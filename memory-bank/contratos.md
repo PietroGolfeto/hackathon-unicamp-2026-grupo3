@@ -95,7 +95,7 @@ Fórmula (uma implementação em numpy, serve escalar e coluna):
 ```
 q             = 1 - p_exito
 custo_defesa  = custas_fixas + honorarios_pct·valor_causa + q·cond_p50·(1 + sucumbencia_pct)
-oferta        = round(fator_oferta·q·cond_p50 / arredondamento)·arredondamento, limitada a [piso·causa, min(teto·causa, cond_p80)]
+oferta        = round(fator_oferta·q·cond_p50), limitada a [piso·causa, min(teto·causa, cond_p80)] e arredondada de novo ao `arredondamento`
 custo_acordo  = a·(oferta + op) + (1 − a)·(custo_defesa + op)          # a = taxa_aceite_esperada
 tipo          = defesa se p_exito ≥ limiar_defesa_forte; acordo se p_exito ≤ limiar_acordo_forte;
                 senão acordo se custo_acordo < custo_defesa; sinal em sinais_forcam_acordo força acordo

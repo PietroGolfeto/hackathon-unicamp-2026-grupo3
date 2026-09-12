@@ -89,8 +89,9 @@ def calcular(
     bruta = np.round(prm.fator_oferta * q * c50 / prm.arredondamento) * prm.arredondamento
     piso = prm.piso_oferta_pct_causa * causa
     teto = np.maximum(np.minimum(prm.teto_oferta_pct_causa * causa, c80), piso)
-    oferta = np.clip(bruta, piso, teto)
     oferta_limitada = np.where(bruta < piso, "piso", np.where(bruta > teto, "teto", ""))
+    # arredonda de novo depois de piso/teto: a oferta que o advogado vê é sempre um número redondo
+    oferta = np.round(np.clip(bruta, piso, teto) / prm.arredondamento) * prm.arredondamento
 
     a = prm.taxa_aceite_esperada
     op = prm.custo_operacional_acordo
