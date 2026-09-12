@@ -10,7 +10,38 @@
 Este README consolida **todas as decisões** do grupo e o que aprendemos com os dados e com as 10 submissões da edição
 UFMG. Documentos de apoio: [`docs/politica.md`](docs/politica.md) (política em linguagem jurídica),
 [`docs/premissas.md`](docs/premissas.md) (cada número: observado × premissa), [`docs/backtest/resumo.md`](docs/backtest/resumo.md)
-(números gerados por script), [`SETUP.md`](SETUP.md) (como rodar).
+(números gerados por script), [`docs/modelo/comparacao.md`](docs/modelo/comparacao.md) (comparação de modelos pelo
+custo de decisão), [`SETUP.md`](SETUP.md) (como rodar).
+
+---
+
+## TL;DR — modelo de decisão v2 (o que mudou e os números para o slide)
+
+- **Inputs que valem**: contrato, extrato, comprovante de crédito, demonstrativo, sub-assunto e UF. **Dossiê e laudo têm
+  efeito zero** (teste LR p = 0,26) e o **valor da causa não move a probabilidade** de perder (correlação 0,0006): ele só
+  multiplica a perda. Assunto é constante.
+- **Modelo**: uma regressão logística aditiva; UF com encolhimento bayesiano para a média; intervalo de credibilidade
+  (Laplace) por caso. **Todas as alternativas empatam** — interações, saturação, gradient boosting, tabelas de células:
+  AUC 0,9226 e **menos de R$ 1M de diferença no custo de decisão** out-of-fold (`make compare-models`).
+- **Onde está o dinheiro**: na estrutura de custos e no valor da informação, não no modelo. Com o **custo total de litigar**
+  (escritório R$ 1.200, sucumbência 15%, custas 2%, correção 1,196), acordar vale a pena a partir de p_perda ≈ **0,26**
+  com oferta fixa de 30% do VC (≈ 0,47 no alvo da escada) — contra **0,58** numa conta sem custos e com aceite 100%.
+  Isso leva a fatia de acordos de ~10% para **36%** dos casos.
+- **Severidade não é constante**: condenação ÷ VC dado perda vai de **0,60 (MA) a 0,84 (AM/AP)**; Genérico 0,65 ×
+  Golpe 0,72. Fica por UF × sub-assunto, com a razão de procedência total (28% → 45% das perdas).
+- **Três ações**: defesa, acordo e **instruir** — pedir contrato/extrato ao banco antes de propor acordo. "Info" nasce do
+  **valor esperado da informação** (com probabilidade total: buscar e não achar é notícia ruim), não de uma classe do
+  classificador. Vale em **34% dos casos (93% dos acordos)** se a chance de localizar for a observada na base; 24% com metade.
+- **Baselines nos 60 mil casos, mesmos custos** (`make backtest`): defender tudo **R$ 342,9M** · limiar fixo 0,60 (3 grupos
+  da UFMG) R$ 257,9M (−24,8%) · **política R$ 236,8M (−31,0%)** · oráculo R$ 191,1M (−44,3%). A política captura **70% do
+  ganho máximo possível** (o limiar, 56%). Banda: 31,1% ± 0,4 p.p. entre folds; bootstrap 30,6–31,4%.
+- **Sensibilidade honesta**: aceite 50% → 17% · 65% → 23% · 80% → 29% · curva → 31%; âncora da curva s50 0,25 → 35% e
+  0,50 → 18%; cenário JEC (sem custas nem sucumbência) → 23%. **O lado acordo é hipótese**; o lado defesa é fato.
+- **Validação**: 5-fold out-of-fold para o modelo (holdout separado seria pior: sem datas não há corte temporal e 30
+  parâmetros em 60 mil linhas não sobreajustam). **Nenhum corte valida a decisão de acordar** — todos os casos foram até a
+  sentença — por isso o experimento de bandas de oferta em produção.
+- **Bayesian Optimization**: não — nem para prever (60 mil rótulos e verossimilhança fechada) nem para os knobs (o
+  backtest custa milissegundos; grid basta).
 
 ---
 
@@ -19,25 +50,30 @@ UFMG. Documentos de apoio: [`docs/politica.md`](docs/politica.md) (política em 
 | Faixa | Quando | Ação |
 |---|---|---|
 | 🟢 **Verde — defender** | Contrato **e** extrato presentes e consistentes (crédito na conta do autor). Perda < 15%. **57% dos casos, 20% do custo** | Contestação padrão; se a petição contradiz o extrato, alegar má-fé |
-| 🟡 **Amarela — instruir antes de decidir** | Falta contrato **ou** extrato, mas recuperá-lo derruba o custo esperado em > 10% do valor da causa. **19% dos casos** | Solicitar o subsídio ao banco (5 dias). Veio → reavaliar. Não veio → acordar |
+| 🟡 **Amarela — instruir antes de acordar** | O caso pede acordo, falta contrato **e/ou** extrato, e o **valor esperado da informação** de pedi-los ao banco supera o custo da busca e dos 5 dias de espera (≥ 2% do VC). **19% dos casos na zona intermediária; instruir vale em 34% de todos os casos** | Solicitar os subsídios ao banco (prazo 5 dias). Vieram → reavaliar (normalmente vira defesa). Não vieram → acordar, com p ajustado para pior |
 | 🔴 **Vermelha — acordar já** | Perda > 60% **ou** sinal grave (crédito em conta de terceiro, biometria ausente em canal digital, documento inconsistente). **24% dos casos, 59% do custo** | Propor na 1ª oportunidade: cancelamento + baixa do saldo + devolução das parcelas + indenização, seguindo a escada **abertura / alvo / teto** |
 
-Regras de ouro: nunca acima do teto (90% do custo esperado de litigar); política não é divulgada (23% de extinções
-sugerem litigância em massa); toda decisão é registrada contra a recomendação vista; documento que não prova o que
-deveria não conta. Texto completo em [`docs/politica.md`](docs/politica.md).
+Regras de ouro: nunca acima do teto (90% do custo esperado de litigar, descontado o saldo baixado); política não é
+divulgada (evita que a parte autora precifique a oferta); toda decisão é registrada contra a recomendação vista;
+documento que não prova o que deveria não conta; decisão cujo intervalo de p cruza o ponto de indiferença (2% dos casos)
+vai para revisão. Texto completo em [`docs/politica.md`](docs/politica.md).
 
-**Potencial financeiro** (backtest com resultados reais dos 60 mil casos, `make backtest`):
+**Potencial financeiro** (backtest com resultados reais dos 60 mil casos e probabilidade out-of-fold, `make backtest`;
+mesmos custos em todas as linhas — só a regra de decisão muda):
 
-| Cenário | Custo total | Economia vs. defender tudo |
-|---|---|---|
-| Defender tudo (o que acontece hoje): condenação R$ 193M + honorários + custas + correção + escritório | **R$ 342,9M** | — |
-| Acordar tudo no alvo | R$ 246,6M | R$ 96M (28%) |
-| **Política (acordo em 36% dos casos)** | **R$ 236,7M** | **R$ 106M (31%)** |
-| Política com aceite fixo em 50% / 80% | R$ 283M / R$ 244M | R$ 60M (17%) / R$ 99M (29%) |
+| Regra de decisão | Custo total | Economia vs. defender tudo | % acordo | Captura do ganho máximo |
+|---|---|---|---|---|
+| Defender tudo (o que aconteceu): condenação R$ 193M + honorários + custas + correção + escritório | **R$ 342,9M** | — | 0% | 0% |
+| Acordar tudo a 30% do VC (aceite 65%) | R$ 313,3M | R$ 30M (8,6%) | 100% | 20% |
+| Heurística "sem contrato → acordo" | R$ 260,7M | R$ 82M (24,0%) | 28% | 54% |
+| Limiar fixo p_perda > 0,60 (3 grupos da UFMG) | R$ 257,9M | R$ 85M (24,8%) | 24% | 56% |
+| **Política EV (escada + curva de aceite)** | **R$ 236,8M** | **R$ 106M (31,0%)** | 36% | **70%** |
+| Oráculo: resultado conhecido, mesma escada (teto teórico) | R$ 191,1M | R$ 152M (44,3%) | 30% | 100% |
 
-Ordem de grandeza: **R$ 5–9 milhões por mês** em 5 mil casos. Sensibilidade completa (aceite × valor da oferta × custos)
-em `docs/backtest/`. Todos os custos além da condenação são premissas declaradas e ajustáveis em
-[`policy.yaml`](src/enteros/policy/policy.yaml).
+Banda do headline: **31,1% ± 0,4 p.p.** entre os 5 folds; bootstrap por caso IC95 30,6–31,4%. Sensibilidade ao aceite
+(hipótese): 50% → 17% · 65% → 23% · 80% → 29%. Ordem de grandeza: **R$ 5–9 milhões por mês** em 5 mil casos. Todos os
+custos além da condenação são premissas declaradas e ajustáveis em [`policy.yaml`](src/enteros/policy/policy.yaml);
+a sensibilidade a cada um (inclusive o cenário JEC) está no bloco abaixo.
 
 ### Números completos do backtest
 
@@ -219,12 +255,14 @@ Ganho se encontrar — queda do custo esperado de litigar se o subsídio ausente
 | **Dossiê e laudo não movem nada** | 30,5% × 30,4%; 30,5% × 30,3% | não entram na faixa; insight para o banco: perícia terceirizada não compra êxito |
 | Nº de subsídios → êxito | 0→0% · 1→3% · 2→13% · 3→34% · 4→64% · 5→87% · 6→96% | monotônico; o engine garante que mais docs nunca aumenta o risco |
 | Sub-assunto | Golpe perde 36%; Genérico 17% | feature |
-| UF | AP/AM perdem ~48% e pagam 84% do pedido; MA perde 21% e paga 60% | feature + razão de condenação por UF |
+| UF | AP/AM perdem ~48% e pagam 84% do pedido; MA perde 21% e paga 60%; 10 de 25 UFs significativas (τ = 0,30) | feature com encolhimento bayesiano + severidade por UF |
 | Valor da causa | **não** altera a probabilidade de perder (69–70% em todas as faixas) | condenação escala linearmente com o VC |
-| Condenação dado perda | 70% do VC em média (p20 0,55 · p50 0,74 · p80 0,86) | quantis para a escada |
+| Condenação dado perda (severidade) | 71% do VC em média, **mas 0,60 (MA) → 0,84 (AM/AP)**; Genérico 0,65 × Golpe 0,72. Procedência ≈ U(0,80–1,00) em toda UF; o que varia é a parcial (0,48–0,82) e P(procedência \| perda) (0,28 → 0,45) | severidade por UF × sub-assunto com razão de procedência; quantis para a escada |
 | Acordos históricos | 280, fechados a 20–40% do VC (mediana 29%), 74% sem contrato | âncora da curva de aceite |
-| Extinção | 23% dos casos, independente de docs | mantida no backtest como defesa vencida com condenação zero; sinal de litigância predatória |
-| Modelo logístico (docs + sub + UF) | **AUC 0,923 · Brier 0,093 · ECE 0,003** (out-of-fold, 5 folds) | calibração quase perfeita → o valor esperado é confiável |
+| Extinção | 23% dos casos; cresce com docs (0% → 32%) porque é **⅓ constante dos êxitos** em todo estrato | é êxito; mantida no backtest como defesa vencida com condenação zero. **Não** é sinal de litigância predatória (versão anterior deste README errava aqui) |
+| Modelo logístico (4 docs + sub + UF, sem os 280 acordos) | **AUC 0,9226 · log-loss 0,308 · Brier 0,093 · ECE 0,003** (out-of-fold, 5 folds) | calibração quase perfeita → o valor esperado é confiável |
+| Interações, saturação, valor da causa, gradient boosting, tabelas de células | todos a ≤ 0,001 de AUC e < R$ 1M de custo de decisão da logística | processo gerador aditivo em log-odds: a escolha do modelo não é onde está o dinheiro |
+| Documentos correlacionados | P(contrato \| extrato) 0,79 × 0,42 sem extrato; dossiê/laudo independentes de tudo | q_d = P(doc \| outros docs) é a chance (limite superior) de o back-office localizar o documento |
 
 ### Os dois processos exemplo são extremos deliberados
 
@@ -235,6 +273,112 @@ Ganho se encontrar — queda do custo esperado de litigar se o subsídio ausente
 | Prova de proveito | extrato: crédito R$ 5 mil + TED para conta própria + PIX + saque em São Luís | crédito em conta da **Caixa** que o autor diz não ter; laudo admite **liveness não localizado** |
 | Autor | idosa, pede R$ 15 mil de dano moral, VC R$ 20 mil | idoso, BO + BACEN, pede R$ 18 mil, VC R$ 25 mil |
 | Engine | **DEFESA** · perda 0,9% · a petição diz "jamais utilizou os valores" — o extrato prova o contrário | **ACORDO** · perda 97% · litigar custa ≈ R$ 30 mil · escada R$ 9,0 mil / **R$ 11,25 mil** / R$ 17,5 mil (devolução R$ 1.440 + baixa R$ 2.748 + indenização) |
+
+---
+
+## 2b. Modelo de decisão v2 — achados, decisões e o que mudou
+
+### Por que uma logística aditiva (e não XGBoost, tabela ou "Bayesian Optimization")
+
+Comparação out-of-fold com **a métrica que importa**: o custo de decisão realizado em R$ sob a mesma regra de EV
+(oferta fixa de 30% do VC, aceite 65%, custos do `policy.yaml`) — só a probabilidade muda. Gerado por `make compare-models`
+([`docs/modelo/comparacao.md`](docs/modelo/comparacao.md)); 59.720 sentenças, 5 folds.
+
+| Modelo | AUC | log-loss | ECE | Custo OOF | Captura do ganho máximo |
+|---|---|---|---|---|---|
+| Logística 6 docs + sub + UF (v1) | 0,9226 | 0,3079 | 0,003 | R$ 242,7M | 74,9% |
+| **Logística 4 docs + sub + UF (v2, escolhida)** | 0,9226 | 0,3079 | 0,003 | R$ 242,7M | 74,9% |
+| … sem UF | 0,9187 | 0,3121 | 0,002 | R$ 243,3M | 74,4% |
+| … + valor da causa · + interações · saturada sub×docs · UF encolhida | 0,9225–0,9226 | 0,3079–0,3083 | 0,002–0,003 | R$ 242,6–242,7M | 74,8–74,9% |
+| HistGradientBoosting (6 docs + sub + UF + VC) | 0,9217 | 0,3099 | 0,006 | R$ 243,0M | 74,6% |
+| Tabela de segmentos k=20 (estimador da v1) | 0,9206 | 0,3120 | 0,004 | R$ 243,1M | 74,6% |
+| Engine v1: média(tabela, logística) | 0,9221 | 0,3089 | 0,003 | R$ 242,8M | 74,8% |
+| Células brutas UF×sub×docs | 0,9173 | 0,3241 | 0,007 | R$ 243,4M | 74,3% |
+| Defender tudo / Oráculo | — | — | — | R$ 340,8M / R$ 209,8M | 0% / 100% |
+
+Leitura: o processo gerador é **aditivo em log-odds**; a logística já está no teto. A média com a tabela de segmentos
+(engine v1) era ligeiramente pior e o "intervalo = discordância" não era um intervalo estatístico. **Bayesian
+Optimization** não se aplica: há 60 mil rótulos e verossimilhança fechada (não é função cara de caixa-preta), e para os
+knobs da política o backtest custa milissegundos — grid resolve. Efeitos em log-odds de perda (Wald): contrato −3,08
+(OR de êxito 21,7), extrato −3,00 (20,1), comprovante −1,27 (3,6), demonstrativo −0,52 (1,7), **dossiê +0,04 (p = 0,20),
+laudo −0,04 (p = 0,28)**, Golpe +1,02. Incerteza paramétrica (Laplace): IC95 de p com largura média **0,03**; só **2,2%**
+dos casos cruzam o ponto de indiferença — a incerteza que importa é o subsídio ausente, não o posterior.
+
+### A função de perda: custo total de litigar, com base na prática brasileira
+
+```
+EV_defesa  = escritório + p_perda · [ ratio(UF, sub) · VC · (1 + sucumbência) · fator_tempo + custas · VC + saldo ]
+EV_acordo  = a(oferta) · (oferta + saldo) + (1 − a) · EV_defesa + operacional
+p*         = (oferta + saldo + operacional / a − escritório) / (custo_se_perde + saldo)     ← ponto de indiferença, por caso
+EV_instruir(S) = custo_busca(S) + atraso + Σ P(outcome) · min(EV_defesa, EV_acordo)(p_outcome)
+```
+Condenação é 0 no êxito e `ratio × VC` na perda (ratio por UF × sub-assunto, sem os 280 acordos). `saldo` é o saldo
+devedor baixado quando a IA documental o informa (receita perdida; entra nos dois ramos porque perder em juízo também
+anula o contrato).
+
+| Parâmetro | Default | Faixa testada | Base |
+|---|---|---|---|
+| Escritório — defesa até sentença | R$ 1.200 | ×0,5 / ×1,5 | tabelas de honorários por ato em contencioso de massa (contestação + audiência + recurso) |
+| Escritório — negociar/formalizar acordo | R$ 300 | — | idem |
+| Sucumbência sobre a condenação | 15% | 10% / 20% | CPC art. 85 §2 (10–20%); em JEC só em recurso (Lei 9.099 art. 55) |
+| Custas quando perde | 2% do VC | 0% | reembolso de custas + preparo; gratuidade de justiça frequente (autores idosos) |
+| Correção + juros até o pagamento | 1% a.m. × 18 meses = 1,196 | 10 / 22 meses (1,10 / 1,25) | IPCA + juros legais (SELIC − IPCA, Lei 14.905/2024); 12–24 meses em vara, 6–12 em JEC |
+| Localizar um subsídio | R$ 80 + 5 dias | q_d × 0,5 / 0,75 / 1 | premissa (back-office) |
+| Cenário **JEC** | sem custas nem sucumbência, 9 meses | — | Lei 9.099 art. 55 |
+
+O breakeven é **saída**, não entrada: com oferta fixa de 30% do VC e aceite 65% fica em p_perda ≈ 0,26 (0,19–0,31 por UF e
+VC); no alvo da escada, 0,47 em média (p5 0,24 · p95 0,84). Numa conta sem custos e com aceite 100% seria 0,58 — a
+diferença entre acordar 10% e 36% dos casos. Sensibilidade completa a cada custo no bloco do backtest acima; a economia
+fica entre 28% e 32% em todos os cenários de vara e cai para 23% no cenário JEC.
+
+### Três ações: defesa, acordo, instruir
+
+"Info" não é uma classe do classificador. Para cada conjunto S de subsídios preditivos ausentes, o engine calcula
+`EV_instruir(S)` enumerando os resultados da busca: cada documento é localizado com chance `q_d = P(doc | padrão dos
+outros docs)` (limite superior declarado), o que leva p para `p_com` (o coeficiente do documento); **não localizar piora
+p por probabilidade total** (`p_falha = (p − q·p_com)/(1 − q)`), senão o valor da informação fica superestimado.
+`EVSI(S) = V(p) − EV_instruir(S)`; o engine pede o conjunto de maior EVSI se ele supera 2% do VC. Contrato ou extrato
+sozinhos raramente viram a decisão de um caso sem os dois (o caso continua acordo, só mais barato); **o par vira**. Uma
+defesa nunca é adiada: o engine lista os documentos que a fortalecem para pedir em paralelo. Na base, vale instruir em
+33,6% dos casos (93% dos acordos), EVSI total R$ 50M sob q_d cheio; 23,9% e R$ 17M com q_d × 0,5.
+
+### Cruzamento com uma análise independente (colega do time)
+
+| Afirmação | Veredito na base |
+|---|---|
+| ORs e p-valores dos 10 inputs; dossiê/laudo ruído; VC só na função de perda | **Confere** |
+| Logística ≈ GBM; processo aditivo; agregados por célula são piores | **Confere** (0,9226 × 0,9217 × 0,9173) |
+| UF com partial pooling; 10/25 significativas; IC de p estreito → rotear por VOI, não por posterior | **Confere** (τ = 0,30; encolhimento 0,90 — efeito prático nulo, mas é o modelo correto) |
+| Severidade ≈ constante 0,71 do VC | **Não confere**: 0,60 (MA) → 0,84 (AM/AP); Genérico 0,65 × Golpe 0,72 |
+| Breakeven p_êxito < 0,581 | **Só sem custos e com aceite 100%**; com custo total é ≈ 0,74 de êxito (0,26 de perda) |
+| Bayesian Optimization não é para prever; sobra para knobs | **Confere**; e para knobs também é desnecessária (backtest em ms) |
+| Base sintética; sem contrafactual de aceite → modelar aceite e fazer sensibilidade | **Confere** (premissa H1 + experimento H11 + sensibilidade a s50) |
+
+### Decisões desta versão
+
+| # | Decisão | Por quê |
+|---|---|---|
+| A1 | Inputs: contrato, extrato, comprovante, demonstrativo, sub-assunto, UF; dossiê e laudo exportados com coeficiente 0; VC e assunto fora | LR p = 0,26; corr(VC, perda) 0,0006; assunto constante. Coeficiente 0 mantém o contrato do adapter do portal e vira argumento no slide |
+| A2 | Logística única; tabela de segmentos é **saída** do modelo (p previsto por célula + n observado) | Tabela era pior OOF e a média piorava a logística; continua útil como "política em planilha" |
+| A3 | UF com encolhimento Bayes-empírico para a média das UFs (intercepto = UF média; UF desconhecida cai nela) | Evita política estadual sobre ruído amostral; default principiado para UF sem dados |
+| A4 | Incerteza por covariância de Laplace (32×32) → IC95 por caso, rotulado epistêmico; `decisao_sensivel` quando cruza p\* | Intervalo estatístico de verdade; 2,2% dos casos vão para revisão |
+| A5 | Severidade por UF × sub sem acordos, com razão de procedência; células pequenas encolhem para o sub-assunto | Corrige viés (acordos entravam como perda) e estabiliza o p50 bimodal das células Genérico que o portal usa |
+| A6 | Função de perda = custo total de litigar; saldo devedor nos dois ramos; breakeven como saída; cenário JEC | Explica o limiar ao jurídico; custos movem mais que o modelo |
+| A7 | Três ações por valor esperado com probabilidade total e conjuntos de documentos | Sem `p_falha` o EVSI é superestimado; documento sozinho raramente vira a decisão, o par vira |
+| A8 | Seleção de modelo pela perda de negócio (`make compare-models`) | A métrica que importa é R$ de arrependimento OOF, não AUC |
+| A9 | Sem Bayesian Optimization; fronteira de política por grid quando necessário | Objetivo custa ms; com ECE 0,003 a regra de EV já é Bayes-ótima sob o modelo |
+| A10 | Curva de aceite continua premissa (s50 0,30; só aceites, censura declarada) com sensibilidade 0,25–0,50 | Único dado são 280 aceites majoritariamente sem contrato |
+| A11 | Scores OOF para o portal (`make scored` → `data/derived/historico_scored.csv`, não versionado) | Backtest do gestor com probabilidade honesta |
+| A12 | Extinção = êxito (mantida); acordos históricos fora do treino, dentro do backtest como custo real | Extinção é ⅓ constante dos êxitos; acordos não são sentenças |
+
+### O que dá para validar e o que não dá
+
+O **modelo** (p de perda e severidade) é validado out-of-fold em 5 folds estratificados — cada um dos 60 mil casos é
+pontuado por um modelo que não o viu — e o backtest usa esse p. Um holdout separado seria pior: sem datas não há corte
+temporal; 30 parâmetros em 60 mil linhas não sobreajustam (política com p OOF R$ 236,8M × in-sample R$ 236,7M). A
+**decisão de acordar** não é validável por nenhum corte: todos os casos foram até a sentença, não há contrafactual de
+"e se tivéssemos ofertado". O lado defesa do backtest é fato; o lado acordo é hipótese (curva de aceite) — por isso o
+headline vem com banda e sensibilidade, e a curva se aprende em produção com bandas de oferta randomizadas (H11).
 
 ---
 
@@ -271,11 +415,11 @@ aderência com **taxonomia de desvio**; (8) oferta **decomposta** + escada + men
 
 | # | Diferencial | Critério |
 |---|---|---|
-| D1 | **Decisão por valor esperado**: `EV_defesa = escritório + p·[cond·(1+honorários)·tempo + custas]` vs `EV_acordo = a·alvo + (1−a)·EV_defesa + op`. O limiar cai da economia, não é 0,60 arbitrário | Leitura do problema · Execução |
-| D2 | **Backtest reproduzível** com resultados reais, baselines "defender tudo" e "acordar tudo", sensibilidade e gráficos (`make backtest`) | Potencial financeiro · Execução |
+| D1 | **Decisão por valor esperado em três ações** (defesa, acordo, instruir): `EV_defesa = escritório + p·[cond·(1+honorários)·tempo + custas + saldo]` vs `EV_acordo = a·(alvo + saldo) + (1−a)·EV_defesa + op` vs `EV_instruir`. O ponto de indiferença é saída por caso, não 0,60 arbitrário | Leitura do problema · Execução |
+| D2 | **Backtest reproduzível** com resultados reais e p out-of-fold: baselines (defender tudo, acordar tudo, heurísticas, limiar 0,60 da UFMG, oráculo), % do ganho máximo capturado, banda por fold/bootstrap, sensibilidade a aceite/custos/JEC (`make backtest`); seleção de modelo pelo custo de decisão (`make compare-models`) | Potencial financeiro · Execução |
 | D3 | **Escada decomposta**: abertura / alvo / teto; alvo = argmin do custo esperado sob curva de aceite (premissa declarada); piso = devolução simples; oferta = cancelamento + baixa + devolução + indenização | Criatividade · Leitura |
 | D4 | **Auditoria de conteúdo por IA** (trilha em andamento): titularidade da conta de depósito, TED × valor liberado, liveness, dossiê favorável, contradições da petição. Documento inconsistente é **rebaixado** a ausente pelo engine | Uso de IA · Execução |
-| D5 | **Valor da informação**: faixa amarela "instruir antes de acordar"; para o banco, recuperar contratos ausentes evitaria **R$ 110M** de custo esperado; extratos, **R$ 62M**; dossiê/laudo: zero | Leitura do problema |
+| D5 | **Valor da informação com probabilidade total**: "instruir antes de acordar" em 34% dos casos (EVSI R$ 50M sob q_d cheio); se todos os contratos ausentes fossem localizados, o custo esperado de litigar cairia **R$ 111M**; extratos, **R$ 63M**; dossiê/laudo: zero → rever o gasto com perícia terceirizada | Leitura do problema |
 | D6 | **Monitoramento que aprende** (trilha em andamento): taxonomia de desvio, justificativa por código, scorecard com controle estatístico, funil de negociação, curva de aceite por **bandas de oferta randomizadas** (15% de exploração) → bandit ajusta o alvo | Execução · Uso de IA |
 | D7 | **Onde o advogado trabalha**: API `POST /recomendacao` que o EnterOS chamaria + portal completo (`src/web` sobre `src/api`): lista de casos, caso com recomendação, PDFs, decisão com justificativa, resultado; link mágico para a banca. Sem a trilha B, nada é inferido dos documentos: só presença de subsídio, scores e recomendação | Usabilidade · Viabilidade |
 | D8 | **Evals e guardrails**: LLM nunca decide dinheiro; saídas validadas por schema; golden set com os 2 casos + sintéticos (trilha em andamento) | Uso de IA |
@@ -287,11 +431,11 @@ aderência com **taxonomia de desvio**; (8) oferta **decomposta** + escada + men
 | # | Decisão | Por quê |
 |---|---|---|
 | 1 | **Valor esperado em vez de limiar de probabilidade** | 0,60 (usado por 3 grupos) não tem justificativa econômica; o EV torna o limiar função dos custos e explicável ao jurídico |
-| 2 | **Regressão logística + tabela de segmentos, não XGBoost** | A base é quase linear em log-odds (AUC 0,923 vs ~0,92 dos XGBoost dos outros grupos); artefato é um JSON de 30 coeficientes, auditável e sem dependência; a tabela de segmentos (831 células com shrinkage) é a política em forma de planilha |
-| 3 | **Média entre tabela e logística; intervalo = discordância** | Segmentos raros são suavizados; a discordância vira medida de incerteza mostrada ao advogado |
-| 4 | **Dossiê e laudo ficam no modelo mas não definem faixa** | Efeito observado é zero; manter como feature evita "esconder" o dado; a faixa usa só o que o juiz olha |
+| 2 | **Regressão logística aditiva (4 docs + sub + UF), não XGBoost nem tabela** | Processo gerador aditivo em log-odds: todas as variantes empatam (AUC 0,9226; < R$ 1M de custo OOF); artefato é um JSON de ~35 coeficientes, auditável e sem dependência (`make compare-models`) |
+| 3 | **Logística única; tabela de segmentos é saída do modelo; incerteza = IC de Laplace** (substitui a v1 "média entre tabela e logística; intervalo = discordância") | A média piorava a logística e a discordância não era intervalo estatístico; o IC epistêmico marca 2,2% de decisões sensíveis para revisão |
+| 4 | **Dossiê e laudo exportados com coeficiente 0** (fora do ajuste, dentro das colunas) | Efeito observado é zero (LR p = 0,26); coeficiente 0 mantém o contrato do portal e vira argumento no slide |
 | 5 | **LLM só nas pontas** (extrair, cruzar fatos, redigir); engine determinístico | Custo (centavos/caso), latência, consistência entre advogados e auditabilidade — G10 perdeu credibilidade deixando a LLM calcular valor |
-| 6 | **Extinção mantida no backtest** como defesa vencida com condenação zero | Excluir 23% da base enviesaria o baseline (o vencedor anterior excluiu) |
+| 6 | **Extinção mantida como êxito** (defesa vencida com condenação zero) | É ⅓ constante dos êxitos em todo estrato de docs; excluir 23% da base enviesaria o baseline (o vencedor anterior excluiu). Não é sinal de litigância predatória |
 | 7 | **Curva de aceite é premissa declarada + experimento** | Só há 280 acordos, todos aceitos (viés de seleção); a base não permite estimar a curva — por isso 15% de exploração em bandas para aprendê-la |
 | 8 | **Custos de defesa como parâmetros com fonte** (`policy.yaml`, `docs/premissas.md`) | A base não tem honorários, custas nem datas; o jurídico ajusta e o backtest mostra a sensibilidade |
 | 9 | **Sinais da IA entram por regra dura, não pelo modelo** | O histórico não tem esses rótulos; vender "conta de terceiro" como feature treinada seria desonesto (Súmula 479 STJ justifica a regra) |
@@ -300,6 +444,11 @@ aderência com **taxonomia de desvio**; (8) oferta **decomposta** + escada + men
 | 12 | **React + Vite + Tailwind para a tela** (time tem frontend); Streamlit descartado | Foi o que 4 grupos usaram; usabilidade é critério |
 | 13 | **Constantes centralizadas** (`config.py`, `policy.yaml`); nomes de domínio em português | Nada hardcoded; política versionada é requisito de aderência |
 | 14 | **Limitações declaradas no deck** | G10 perdeu credibilidade prometendo o que não entregou |
+| 15 | **Acordos históricos fora do treino de frequência e severidade** | Não são sentenças (razão pago/causa ≈ U(0,20–0,40)); entravam como perda e puxavam a severidade para baixo; ficam no backtest como custo real e como âncora da curva de aceite |
+| 16 | **Três ações por valor esperado; "instruir" nasce do EVSI com probabilidade total sobre conjuntos de documentos** | "Info" não é classe de classificador; sem `p_falha` o valor da informação é superestimado; documento sozinho raramente vira a decisão, o par contrato + extrato vira |
+| 17 | **Breakeven é saída por caso; custos com base legal e cenário JEC na sensibilidade** | O limiar 0,60 de três grupos da UFMG não tinha base econômica; os custos movem a fatia de acordos de 10% para 36% |
+| 18 | **Sem Bayesian Optimization; seleção de modelo pelo custo de decisão OOF** | 60 mil rótulos e verossimilhança fechada; backtest em ms; a métrica que importa é R$, não AUC |
+| 19 | **Validação 5-fold OOF para o modelo; nenhuma para a decisão de acordar** | Sem datas não há corte temporal; todos os casos foram à sentença → o lado acordo é hipótese com banda e sensibilidade, aprendida em produção (H11) |
 
 ---
 
@@ -313,12 +462,13 @@ flowchart LR
   end
   X -->|CaseFeatures| ENG
   subgraph ENG["Engine determinístico (esta entrega)"]
-    M[Tabela de segmentos + logística calibrada<br/>models/*.json] --> P[p_perda]
+    M[Logística aditiva 4 docs + sub + UF encolhida<br/>IC de Laplace · q_doc · models/*.json] --> P[p_perda ± IC]
     R[Razão condenação/VC por UF×sub] --> EV[EV_defesa]
     P --> EV
     Y[policy.yaml<br/>custos · limiares · curva de aceite] --> EV
-    EV --> ESC[Escada abertura/alvo/teto<br/>+ decomposição + VOI]
-    ESC --> REC[Recomendacao<br/>faixa · decisão · motivos · contribuições]
+    EV --> ESC[Escada abertura/alvo/teto<br/>+ decomposição + breakeven p*]
+    ESC --> EVSI[EVSI por conjunto de docs ausentes<br/>q_d · p_com · p_falha]
+    EVSI --> REC[Recomendacao<br/>defesa · acordo · instruir · motivos · contribuições]
   end
   REC -->|POST /recomendacao :8001| EXT[Integrações externas<br/>EnterOS]
   REC --> BT[Backtest 60k<br/>docs/backtest]
@@ -337,9 +487,12 @@ flowchart LR
 `presente|ausente|inconsistente`, e opcionais da IA: titularidade da conta, liveness, parcelas pagas, saldo, dano moral
 pedido, contradições, red flags) → `Recomendacao` (decisão `defesa|acordo|instruir`, faixa, p_perda e intervalo,
 condenação p20/p50/p80, EV de defesa e de acordo, escada, decomposição, VOI por documento, motivos, regras acionadas,
-contribuições por feature, versões da política e do modelo).
+contribuições por feature, versões da política e do modelo; **v2, aditivos**: `p_breakeven`, `decisao_sensivel`,
+`ev_instruir`, `evsi_por_doc`, `q_por_doc`, `analise_subsidios`, `instrucao` (melhor conjunto a pedir),
+`docs_que_fortalecem`, `p_procedencia_se_perder`, `saldo_no_ev`). O adapter do portal (`src/api/app/modelo_enteros.py`)
+continua lendo `Engine.p_perda`, `ratio.para`, `modelo.{colunas, coef, metricas, calibracao, contribuicoes}` sem mudança.
 
-**Custo e performance**: engine < 1 ms; API < 50 ms; IA documental estimada em 2–3 chamadas/caso com modelo barato e
+**Custo e performance**: engine < 1 ms por caso (≈ 0,6 ms com dois subsídios ausentes, enumerando conjuntos); API < 50 ms; IA documental estimada em 2–3 chamadas/caso com modelo barato e
 cache por hash → **≈ R$ 0,05–0,15 por caso, < R$ 1 mil/mês** para 5 mil casos, contra R$ 5–9 milhões/mês de economia.
 
 ---
@@ -348,7 +501,7 @@ cache por hash → **≈ R$ 0,05–0,15 por caso, < R$ 1 mil/mês** para 5 mil c
 
 | Trilha | Entrega | Pasta | Estado |
 |---|---|---|---|
-| A · Dados/Política | loader, modelos calibrados, engine EV, escada, VOI, `policy.yaml`, backtest, API, testes | `src/enteros/{data,policy,backtest,api}` | ✅ esta entrega |
+| A · Dados/Política | loader, logística v2 (UF encolhida, IC de Laplace, q_doc), severidade por UF×sub, engine em três ações (breakeven, EVSI), escada, `policy.yaml` v2, backtest com baselines/banda/sensibilidades, `make compare-models`, `make scored`, API, 35 testes | `src/enteros/{data,policy,backtest,api}` | ✅ esta entrega |
 | B · IA documental | extratores por documento, cruzador de fatos/contradições, contato do adverso, minutas, golden set + `make eval` | `src/enteros/ia/` | 🔧 |
 | C · UX advogado | portal: login, casos, caso (recomendação, PDFs em nova aba com recibo de leitura, decisão com cronômetro, resultado; minutas e contato do adverso só quando a trilha B entregar), link mágico `/api/demo` | `src/web/src/pages/advogado`, `src/api` | ✅ básico · 🔧 polimento |
 | D · Banco/Monitor | decisões em Postgres, aderência (desvio de tipo/valor, justificativas, por escritório/advogado/semana), efetividade (aceite real × hipótese, economia realizada), simulação de parâmetros nos 60k, aprovações | `src/api/app/services/{metricas,backtest}.py`, `src/web/src/pages/gestor` | ✅ números · 🔧 gráficos e experimento |
@@ -363,7 +516,7 @@ ponta · H11–13 números do backtest no deck · H13–14 vídeo · H14–15 bu
 
 | # | Requisito | Onde | Estado |
 |---|---|---|---|
-| 1 | Regra de decisão acordo × defesa | `policy/engine.py` (EV + faixas + regras duras), `policy.yaml` | ✅ |
+| 1 | Regra de decisão acordo × defesa (× instruir) | `policy/engine.py` (três ações por EV, breakeven por caso, EVSI com probabilidade total, faixas e regras duras), `policy.yaml` v2 | ✅ |
 | 2 | Sugestão de valor | `policy/negotiation.py` (escada abertura/alvo/teto, decomposição) | ✅ |
 | 3 | Acesso à recomendação | `enteros/api/main.py` (`POST /recomendacao`); portal `src/web` (`/casos/:id`, resumo copiável, link mágico `/api/demo` para a banca) | ✅ |
 | 4 | Monitoramento de aderência | portal: decisão gravada contra a recomendação vista, justificativa obrigatória no desvio, aprovação de acordos fora da banda, `GET /api/dashboard/aderencia` | ✅ |
@@ -377,6 +530,10 @@ ponta · H11–13 números do backtest no deck · H13–14 vídeo · H14–15 bu
 - Custos de defesa (honorários, custas, escritório) são parâmetros a confirmar com o jurídico; o backtest mostra a sensibilidade.
 - IA lê PDFs digitais; autos escaneados exigem OCR. Dois processos exemplo → golden set precisa de casos sintéticos.
 - Sem dados do advogado da parte autora (OAB) → detecção de litigância predatória é próximo passo.
+- A chance de localizar um subsídio (q_d) vem da coocorrência dos documentos na base: é limite superior; "buscar e não
+  achar" piora p por probabilidade total (premissa H12) e a leitura de "subsídio como intervenção" fica como limite superior.
+- A banda do headline (± 0,4 p.p.) mede só a variação amostral do modelo; a incerteza real está no aceite (17%–31%).
+- Buscas de documentos tratadas como independentes entre si; custo do atraso = correção de 5 dias sobre o EV de litigar.
 
 ## 10. Próximos passos com +1 mês
 Integração ao EnterOS (webhook de novo caso → parecer); OCR; ingestão do resultado real de negociação e recalibração
@@ -387,7 +544,8 @@ modelo de duração com datas reais; expansão a cartão e outras modalidades.
 
 ## Como rodar
 Ver [`SETUP.md`](SETUP.md). Resumo: `make install && make demo` roda o engine (sobre `data/exemplos/sinteticos.csv` se a
-planilha da Enter não estiver em `data/raw/`); `make engine-api` → `http://localhost:8001/docs`. Portal completo com
+planilha da Enter não estiver em `data/raw/`); `make compare-models` gera `docs/modelo/comparacao.md`; `make scored` gera
+os scores OOF para o portal em `data/derived/`; `make engine-api` → `http://localhost:8001/docs`. Portal completo com
 Postgres: `make up && make jobs-docker` → `http://localhost:8080` (usuários e senha em `SETUP.md`).
 
 ## Enunciado original do desafio
