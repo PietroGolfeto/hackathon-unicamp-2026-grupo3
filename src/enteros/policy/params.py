@@ -53,6 +53,13 @@ class Experimento(BaseModel):
     bandas_pct_causa: list[float]
 
 
+class Comparacao(BaseModel):
+    """Cenário fixo (oferta e aceite) para comparar modelos pelo custo de decisão out-of-fold."""
+
+    oferta_pct_causa: float
+    taxa_aceite: float
+
+
 class Politica(BaseModel):
     versao: str
     faixas: Faixas
@@ -60,6 +67,7 @@ class Politica(BaseModel):
     oferta: Oferta
     regras_duras: RegrasDuras
     experimento: Experimento
+    comparacao: Comparacao
 
 
 @lru_cache(maxsize=4)

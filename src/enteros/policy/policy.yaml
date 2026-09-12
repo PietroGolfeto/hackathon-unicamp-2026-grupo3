@@ -36,3 +36,8 @@ regras_duras:
 experimento:
   fracao_exploracao: 0.15     # % dos casos de acordo que recebem banda de oferta aleatória para aprender a curva de aceite
   bandas_pct_causa: [0.25, 0.30, 0.35]
+
+comparacao:
+  # cenário fixo usado só para comparar modelos pelo custo de decisão OOF (make compare-models e métrica custo_decisao_oof)
+  oferta_pct_causa: 0.30      # oferta única de 30% do VC (mediana dos 280 acordos históricos)
+  taxa_aceite: 0.65           # aceite fixo (centro da sensibilidade 50–80%)

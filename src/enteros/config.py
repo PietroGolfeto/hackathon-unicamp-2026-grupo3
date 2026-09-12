@@ -95,3 +95,4 @@ TJ_UF = {
 UFS = tuple(sorted(TJ_UF.values()))
 
 SEMENTE = 42
+Z_IC95 = 1.96  # quantil normal do intervalo de credibilidade de 95%

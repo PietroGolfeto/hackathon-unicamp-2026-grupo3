@@ -21,12 +21,14 @@ Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação d
 | Fato | Número | Implicação |
 |---|---|---|
 | Êxito global | 69,6% | base rate do stub; "defender tudo" já vence 7 em 10 |
-| `Extinção` | 23% da base, todas Êxito | mantida no backtest (decisão 5) |
-| `Acordo` no micro | 280 linhas, Não Êxito | acordos históricos; valor = pago |
+| `Extinção` | 23% da base, todas Êxito; é ⅓ constante dos êxitos em todo estrato de docs (P(ext \| êxito) ≈ 0,33) | mantida no backtest (decisão 5); **não** é sinal de litigância predatória nem independe dos docs |
+| `Acordo` no micro | 280 linhas, Não Êxito; razão pago/causa ≈ U(0,20–0,40), média 0,298; 74% sem contrato | não são sentenças: fora do treino de frequência e de severidade do engine; só âncora da curva de aceite |
 | Sub-assunto | Golpe 69% (êxito 63,6%) · Genérico 31% (êxito 83%) | feature forte |
 | UF | 26 UFs, exatamente 2.308 cada; êxito de 51,6% (AP) a 79,2% (MA) | base sintética (dizer nas limitações); UF tem sinal |
 | Valor da causa | R$ 1k–31k, mediana R$ 15k | **sem** efeito no êxito (69–70% em todas as faixas) |
 | Condenação quando perde | mediana R$ 10k; razão condenação/causa p25 0,55 · p50 0,74 · p75 0,86; nunca zero | stub: p20 = 0,55·causa, p50 = 0,74·causa, p80 = 0,86·causa |
+| Severidade por UF (razão condenação/causa dado perda) | MA 0,60 · MS/MT 0,61 · maioria ≈ 0,68 · BA 0,80 · AM/AP 0,84; Genérico 0,65 × Golpe 0,715; Procedência ≈ U(0,80–1,00) flat por UF, Parcial varia 0,48–0,82 por UF; P(procedência \| perda) 0,28 (MA) → 0,39 (AP) | severidade **não** é constante: fica por UF × sub-assunto |
+| Interações / valor da causa / árvores | logística aditiva 4 docs + sub + UF: AUC 0,9226 OOF; interações, saturação, VC e gradient boosting não mudam nada (≤ 0,001) | processo gerador aditivo em log-odds; escolha de modelo vale < R$ 1M de custo de decisão |
 | Contrato presente | êxito 87% vs 25% ausente | preditor dominante |
 | Extrato presente | êxito 81% vs 18% ausente | segundo preditor |
 | Comprovante de crédito | 80% vs 53% | terceiro |
