@@ -12,7 +12,7 @@ data/
 ├── exemplos/
 │   ├── README.md                      # versionado
 │   ├── sinteticos.csv                 # versionado: 3 mil processos fictícios gerados pelos modelos (`make sinteticos`); schema das duas abas
-│   ├── sinteticos_processos.csv       # versionado: 340 processos fictícios com autor, advogado e escritório (`make seed-demo`)
+│   ├── sinteticos_processos.csv       # versionado: 340 processos fictícios com UF, sub-assunto, valor, flags e escritório (`make seed-demo`)
 │   └── <numero-cnj>/                  # ignorado: as 2 pastas de processos exemplo
 │       ├── autos/*.pdf
 │       └── subsidios/*.pdf            # o nome do arquivo define a flag (contrato, extrato, …)
