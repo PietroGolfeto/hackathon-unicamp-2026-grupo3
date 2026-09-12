@@ -24,6 +24,7 @@ export default function Casos() {
   }, [data, busca]);
 
   const pendentes = (data ?? []).filter((p) => p.status === "pendente").length;
+  const temAutor = (data ?? []).some((p) => p.autor); // só com P3 plugado
 
   return (
     <Stack gap="sm">
@@ -35,7 +36,7 @@ export default function Casos() {
             {data ? ` · ${data.length} processos · ${pendentes} pendentes` : ""}
           </Text>
         </div>
-        <TextInput placeholder="Buscar por número ou autor" value={busca}
+        <TextInput placeholder={temAutor ? "Buscar por número ou autor" : "Buscar por número"} value={busca}
           onChange={(e) => setBusca(e.currentTarget.value)} w={{ base: "100%", sm: 300 }} />
       </Group>
       {isLoading && <Loader />}
@@ -46,7 +47,7 @@ export default function Casos() {
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Processo</Table.Th>
-                <Table.Th>Autor</Table.Th>
+                {temAutor && <Table.Th>Autor</Table.Th>}
                 <Table.Th>Valor da causa</Table.Th>
                 <Table.Th>Subsídios</Table.Th>
                 <Table.Th>Recomendação</Table.Th>
@@ -66,7 +67,7 @@ export default function Casos() {
                       <OrigemBadge origem={p.scores_origem} rotulo="score stub" />
                     </Group>
                   </Table.Td>
-                  <Table.Td><Text size="sm">{p.autor ?? "—"}</Text></Table.Td>
+                  {temAutor && <Table.Td><Text size="sm">{p.autor ?? "—"}</Text></Table.Td>}
                   <Table.Td><Text size="sm">{brl(p.valor_causa)}</Text></Table.Td>
                   <Table.Td>
                     <Text size="sm">{p.n_subsidios}/6</Text>

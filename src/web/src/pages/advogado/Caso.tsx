@@ -43,7 +43,7 @@ export default function Caso() {
       <CardAnalise p={p} />
       <CardDocumentos p={p} abertos={abertos} onAbrir={(a) => setAbertos((s) => new Set(s).add(a))} />
       {decisaoAtual && !novaDecisao && (
-        <CardDecisaoAtual d={decisaoAtual} registrada={registrada} p={p} rec={rec.data}
+        <CardDecisaoAtual d={decisaoAtual} registrada={registrada} p={p}
           onNova={() => setNovaDecisao(true)}
           onResultado={() => { qc.invalidateQueries({ queryKey: ["processo", pid] }); qc.invalidateQueries({ queryKey: ["processos"] }); }} />
       )}
@@ -80,12 +80,14 @@ function Cabecalho({ p }: { p: ProcessoDetalhe }) {
             {p.origem === "exemplo" && <Badge color="grape" variant="light">autos reais</Badge>}
             <OrigemBadge origem={p.dados_extraidos?.origem} rotulo="extração stub" />
           </Group>
-          <Text mt="xs" size="sm">
-            <b>{autor?.nome ?? "Autor não identificado"}</b>
-            {autor?.idade ? ` · ${autor.idade} anos` : ""}{autor?.cpf_mascarado ? ` · CPF ${autor.cpf_mascarado}` : ""}
-            {p.dados_extraidos?.comarca ? ` · ${p.dados_extraidos.comarca}` : ""}
-          </Text>
-          <Text size="sm">Valor da causa: <b>{brl(p.valor_causa, true)}</b> · Escritório: {p.escritorio}</Text>
+          {autor?.nome && (
+            <Text mt="xs" size="sm">
+              <b>{autor.nome}</b>
+              {autor.idade ? ` · ${autor.idade} anos` : ""}{autor.cpf_mascarado ? ` · CPF ${autor.cpf_mascarado}` : ""}
+              {p.dados_extraidos?.comarca ? ` · ${p.dados_extraidos.comarca}` : ""}
+            </Text>
+          )}
+          <Text size="sm" mt={autor?.nome ? 0 : "xs"}>Valor da causa: <b>{brl(p.valor_causa, true)}</b> · Escritório: {p.escritorio}</Text>
           {p.sinais.length > 0 && (
             <Group gap={4} mt="xs" wrap="wrap">{p.sinais.map((s) => <SinalChip key={s.codigo} sinal={s} />)}</Group>
           )}
@@ -278,8 +280,8 @@ function FormDecisao({ pid, rec, abertos, inicio, onOk }: { pid: number; rec: Re
   );
 }
 
-function CardDecisaoAtual({ d, registrada, p, rec, onNova, onResultado }: {
-  d: Decisao; registrada: DecisaoRegistrada | null; p: ProcessoDetalhe; rec?: Recomendacao; onNova: () => void; onResultado: () => void;
+function CardDecisaoAtual({ d, registrada, p, onNova, onResultado }: {
+  d: Decisao; registrada: DecisaoRegistrada | null; p: ProcessoDetalhe; onNova: () => void; onResultado: () => void;
 }) {
   const minutas = registrada?.minutas ?? null;
   const contato = registrada?.contato_adverso ?? p.dados_extraidos?.advogado_autor ?? null;
@@ -301,9 +303,6 @@ function CardDecisaoAtual({ d, registrada, p, rec, onNova, onResultado }: {
 
       {d.tipo === "acordo" && contato && <Contato c={contato} />}
       {minutas && <MinutasView m={minutas} />}
-      {!minutas && rec && d.tipo === "acordo" && (
-        <Text size="xs" c="dimmed" mt="xs">Minutas ficam disponíveis logo após registrar a decisão nesta sessão.</Text>
-      )}
 
       {d.resultado ? (
         <Alert color="green" variant="light" mt="md" title={ROTULO_RESULTADO[d.resultado] ?? d.resultado}>

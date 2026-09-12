@@ -45,7 +45,7 @@ export default function Aprovacoes() {
                 <Table.Td>{dataHora(a.decisao.created_at)}</Table.Td>
                 <Table.Td>
                   <Anchor component={Link} to={`/casos/${a.processo_id}`} size="sm">{a.numero}</Anchor>
-                  <Text size="xs" c="dimmed">{a.autor ?? "—"} · causa {brl(a.valor_causa)}</Text>
+                  <Text size="xs" c="dimmed">{a.autor ? `${a.autor} · ` : ""}causa {brl(a.valor_causa)}</Text>
                 </Table.Td>
                 <Table.Td>{a.decisao.usuario_nome} <Text span size="xs" c="dimmed">{a.escritorio}</Text></Table.Td>
                 <Table.Td>
