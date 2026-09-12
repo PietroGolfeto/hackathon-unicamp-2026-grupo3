@@ -31,6 +31,7 @@ def app_pronto():
     from app.main import app  # registra os modelos em Base.metadata antes do drop_all
 
     try:
+        garantir_banco(engine.url)
         with engine.connect() as conn:
             conn.execute(text("select 1"))
     except Exception as exc:  # noqa: BLE001
@@ -40,6 +41,18 @@ def app_pronto():
 
     with TestClient(app):
         yield app
+
+
+def garantir_banco(url) -> None:
+    """Cria o banco de teste se não existir (conecta ao banco `postgres` do mesmo servidor)."""
+    from sqlalchemy import create_engine
+
+    admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    with admin.connect() as conn:
+        existe = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = :n"), {"n": url.database}).scalar()
+        if not existe:
+            conn.execute(text(f'CREATE DATABASE "{url.database}"'))
+    admin.dispose()
 
 
 def logar(app, email: str) -> TestClient:

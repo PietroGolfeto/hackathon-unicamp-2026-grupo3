@@ -97,11 +97,11 @@ jobs:
           cache: pip
           cache-dependency-path: |
             src/core/pyproject.toml
-            src/api/requirements.txt
+            src/api/pyproject.toml
       - name: Instala core, api e ferramentas
         run: |
           pip install -e src/core
-          if [ -f src/api/requirements.txt ]; then pip install -r src/api/requirements.txt; else pip install -e src/api; fi
+          if [ -f src/api/requirements.txt ]; then pip install -r src/api/requirements.txt; else pip install -e "src/api[test]"; fi
           pip install ruff pytest
       - name: Lint
         run: ruff check src/core src/api
@@ -138,4 +138,4 @@ jobs:
         run: |
           if [ -f infra/.env.example ]; then cp infra/.env.example .env; elif [ -f .env.example ]; then cp .env.example .env; fi
       - name: Valida compose
-        run: docker compose -f infra/compose.yml config -q
+        run: docker compose -f infra/compose.yml --project-directory . config -q
