@@ -1,25 +1,23 @@
 import {
-  Alert, Anchor, Badge, Box, Button, Card, Collapse, CopyButton, Divider, Group, List, NumberInput, Paper,
-  SegmentedControl, Select, SimpleGrid, Skeleton, Stack, Text, Textarea, ThemeIcon, Title, UnstyledButton,
+  Alert, Anchor, Box, Button, Card, Collapse, CopyButton, Group, NumberInput, Paper,
+  SegmentedControl, Select, SimpleGrid, Skeleton, Stack, Text, Textarea,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 
 import {
   api, type Decisao, type DecisaoRegistrada, type Minutas, type Pessoa, type ProcessoDetalhe,
   type Recomendacao, type Resultado, type TipoDecisao,
 } from "../../api/client";
-import { AderenciaBadge, OrigemBadge, SinalChip, StatusBadge, TipoBadge } from "../../components/Badges";
-import { IcoAcordo, IcoCheck, IcoCopiar, IcoDoc, IcoEscudo, IcoExterno, IcoRelogio, IcoVoltar } from "../../components/Icones";
-import { useMontado } from "../../lib/animacao";
-import { ROTULO_RESULTADO, brl, dataHora, duracao, pct } from "../../lib/format";
-
-const NOMES_SUBSIDIOS: Record<string, string> = {
-  contrato: "Contrato", extrato: "Extrato", comprovante_credito: "Comprovante de crédito", dossie: "Dossiê",
-  demonstrativo_divida: "Demonstrativo da dívida", laudo_referenciado: "Laudo referenciado",
-};
+import { AderenciaBadge, OrigemBadge, StatusBadge, TipoBadge } from "../../components/Badges";
+import { IcoAcordo, IcoCheck, IcoCopiar, IcoEscudo, IcoRelogio } from "../../components/Icones";
+import { ROTULO_RESULTADO, brl, dataHora, duracao } from "../../lib/format";
+import { CabecalhoCaso } from "./caso/components/CabecalhoCaso";
+import { CardAnalise } from "./caso/components/CardAnalise";
+import { CardDocumentos } from "./caso/components/CardDocumentos";
+import { CardRecomendacao } from "./caso/components/CardRecomendacao";
 
 export default function Caso() {
   const { id } = useParams();
@@ -41,7 +39,7 @@ export default function Caso() {
 
   return (
     <Stack gap="md" className="escalonado">
-      <Cabecalho p={p} />
+      <CabecalhoCaso p={p} />
       <CardRecomendacao p={p} rec={rec.data} carregando={rec.isLoading} erro={rec.error as Error | null} />
       <CardAnalise p={p} />
       <CardDocumentos p={p} abertos={abertos} onAbrir={(a) => setAbertos((s) => new Set(s).add(a))} />
@@ -56,230 +54,6 @@ export default function Caso() {
           }} />
       )}
     </Stack>
-  );
-}
-
-function Cabecalho({ p }: { p: ProcessoDetalhe }) {
-  const autor = p.dados_extraidos?.autor;
-  const copiar = useMutation({
-    mutationFn: () => api.resumoTxt(p.id).then((t) => navigator.clipboard.writeText(t)),
-    onSuccess: () => notifications.show({ message: "Resumo copiado. Cole no WhatsApp ou no e-mail.", color: "verde" }),
-    onError: (e) => notifications.show({ message: (e as Error).message, color: "vermelho" }),
-  });
-  return (
-    <Paper withBorder p="lg">
-      <Group justify="space-between" align="start" wrap="wrap" gap="md">
-        <div>
-          <Anchor component={Link} to="/casos" size="xs" c="dimmed" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <IcoVoltar size={12} /> Casos
-          </Anchor>
-          <Title order={2} className="numero" mt={4} style={{ wordBreak: "break-all" }}>{p.numero}</Title>
-          <Group gap={6} mt="xs" wrap="wrap">
-            <Badge variant="default">{p.uf}</Badge>
-            {p.sub_assunto && <Badge variant="default">{p.sub_assunto}</Badge>}
-            <StatusBadge status={p.status} />
-            {p.origem === "exemplo" && <Badge color="tinta" variant="light">autos reais</Badge>}
-            <OrigemBadge origem={p.dados_extraidos?.origem} rotulo="extração stub" />
-          </Group>
-          {autor?.nome && (
-            <Text mt="sm" size="sm">
-              <b>{autor.nome}</b>
-              {autor.idade ? ` · ${autor.idade} anos` : ""}{autor.cpf_mascarado ? ` · CPF ${autor.cpf_mascarado}` : ""}
-              {p.dados_extraidos?.comarca ? ` · ${p.dados_extraidos.comarca}` : ""}
-            </Text>
-          )}
-          <Group gap="lg" mt={autor?.nome ? 4 : "sm"}>
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>Valor da causa</Text>
-              <Text className="numero" fz="lg">{brl(p.valor_causa, true)}</Text>
-            </div>
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>Escritório</Text>
-              <Text fz="sm" mt={2}>{p.escritorio}</Text>
-            </div>
-          </Group>
-          {p.sinais.length > 0 && (
-            <Group gap={4} mt="sm" wrap="wrap">{p.sinais.map((s) => <SinalChip key={s.codigo} sinal={s} />)}</Group>
-          )}
-        </div>
-        <Button variant="default" size="sm" leftSection={<IcoCopiar size={15} />} onClick={() => copiar.mutate()} loading={copiar.isPending}>
-          Copiar resumo
-        </Button>
-      </Group>
-    </Paper>
-  );
-}
-
-function CardRecomendacao({ p, rec, carregando, erro }: { p: ProcessoDetalhe; rec?: Recomendacao; carregando: boolean; erro: Error | null }) {
-  if (carregando) return <Skeleton height={360} radius={12} />;
-  if (erro) return <Alert color="vermelho" variant="light" title="Sem recomendação">{erro.message}</Alert>;
-  if (!rec) return null;
-  const s = rec.scores_snapshot;
-  const acordo = rec.tipo === "acordo";
-  return (
-    <Card style={{ borderColor: acordo ? "var(--enter-laranja)" : "var(--enter-tinta)", borderWidth: 2 }}>
-      <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>A política recomenda</Text>
-      <Group justify="space-between" align="flex-start" wrap="wrap" gap="xl" mt={4}>
-        <div style={{ flex: "1 1 280px" }}>
-          <Group gap="sm" align="baseline">
-            <Title order={1} c={acordo ? "laranja.8" : "tinta.6"} className="subir">{acordo ? "Acordo" : "Defesa"}</Title>
-            {acordo && <Text className="numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
-          </Group>
-          {acordo && rec.valor_min != null && rec.valor_max != null && rec.valor_sugerido != null && (
-            <Box mt="md"><Banda min={rec.valor_min} sugerido={rec.valor_sugerido} max={rec.valor_max} causa={p.valor_causa} /></Box>
-          )}
-          <Box mt="lg">
-            <Group justify="space-between" align="baseline">
-              <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>Probabilidade de êxito na defesa</Text>
-              <Group gap={6}>
-                <Text className="numero" fz={26} lh={1}>{pct(s.p_exito_defesa)}</Text>
-                <OrigemBadge origem={s.origem} rotulo="score stub" />
-              </Group>
-            </Group>
-            <Box mt={8}><Medidor valor={s.p_exito_defesa} /></Box>
-            <Text size="xs" c="dimmed" mt={6} className="numero">
-              Se perder, condenação estimada entre {brl(s.condenacao_p20)} e {brl(s.condenacao_p80)} (mediana {brl(s.condenacao_p50)})
-            </Text>
-          </Box>
-          {rec.exige_aprovacao_valor_causa && (
-            <Alert color="laranja" variant="light" mt="sm" p="xs">Valor da causa acima do teto: acordo exige aprovação do gestor.</Alert>
-          )}
-        </div>
-        <Stack gap="xs" style={{ flex: "0 0 auto", minWidth: 200 }}>
-          <Mini rotulo="Custo esperado da defesa" valor={brl(rec.custo_esperado_defesa)} />
-          <Mini rotulo="Custo esperado do acordo" valor={brl(rec.custo_esperado_acordo)} />
-          <Mini rotulo="Economia com acordo" valor={brl(rec.economia_esperada)} cor={rec.economia_esperada > 0 ? "verde.7" : "vermelho.6"} />
-        </Stack>
-      </Group>
-
-      <Divider my="md" />
-      <List spacing={6} size="sm" icon={<Box w={6} h={6} mt={7} bg="laranja.6" style={{ borderRadius: 999 }} />}>
-        {rec.motivos.map((m, i) => <List.Item key={i}>{m}</List.Item>)}
-      </List>
-    </Card>
-  );
-}
-
-/** Faixa de oferta em relação ao valor da causa: banda em laranja claro, marcador no valor sugerido. */
-function Banda({ min, sugerido, max, causa }: { min: number; sugerido: number; max: number; causa: number }) {
-  const pronto = useMontado();
-  const pos = (v: number) => Math.min(100, Math.max(0, (v / causa) * 100));
-  return (
-    <div>
-      <Box pos="relative" h={10} bg="gray.1" style={{ borderRadius: 5 }}>
-        <Box pos="absolute" top={0} bottom={0} bg="laranja.3" className="preencher"
-          style={{ left: `${pos(min)}%`, width: pronto ? `${pos(max) - pos(min)}%` : 0, borderRadius: 5 }} />
-        {pronto && (
-          <Box pos="absolute" top={-5} w={4} h={20} bg="laranja.7" className="pingar" style={{ left: `${pos(sugerido)}%`, borderRadius: 2 }} />
-        )}
-      </Box>
-      <Group justify="space-between" mt={6}>
-        <Text size="xs" c="dimmed" className="numero">banda {brl(min)} a {brl(max)}</Text>
-        <Text size="xs" c="dimmed" className="numero">causa {brl(causa)}</Text>
-      </Group>
-    </div>
-  );
-}
-
-function Medidor({ valor }: { valor: number }) {
-  const pronto = useMontado();
-  return (
-    <Box h={10} bg="gray.1" style={{ borderRadius: 5, overflow: "hidden" }}>
-      <Box h="100%" bg="tinta.6" className="preencher" style={{ width: pronto ? `${valor * 100}%` : 0, borderRadius: 5 }} />
-    </Box>
-  );
-}
-
-function Mini({ rotulo, valor, cor }: { rotulo: string; valor: string; cor?: string }) {
-  return (
-    <Paper p="sm" radius={8} bg="gray.0">
-      <Text size="xs" c="dimmed">{rotulo}</Text>
-      <Text fw={500} className="numero" c={cor}>{valor}</Text>
-    </Paper>
-  );
-}
-
-function CardAnalise({ p }: { p: ProcessoDetalhe }) {
-  const a = p.analise;
-  const d = p.dados_extraidos;
-  if (!a && !d) return null;
-  return (
-    <Card>
-      <Group justify="space-between">
-        <Text fw={500}>Análise do caso</Text>
-        <OrigemBadge origem={a?.origem} rotulo="análise stub" />
-      </Group>
-      {d?.resumo_fatos && <Text size="sm" mt="xs" c="dimmed" lineClamp={4}>{d.resumo_fatos}</Text>}
-      {a?.texto && <Text size="sm" mt="xs">{a.texto}</Text>}
-      <SimpleGrid cols={{ base: 1, sm: 2 }} mt="sm" spacing="md">
-        {a && a.pontos_fortes_banco.length > 0 && (
-          <div><Text size="xs" fw={500} c="verde.7" tt="uppercase" lts=".06em">Pontos fortes do banco</Text>
-            <List size="sm" mt={4}>{a.pontos_fortes_banco.map((x, i) => <List.Item key={i}>{x}</List.Item>)}</List></div>
-        )}
-        {a && a.pontos_fracos_banco.length > 0 && (
-          <div><Text size="xs" fw={500} c="vermelho.6" tt="uppercase" lts=".06em">Pontos fracos do banco</Text>
-            <List size="sm" mt={4}>{a.pontos_fracos_banco.map((x, i) => <List.Item key={i}>{x}</List.Item>)}</List></div>
-        )}
-      </SimpleGrid>
-      {d && d.pedidos.length > 0 && <Text size="xs" mt="sm" c="dimmed">Pedidos: {d.pedidos.join("; ")}</Text>}
-    </Card>
-  );
-}
-
-function CardDocumentos({ p, abertos, onAbrir }: { p: ProcessoDetalhe; abertos: Set<string>; onAbrir: (a: string) => void }) {
-  const presentes = Object.entries(p.subsidios).filter(([, v]) => v).map(([k]) => NOMES_SUBSIDIOS[k] ?? k);
-  const ausentes = Object.entries(p.subsidios).filter(([, v]) => !v).map(([k]) => NOMES_SUBSIDIOS[k] ?? k);
-  const subsidios = (
-    <Group gap={6} mt="md" wrap="wrap">
-      <Text size="xs" c="dimmed" mr={4}>Subsídios</Text>
-      {presentes.map((n) => (
-        <Badge key={n} color="tinta" variant="light" size="sm" leftSection={<IcoCheck size={11} />}>{n}</Badge>
-      ))}
-      {ausentes.map((n) => <Badge key={n} color="gray" variant="outline" size="sm" td="line-through">{n}</Badge>)}
-    </Group>
-  );
-  if (p.documentos.length === 0) {
-    return (
-      <Card>
-        <Text fw={500}>Documentos</Text>
-        <Text size="sm" c="dimmed" mt={4}>Processo sem PDFs anexados (caso sintético).</Text>
-        {subsidios}
-      </Card>
-    );
-  }
-  const grupos = [["autos", "Autos"], ["subsidios", "Subsídios do banco"]] as const;
-  return (
-    <Card>
-      <Text fw={500}>Documentos</Text>
-      <Text size="xs" c="dimmed" mb="sm">Abrem em nova aba. Os que você abriu ficam marcados.</Text>
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-        {grupos.map(([tipo, rotulo]) => {
-          const docs = p.documentos.filter((d) => d.tipo === tipo);
-          return (
-            <div key={tipo}>
-              <Text size="xs" fw={500} c="dimmed" tt="uppercase" lts=".06em" mb={4}>{rotulo}</Text>
-              <Stack gap={2}>
-                {docs.map((d) => {
-                  const aberto = abertos.has(d.arquivo);
-                  return (
-                    <UnstyledButton key={d.arquivo} component="a" href={d.url} target="_blank" rel="noopener" className="linha-link"
-                      onClick={() => onAbrir(d.arquivo)} p={6} style={{ borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
-                      <ThemeIcon size={26} radius="sm" variant="light" color={aberto ? "verde" : "tinta"}>
-                        {aberto ? <IcoCheck size={14} /> : <IcoDoc size={14} />}
-                      </ThemeIcon>
-                      <Text size="sm" c={aberto ? "dimmed" : undefined} truncate style={{ flex: 1 }}>{d.arquivo}</Text>
-                      <IcoExterno size={13} style={{ color: "var(--mantine-color-dimmed)" }} />
-                    </UnstyledButton>
-                  );
-                })}
-                {docs.length === 0 && <Text size="xs" c="dimmed">nenhum</Text>}
-              </Stack>
-            </div>
-          );
-        })}
-      </SimpleGrid>
-      {subsidios}
-    </Card>
   );
 }
 
