@@ -14,6 +14,7 @@ DIR_MODELS = RAIZ / "models"
 DIR_DOCS = RAIZ / "docs"
 DIR_BACKTEST = DIR_DOCS / "backtest"
 DIR_MODELO_DOCS = DIR_DOCS / "modelo"
+DIR_ANALISES = DIR_DOCS / "analises"
 DIR_DERIVED = DIR_DATA / "derived"
 
 ARQ_RAW_XLSX = Path(os.environ.get("ENTEROS_RAW_XLSX", DIR_RAW / "Hackaton_Enter_Base_Candidatos.xlsx"))
