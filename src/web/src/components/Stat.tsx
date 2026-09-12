@@ -25,9 +25,9 @@ export function Stat({ rotulo, valor, numero, formatar, detalhe, cor, destaque, 
   return (
     <Paper withBorder={!destaque} p="md" bg={destaque ? "tinta.6" : "white"} className={className} miw={0}>
       <Text size="xs" fw={500} tt="uppercase" lts=".06em" c={secundario}>{rotulo}</Text>
-      <Text className="serif numero" fz={{ base: 24, sm: 28 }} lh={1.15} mt={4}
-        c={vazio ? secundario : cor ?? (destaque ? "white" : "tinta.6")}>
-        {vazio ? "sem dado" : mostrado}
+      <Text className={vazio ? "numero" : "serif numero"} fz={{ base: 24, sm: 28 }} lh={1.15} mt={4}
+        c={vazio ? (destaque ? "rgba(255,255,255,.4)" : "gray.4") : cor ?? (destaque ? "white" : "tinta.6")}>
+        {mostrado}
       </Text>
       {detalhe && <Text size="xs" mt={4} c={secundario}>{detalhe}</Text>}
     </Paper>
