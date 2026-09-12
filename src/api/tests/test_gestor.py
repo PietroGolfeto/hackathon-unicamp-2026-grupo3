@@ -114,6 +114,7 @@ def test_seed_demo_cria_so_processos_pendentes(app_pronto, gestor: TestClient):
     """Nada simulado entra no painel: decisões, eventos e resultados só vêm do portal."""
     from sqlalchemy import func, select
 
+    from app.config import settings
     from app.db import SessionLocal
     from app.models import Decisao, Evento, Processo
     from app.services import seed_demo
@@ -123,10 +124,10 @@ def test_seed_demo_cria_so_processos_pendentes(app_pronto, gestor: TestClient):
     with SessionLocal() as db:
         n_dec = db.scalar(select(func.count()).select_from(Decisao))
         n_ev = db.scalar(select(func.count()).select_from(Evento))
-        r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo)
-        assert r1 == {"processos_criados": 340}
-        r2 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo)
-        assert r2 == {"processos_criados": 0}
+        r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, settings.data_dir)
+        assert r1 == {"processos_criados": 340, "documentos_populados": 0}
+        r2 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, settings.data_dir)
+        assert r2 == {"processos_criados": 0, "documentos_populados": 0}
         assert db.scalar(select(func.count()).select_from(Decisao)) == n_dec
         assert db.scalar(select(func.count()).select_from(Evento)) == n_ev
         sint = list(db.scalars(select(Processo).where(Processo.origem == "sintetico")))
@@ -134,6 +135,14 @@ def test_seed_demo_cria_so_processos_pendentes(app_pronto, gestor: TestClient):
         assert all(p.status == "pendente" and p.dados_extraidos is None and p.analise is None
                    for p in sint)
         assert all(p.scores["origem"] == "stub" for p in sint)
+        assert all(p.documentos == seed_demo.DOCUMENTO_SINTETICO for p in sint)
+
+        sint[0].documentos = []
+        db.commit()
+        r3 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, settings.data_dir)
+        assert r3 == {"processos_criados": 0, "documentos_populados": 1}
+        db.refresh(sint[0])
+        assert sint[0].documentos == seed_demo.DOCUMENTO_SINTETICO
     depois = gestor.get("/api/dashboard/aderencia").json()
     assert depois["total"] == antes["total"]
 
