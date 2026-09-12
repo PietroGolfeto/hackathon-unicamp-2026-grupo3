@@ -118,7 +118,7 @@ def test_seed_demo_idempotente(app_pronto, gestor: TestClient):
 
     with SessionLocal() as db:
         r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, app_pronto.state.extrator)
-        assert r1["processos_criados"] >= 300 and r1["decisoes_criadas"] >= 250
+        assert r1["processos_criados"] >= 300 and 220 <= r1["decisoes_criadas"] <= 280
         r2 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, app_pronto.state.extrator)
         assert r2 == {"processos_criados": 0, "decisoes_criadas": 0}
         n = db.scalar(select(func.count()).select_from(Decisao))

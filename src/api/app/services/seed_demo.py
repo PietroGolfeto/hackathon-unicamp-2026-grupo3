@@ -34,6 +34,7 @@ JUSTIFICATIVAS = [
     "Parte autora pediu valor menor que a banda; aceitei para encerrar rápido.",
 ]
 DOCS_POR_FLAG = {f: f"{f}.pdf" for f in FLAGS_SUBSIDIOS}
+PCT_PENDENTES = 15  # % dos processos com_decisao que ficam pendentes (fila do advogado)
 
 
 def rodar(
@@ -64,6 +65,8 @@ def rodar(
             existentes[linha.numero] = processo
             criados += 1
         if not int(linha.com_decisao) or processo.id in com_decisao or escritorio.nome == ESCRITORIO_DEMO:
+            continue
+        if int(linha.numero[:7]) % 100 < PCT_PENDENTES:  # determinístico: sobra fila para o advogado
             continue
         advs = advogados.get(escritorio.id) or []
         if not advs:

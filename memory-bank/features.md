@@ -10,8 +10,8 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Contratos P1/P3 e stubs | — | Lucas | ✅ | contratos em `src/core/core/{caso,modelo,docs}.py`; `StubModelo` (lookup no histórico) e `StubExtrator` (regex nos autos) em `src/api/app/stubs.py`; seleção por env em `plugins.py` |
 | Política de custo esperado e backtest | 1, 2, 5 | Lucas; P1 calibra | ✅ | núcleo em `src/core/core/politica.py` (11 testes); backtest com resultados reais em `src/api/app/services/backtest.py` (~15 ms nos 60k) |
 | Auth por cookie, papéis advogado/gestor | 3 | Lucas | ✅ | `src/api/app/auth.py`, `routers/auth.py`; seed com 8 usuários (`senha123`) em `services/seed.py` |
-| Jobs: seed, load-historico, ingest, seed-demo, reset-demo, reset | — | Lucas | ✅ | `python -m app.cli`; `seed-demo` lê `data/exemplos/sinteticos.csv` (340 processos, 300 decisões simuladas em 8 semanas) |
-| Lista e detalhe de processos, arquivos | 3 | Lucas | 🔧 | API pronta em `routers/processos.py`, `routers/files.py`; `pages/advogado` pendente |
+| Jobs: seed, load-historico, ingest, seed-demo, reset-demo, reset | — | Lucas | ✅ | `python -m app.cli`; `seed-demo` lê `data/exemplos/sinteticos.csv` (340 processos; ~255 decisões simuladas em 8 semanas; 15% ficam pendentes como fila do advogado) |
+| Lista e detalhe de processos, arquivos | 3 | Lucas | ✅ | `routers/processos.py`, `routers/files.py`; `pages/advogado/{Casos,Caso}.tsx` (PDFs em nova aba, abertos ficam marcados) |
 | Recomendação gravada sob a política ativa | 1, 2, 4 | Lucas | ✅ | `GET /processos/{id}/recomendacao` → `services/recomendacao.py` (get_or_create com ON CONFLICT) |
 | Decisão com aderência, justificativa e aprovação | 4 | Lucas | ✅ | `POST /processos/{id}/decisoes`; regras em `services/recomendacao.avaliar_decisao`; devolve minutas e contato adverso |
 | Resultado da negociação | 5 | Lucas | ✅ | `POST /decisoes/{id}/resultado` (colunas em `decisoes`) |
@@ -20,7 +20,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Dashboard de efetividade (números) | 5 | Lucas | ✅ | `GET /dashboard/efetividade` (aceite real vs hipótese, desconto, economia realizada, backtest da política ativa, ModeloInfo) |
 | Políticas: simular, publicar, versões | 1, 5 | Lucas | ✅ | `routers/politicas.py`, `services/backtest.py`; `ativar` grava `resumo_backtest`; `/api/internal/reload-historico` |
 | Link mágico `/demo` para a banca | 3 | Lucas | ✅ | `GET /api/demo?t=` reserva caso livre da Banca Demo por 15 min, rate limit 20/min |
-| Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | 🔧 | login e sessão prontos em `src/web/src/{pages/Login.tsx,auth,components}`; páginas de advogado e gestor pendentes |
+| Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | ✅ | `pages/{Login,advogado/*,gestor/*}.tsx`; painel faz poll de 5 s; política simula com debounce de 300 ms e publica com diff; P4/P5 polem a partir daqui |
 | Compose, Caddy, deploy VPS, standby homelab, backup | — | Lucas | ⬜ | `infra/`, `Makefile` |
 | Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 exporta o modelo | 🔧 | `data/exemplos/sinteticos.csv` ✅ e seed ✅; modelo exportado em `src/model/artifacts/` pendente (P1) |
 | Modelo XGBoost + scores OOF do histórico | 1, 2 | P1 | ⬜ | `src/model` |
