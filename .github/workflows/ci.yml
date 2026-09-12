@@ -19,6 +19,7 @@ jobs:
       web: ${{ steps.detect.outputs.web }}
       compose: ${{ steps.detect.outputs.compose }}
       engine: ${{ steps.detect.outputs.engine }}
+      extractor: ${{ steps.detect.outputs.extractor }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,6 +51,7 @@ jobs:
           echo "web=$([ -f src/web/package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "compose=$([ -f infra/compose.yml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "engine=$({ [ -f pyproject.toml ] && [ -d tests ]; } && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "extractor=$([ -f src/extractor/pyproject.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
   core:
     name: core (pytest)
@@ -99,7 +101,7 @@ jobs:
       - name: Instala o workspace (engine, core, api) a partir do lock
         run: uv sync --frozen --extra dev
       - name: Lint
-        run: uv run ruff check src/core src/api
+        run: uv run ruff check src/core src/api src/extractor
       - name: Testes
         run: uv run pytest src/api -q
 
@@ -117,6 +119,23 @@ jobs:
         run: uv sync --frozen --extra dev
       - name: Testes do engine
         run: uv run pytest tests -q
+
+  extractor:
+    name: extractor (pytest)
+    needs: higiene
+    if: needs.higiene.outputs.extractor == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: poppler (pdftotext) para os testes de leitura
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - name: Instala o workspace a partir do lock
+        run: uv sync --frozen --extra dev
+      - name: Testes do extractor
+        run: uv run pytest src/extractor -q
 
   web:
     name: web (lint + build)
