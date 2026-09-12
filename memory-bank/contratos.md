@@ -104,4 +104,4 @@ banda         = oferta·(1 ± margem_banda_pct)
 Backtest usa **resultados reais**: `custo_defesa_real = custas + hon·causa + condenação·(1 + sucumb) se perdeu`. Baselines "defender tudo" e "acordar tudo" lado a lado.
 
 ## Seleção de implementação
-Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. Import falha → stub, log alto, campo `origem` mostra "stub" na UI.
+Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. A classe precisa ser instanciável **sem argumentos** (carrega seus artefatos sozinha). Import ou construção falha → stub, log alto, campo `origem` mostra "stub" na UI. `app/plugins.py` faz isso no start e em `POST /api/internal/reload-historico`.

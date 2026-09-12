@@ -7,7 +7,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Regras de colaboração e memory-bank | — | Lucas | ✅ | `CLAUDE.md`, `memory-bank/` |
 | CI de PR: commits, memory-bank, segredos, testes por componente | — | Lucas | ✅ | `.github/workflows/ci.yml`, `scripts/`, `Makefile` |
 | Parsing dos CSVs da Enter e UF por número CNJ | — | Lucas | ✅ | `src/core/core/colunas.py`, `src/core/core/cnj.py` |
-| Contratos P1/P3 e stubs | — | Lucas | 🔧 | contratos prontos em `src/core/core/{caso,modelo,docs}.py` (32 testes no core); stubs em `src/api/app/stubs.py` pendentes |
+| Contratos P1/P3 e stubs | — | Lucas | ✅ | contratos em `src/core/core/{caso,modelo,docs}.py`; `StubModelo` (lookup no histórico) e `StubExtrator` (regex nos autos) em `src/api/app/stubs.py`; seleção por env em `plugins.py` |
 | Política de custo esperado e backtest | 1, 2, 5 | Lucas; P1 calibra | 🔧 | núcleo e custos reais em `src/core/core/politica.py` com 11 testes; serviço de simulação na API pendente |
 | Auth por cookie, papéis advogado/gestor | 3 | Lucas | ✅ | `src/api/app/auth.py`, `routers/auth.py`; seed com 8 usuários (`senha123`) em `services/seed.py` |
 | Jobs: seed, load-historico, ingest, seed-demo, reset-demo | — | Lucas | ⬜ | `src/api/app/cli.py` |
