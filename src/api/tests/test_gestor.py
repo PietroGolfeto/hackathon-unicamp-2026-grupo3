@@ -110,26 +110,32 @@ def test_dashboards(gestor: TestClient, exemplos):
     assert filtrado["total"] == 0 and filtrado["pct_aderente"] is None
 
 
-def test_seed_demo_idempotente(app_pronto, gestor: TestClient):
+def test_seed_demo_cria_so_processos_pendentes(app_pronto, gestor: TestClient):
+    """Nada simulado entra no painel: decisões, eventos e resultados só vêm do portal."""
     from sqlalchemy import func, select
 
     from app.db import SessionLocal
-    from app.models import Decisao
+    from app.models import Decisao, Evento, Processo
     from app.services import seed_demo
 
     SINTETICOS = Path(__file__).resolve().parents[3] / "data" / "exemplos" / "sinteticos_processos.csv"
+    antes = gestor.get("/api/dashboard/aderencia").json()
     with SessionLocal() as db:
+        n_dec = db.scalar(select(func.count()).select_from(Decisao))
+        n_ev = db.scalar(select(func.count()).select_from(Evento))
         r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo)
-        assert r1["processos_criados"] >= 300 and 220 <= r1["decisoes_criadas"] <= 280
+        assert r1 == {"processos_criados": 340}
         r2 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo)
-        assert r2 == {"processos_criados": 0, "decisoes_criadas": 0}
-        n = db.scalar(select(func.count()).select_from(Decisao))
-    a = gestor.get("/api/dashboard/aderencia").json()
-    assert a["total"] == n and 0.6 < a["pct_aderente"] < 0.95
-    assert a["pct_sem_ver_recomendacao"] > 0
-    e = gestor.get("/api/dashboard/efetividade").json()
-    assert e["n_com_resultado"] > 50 and 0.5 < e["taxa_aceite_real"] < 0.9
-    assert e["economia_realizada"] != 0 and len(e["por_semana"]) >= 5
+        assert r2 == {"processos_criados": 0}
+        assert db.scalar(select(func.count()).select_from(Decisao)) == n_dec
+        assert db.scalar(select(func.count()).select_from(Evento)) == n_ev
+        sint = list(db.scalars(select(Processo).where(Processo.origem == "sintetico")))
+        assert len(sint) == 340
+        assert all(p.status == "pendente" and p.dados_extraidos is None and p.analise is None
+                   for p in sint)
+        assert all(p.scores["origem"] == "stub" for p in sint)
+    depois = gestor.get("/api/dashboard/aderencia").json()
+    assert depois["total"] == antes["total"]
 
 
 def test_demo_reserva_casos_distintos(anon: TestClient, app_pronto):

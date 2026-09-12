@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("load-historico", help="2 CSVs da Enter → historico_sentencas")
     p_ing = sub.add_parser("ingest", help="pastas data/exemplos/<numero>/ → processos")
     p_ing.add_argument("--escritorio", default="Escritório A")
-    p_sd = sub.add_parser("seed-demo", help="processos sintéticos + decisões simuladas")
+    p_sd = sub.add_parser("seed-demo", help="processos sintéticos, todos pendentes (sem decisões simuladas)")
     p_sd.add_argument("--csv", type=Path, default=None)
     sub.add_parser("reset-demo", help="apaga decisões/eventos/recomendações")
     p_rs = sub.add_parser("reset", help="recria o banco e roda tudo (só local)")

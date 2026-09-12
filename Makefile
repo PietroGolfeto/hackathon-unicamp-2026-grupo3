@@ -90,7 +90,7 @@ historico: ## carrega os 2 CSVs da Enter de data/ e avisa a API
 ingest: ## lê data/exemplos/<numero>/ (autos e subsídios) para processos
 	$(CLI) ingest
 
-seed-demo: ## processos sintéticos (data/exemplos/sinteticos_processos.csv) + decisões simuladas
+seed-demo: ## processos sintéticos (data/exemplos/sinteticos_processos.csv), todos pendentes
 	$(CLI) seed-demo
 
 reset-demo: ## apaga decisões, eventos e recomendações; mantém processos e políticas
