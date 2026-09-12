@@ -52,5 +52,13 @@ Leitura: com custas R$ 1.500 + 10% de honorários, defender custa ≥ R$ 3k por 
 | Faixas | verde 57% dos casos / 20% do custo · amarela 19% · vermelha 24% dos casos / 59% do custo |
 Os dois backtests (engine e API) usam resultados reais, mas premissas de custo diferentes; por isso os totais não batem. Ver decisão 25.
 
-## Processos exemplo (do vencedor anterior; confirmar que são os mesmos)
-`0654321-09.2024.8.04.0001` (Manaus/AM): idoso, aposentado, contratação por app, crédito caiu em conta da Caixa que não é do autor, boletim de ocorrência, reclamação BACEN. `0801234-56.2024.8.10.0001` (MA): 6 subsídios presentes.
+## Processos exemplo (PDFs em `docs/Caso_01_…/` e `docs/Caso_02_…/`, não versionados; `make exemplos-docs` copia para `data/exemplos/`)
+| Fato | Caso 01 `0801234-56.2024.8.10.0001` (São Luís/MA) | Caso 02 `0654321-09.2024.8.04.0001` (Manaus/AM) |
+|---|---|---|
+| Arquivos | 7 PDFs (autos + 6 subsídios), 1–8 páginas, com camada de texto, gerados por pypdf, sem scripts | 4 PDFs (autos + comprovante, demonstrativo, laudo); sem contrato, extrato e dossiê |
+| Texto bruto → brief | 47,6k → 17,8k caracteres | 37,7k → 13,0k caracteres |
+| Autor | Maria, 65 anos na data da petição (RG anexo), aposentada; pede R$ 15k de dano moral; causa R$ 20k | José, 61 anos, aposentado; BO nº 2024.005432 e RDR (BACEN) nº 12345678-9; dano moral R$ 18k; causa R$ 25k |
+| Contrato | nº 502348719, R$ 5.000 em 72 × R$ 120, correspondente por telemarketing, assinatura manuscrita (dossiê: 91%), liveness 97,3% | nº 603827451, R$ 8.500 em 84 × R$ 180, app mobile com biometria; laudo admite que o vídeo de liveness não foi localizado |
+| Crédito | conta própria no Banco UFMG; extrato mostra TED p/ conta própria no Bradesco, PIX a familiar e saque em São Luís — a petição diz que "jamais utilizou os valores" | conta na Caixa (ag 3245, cc 00012345-6) que o autor diz não ter |
+| Parcelas | 21 de 72 pagas, saldo R$ 1.037,66 | 8 de 84 pagas, saldo R$ 2.748,38 |
+Regras de parsing dos PDFs: `pdftotext -layout` separa parágrafos por linha em branco e tabelas rótulo/valor por 2+ espaços; rodapé `Processo nº … - Página N` em toda página; "Saldo devedor … aproximadamente R$" quebra a linha antes do número; a petição segue I – DOS FATOS / II – DO DIREITO / III – DA TUTELA / IV – DOS PEDIDOS / procuração / RG / comprovante de residência.
