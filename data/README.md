@@ -1,17 +1,24 @@
-# Dados
+# data/
+
+Nada da Enter é versionado aqui (decisão 19 em `memory-bank/decisoes.md`). Coloque os arquivos assim:
 
 ```
 data/
-├── raw/                 # NÃO versionado — planilha da Enter e pastas dos 2 processos exemplo
-│   ├── Hackaton_Enter_Base_Candidatos.xlsx
-│   └── casos/Caso_01_.../*.pdf, Caso_02_.../*.pdf
-├── cache/               # NÃO versionado — parquet gerado por `make data`
-└── exemplos/
-    └── sinteticos.csv   # versionado — 3 mil processos FICTÍCIOS gerados por `make sinteticos`
+├── Hackaton_Enter_Base_Candidatos.xlsx - Resultados dos processos.csv      # portal: 60.000 sentenças
+├── Hackaton_Enter_Base_Candidatos.xlsx - Subsídios disponibilizados.csv    # portal: 6 flags por processo
+├── raw/                                                                    # engine: planilha bruta (ignorado)
+│   └── Hackaton_Enter_Base_Candidatos.xlsx
+├── cache/                             # engine: parquet gerado por `make data` (ignorado)
+├── exemplos/
+│   ├── README.md                      # versionado
+│   ├── sinteticos.csv                 # versionado: 3 mil processos fictícios gerados pelos modelos (`make sinteticos`); schema das duas abas
+│   ├── sinteticos_processos.csv       # versionado: 340 processos fictícios com UF, sub-assunto, valor, flags e escritório (`make seed-demo`)
+│   └── <numero-cnj>/                  # ignorado: as 2 pastas de processos exemplo
+│       ├── autos/*.pdf
+│       └── subsidios/*.pdf            # o nome do arquivo define a flag (contrato, extrato, …)
+└── derived/                           # ignorado: saídas de P1/P3 para o portal (historico_scored.csv, extraidos/, scores/)
 ```
 
-- Nenhum dado da Enter é versionado (regra da organização). O `.gitignore` bloqueia `data/raw/`, `data/cache/`
-  e qualquer `.xlsx`/`.csv` fora de `data/exemplos/`.
-- `sinteticos.csv` é amostrado dos modelos ajustados (segmentos, razão de condenação), com números CNJ inventados.
-  Mantém o schema original (mesmos cabeçalhos das duas abas, já juntas) para o pipeline rodar em clone limpo.
-- Com a planilha em `data/raw/`, `make data` usa a base real e o backtest reproduz os números do README.
+Dois consumidores da mesma base:
+- **Portal e API** (`src/api`): `make historico` lê os **2 CSVs**; `make ingest` lê `exemplos/<numero>/`; `make seed-demo` lê `sinteticos_processos.csv`. Sem os CSVs a API sobe e só a simulação da política fica desabilitada.
+- **Engine e backtest** (`src/enteros`): `make data/train/backtest` leem a **planilha** em `raw/`; sem ela rodam sobre `sinteticos.csv` (números ilustrativos).

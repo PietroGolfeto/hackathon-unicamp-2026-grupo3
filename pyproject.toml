@@ -3,7 +3,7 @@ name = "enteros-acordos"
 version = "0.1.0"
 description = "Política de acordos do Banco Unicamp: engine de decisão por valor esperado, backtest reproduzível e API (Hackathon Enter/Unicamp 2026, Grupo 3)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "pandas>=2.2",
     "numpy>=1.26",
@@ -16,6 +16,9 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "matplotlib>=3.9",
     "python-dotenv>=1.0",
+    # portal e contratos compartilhados (membros do workspace uv)
+    "enter-core",
+    "enter-api",
 ]
 
 [project.optional-dependencies]
@@ -39,3 +42,10 @@ target-version = "py311"
 [tool.uv]
 # Índice público explícito: máquinas com espelho corporativo configurado falhariam no sync.
 index-url = "https://pypi.org/simple"
+
+[tool.uv.workspace]
+members = ["src/core", "src/api"]
+
+[tool.uv.sources]
+enter-core = { workspace = true }
+enter-api = { workspace = true }

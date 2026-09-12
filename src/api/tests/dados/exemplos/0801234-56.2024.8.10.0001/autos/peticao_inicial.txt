@@ -1,0 +1,2 @@
+Petição inicial do processo 0801234-56.2024.8.10.0001.
+Arquivo de exemplo para os testes: o portal não lê o conteúdo dos documentos.

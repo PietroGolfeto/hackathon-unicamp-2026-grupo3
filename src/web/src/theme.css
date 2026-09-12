@@ -1,0 +1,102 @@
+/* Único CSS do front: tokens da identidade visual, fontes, keyframes e classes de animação.
+   Tudo o mais é tema e props do Mantine (ver main.tsx). */
+
+:root {
+  --enter-fundo: #f3f3f3;
+  --enter-tinta: #171717;
+  --enter-laranja: #ffae35;
+  --enter-traco: rgba(0, 0, 0, 0.1);
+  --enter-traco-forte: rgba(0, 0, 0, 0.2);
+  --enter-secundario: rgba(0, 0, 0, 0.64);
+  --enter-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+html,
+body {
+  background: var(--enter-fundo);
+  color: var(--enter-tinta);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--enter-laranja);
+  color: var(--enter-tinta);
+}
+
+/* Utilitários tipográficos */
+.serif { font-family: var(--mantine-font-family-headings); }
+.numero { font-variant-numeric: tabular-nums; }
+
+/* Keyframes */
+@keyframes enter-subir {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes enter-surgir {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes enter-pulsar {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 174, 53, 0.6); }
+  70% { box-shadow: 0 0 0 9px rgba(255, 174, 53, 0); }
+}
+@keyframes enter-crescer {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes enter-pingar {
+  from { opacity: 0; transform: translate(-50%, -8px) scale(0.6); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes enter-brilhar {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* Entrada de conteúdo */
+.subir { animation: enter-subir 0.42s var(--enter-ease) both; }
+.surgir { animation: enter-surgir 0.3s ease-out both; }
+.atraso-1 { animation-delay: 80ms; }
+.atraso-2 { animation-delay: 160ms; }
+.atraso-3 { animation-delay: 240ms; }
+.atraso-4 { animation-delay: 320ms; }
+
+/* Filhos entram um a um (cards, linhas de estatística) */
+.escalonado > * { animation: enter-subir 0.42s var(--enter-ease) both; }
+.escalonado > *:nth-child(1) { animation-delay: 0ms; }
+.escalonado > *:nth-child(2) { animation-delay: 45ms; }
+.escalonado > *:nth-child(3) { animation-delay: 90ms; }
+.escalonado > *:nth-child(4) { animation-delay: 135ms; }
+.escalonado > *:nth-child(5) { animation-delay: 180ms; }
+.escalonado > *:nth-child(6) { animation-delay: 225ms; }
+.escalonado > *:nth-child(7) { animation-delay: 270ms; }
+.escalonado > *:nth-child(8) { animation-delay: 315ms; }
+.escalonado > *:nth-child(n + 9) { animation-delay: 360ms; }
+
+/* Realces */
+.pulsar { animation: enter-pulsar 1.8s ease-out infinite; }
+.crescer { transform-origin: left center; animation: enter-crescer 0.5s var(--enter-ease) both; }
+.pingar { animation: enter-pingar 0.5s var(--enter-ease) both; }
+
+/* Cartão que reage ao passar o mouse (links de lista) */
+.cartao-hover {
+  transition: transform 0.2s var(--enter-ease), box-shadow 0.2s var(--enter-ease), border-color 0.2s;
+}
+.cartao-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.25);
+  border-color: var(--enter-traco-forte);
+}
+
+/* Linha de tabela clicável */
+.linha-link { cursor: pointer; transition: background-color 0.15s; }
+.linha-link:hover { background-color: rgba(23, 23, 23, 0.035); }
+
+/* Barra de preenchimento animada (medidores) */
+.preencher { transition: width 0.8s var(--enter-ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  .subir, .surgir, .escalonado > *, .pulsar, .crescer, .pingar { animation: none !important; }
+  .cartao-hover, .linha-link, .preencher { transition: none !important; }
+}
