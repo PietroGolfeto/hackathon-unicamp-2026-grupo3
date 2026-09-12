@@ -17,6 +17,7 @@ RUN uv sync --frozen --no-dev --no-install-workspace
 # 2) código do workspace (enteros na raiz, core, api) e os modelos do engine
 COPY src/ ./src/
 COPY models/ ./models/
+COPY docs/backtest/resumo.json ./docs/backtest/resumo.json
 RUN uv sync --frozen --no-dev
 ENV PATH="/app/.venv/bin:$PATH"
 

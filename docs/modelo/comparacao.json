@@ -1,0 +1,143 @@
+{
+ "n_treino": 59720,
+ "n_acordos_excluidos": 280,
+ "n_folds": 5,
+ "cenario": {
+  "oferta_pct_causa": 0.3,
+  "taxa_aceite": 0.65
+ },
+ "custos": {
+  "custo_escritorio_defesa": 1200.0,
+  "custo_escritorio_acordo": 300.0,
+  "honorarios_sucumbencia_pct": 0.15,
+  "custas_pct_valor_causa": 0.02,
+  "taxa_correcao_mensal": 0.01,
+  "prazo_medio_meses": 18,
+  "custo_recuperar_subsidio": 80.0
+ },
+ "custo_defender_tudo": 340766988.132112,
+ "custo_oraculo": 209752985.030289,
+ "linhas": [
+  {
+   "modelo": "Logística 6 docs + sub + UF (v1)",
+   "auc_oof": 0.9226,
+   "logloss_oof": 0.3079,
+   "brier_oof": 0.0929,
+   "acuracia_oof_0.5": 0.8725,
+   "ece_oof": 0.0029,
+   "custo_oof": 242658606.05616,
+   "share_acordo": 0.360968,
+   "tempo_s": 0.1
+  },
+  {
+   "modelo": "Logística 4 docs + sub + UF (v2, escolhida)",
+   "auc_oof": 0.9226,
+   "logloss_oof": 0.3079,
+   "brier_oof": 0.0929,
+   "acuracia_oof_0.5": 0.8728,
+   "ece_oof": 0.0031,
+   "custo_oof": 242674163.289523,
+   "share_acordo": 0.360767,
+   "tempo_s": 0.1
+  },
+  {
+   "modelo": "… sem UF",
+   "auc_oof": 0.9187,
+   "logloss_oof": 0.3121,
+   "brier_oof": 0.0941,
+   "acuracia_oof_0.5": 0.8694,
+   "ece_oof": 0.0023,
+   "custo_oof": 243314664.163549,
+   "share_acordo": 0.352127,
+   "tempo_s": 0.1
+  },
+  {
+   "modelo": "… + valor da causa",
+   "auc_oof": 0.9226,
+   "logloss_oof": 0.3079,
+   "brier_oof": 0.0929,
+   "acuracia_oof_0.5": 0.8727,
+   "ece_oof": 0.0033,
+   "custo_oof": 242647411.86187,
+   "share_acordo": 0.361035,
+   "tempo_s": 0.1
+  },
+  {
+   "modelo": "… + interações docs×docs e sub×docs",
+   "auc_oof": 0.9226,
+   "logloss_oof": 0.3079,
+   "brier_oof": 0.0929,
+   "acuracia_oof_0.5": 0.8724,
+   "ece_oof": 0.0028,
+   "custo_oof": 242644470.913497,
+   "share_acordo": 0.362676,
+   "tempo_s": 0.2
+  },
+  {
+   "modelo": "… saturada sub×docs (32 células) + UF",
+   "auc_oof": 0.9225,
+   "logloss_oof": 0.3083,
+   "brier_oof": 0.093,
+   "acuracia_oof_0.5": 0.8722,
+   "ece_oof": 0.0019,
+   "custo_oof": 242707000.404052,
+   "share_acordo": 0.36276,
+   "tempo_s": 1.6
+  },
+  {
+   "modelo": "… UF encolhida (colunas × 0.3)",
+   "auc_oof": 0.9226,
+   "logloss_oof": 0.3079,
+   "brier_oof": 0.0929,
+   "acuracia_oof_0.5": 0.8724,
+   "ece_oof": 0.0028,
+   "custo_oof": 242685607.031341,
+   "share_acordo": 0.360499,
+   "tempo_s": 0.1
+  },
+  {
+   "modelo": "HistGradientBoosting (6 docs + sub + UF + VC)",
+   "auc_oof": 0.9217,
+   "logloss_oof": 0.3099,
+   "brier_oof": 0.0935,
+   "acuracia_oof_0.5": 0.8702,
+   "ece_oof": 0.0056,
+   "custo_oof": 242980190.629655,
+   "share_acordo": 0.361788,
+   "tempo_s": 2.2
+  },
+  {
+   "modelo": "Tabela de segmentos k=20 (estimador da v1)",
+   "auc_oof": 0.9206,
+   "logloss_oof": 0.312,
+   "brier_oof": 0.0939,
+   "acuracia_oof_0.5": 0.8717,
+   "ece_oof": 0.0044,
+   "custo_oof": 243095030.841038,
+   "share_acordo": 0.365305,
+   "tempo_s": 1.5
+  },
+  {
+   "modelo": "Células brutas UF×sub×4 docs",
+   "auc_oof": 0.9173,
+   "logloss_oof": 0.3241,
+   "brier_oof": 0.0955,
+   "acuracia_oof_0.5": 0.8695,
+   "ece_oof": 0.0072,
+   "custo_oof": 243443184.457884,
+   "share_acordo": 0.363396,
+   "tempo_s": 1.3
+  },
+  {
+   "modelo": "Engine v1: média(tabela, logística 6 docs)",
+   "auc_oof": 0.9221,
+   "logloss_oof": 0.3089,
+   "brier_oof": 0.0932,
+   "acuracia_oof_0.5": 0.872,
+   "ece_oof": 0.0027,
+   "custo_oof": 242832743.093254,
+   "share_acordo": 0.362693,
+   "tempo_s": 0.0
+  }
+ ]
+}

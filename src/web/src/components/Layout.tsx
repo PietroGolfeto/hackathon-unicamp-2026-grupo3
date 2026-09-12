@@ -9,9 +9,6 @@ import { Marca } from "./Marca";
 const LINKS_ADV = [{ to: "/casos", rotulo: "Casos" }];
 const LINKS_GESTOR = [
   { to: "/gestor/painel", rotulo: "Painel" },
-  { to: "/gestor/politica", rotulo: "Política" },
-  { to: "/gestor/aprovacoes", rotulo: "Aprovações" },
-  { to: "/casos", rotulo: "Casos" },
 ];
 
 function iniciais(nome: string): string {

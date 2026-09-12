@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     model_impl: str = "app.modelo_enteros:ModeloEnteros"
     extractor_impl: str = "extractor.pipeline:Extrator"
     openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
     sessao_horas: int = 12
     api_url: str = "http://localhost:8000"  # usado pelo CLI para avisar a API após cargas
 

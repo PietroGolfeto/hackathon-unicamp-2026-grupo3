@@ -2,6 +2,10 @@
 
 Coloque aqui os artefatos de entrega da sua equipe.
 
+## Especificações
+
+- [Painel do gestor](painel_gestor_spec.md) — aderência, efetividade e parecer consultivo da IA.
+
 ## Entregáveis esperados
 
 | Arquivo | Descrição |

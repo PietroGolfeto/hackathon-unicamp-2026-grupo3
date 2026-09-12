@@ -146,7 +146,11 @@ export interface LinhaAderencia { [k: string]: unknown; total: number; aderentes
 export interface Justificativa {
   decisao_id: number; created_at: string; numero: string; processo_id: number; advogado: string; escritorio: string;
   tipo: string; rec_tipo: string; valor_proposto: number | null; valor_sugerido: number | null; tipo_desvio: string;
-  status: string; justificativa: string | null;
+  status: string; justificativa: string | null; parecer_ia: ParecerIA | null;
+}
+export interface ParecerIA {
+  decisao_id: number; classificacao: "fundamentada" | "generica" | "contradiz_evidencias";
+  resumo: string; pontos: string[]; confianca: number; modelo: string; gerado_em: string;
 }
 export interface Aderencia {
   total: number; aderentes: number; pct_aderente: number | null; pct_desvio_tipo: number | null;
@@ -158,9 +162,15 @@ export interface Aderencia {
 export interface LinhaEfetividade { [k: string]: unknown; n: number; taxa_aceite: number; economia_realizada: number; valor_final_medio: number | null }
 export interface Efetividade {
   n_decisoes: number; n_acordos: number; n_defesas: number; n_com_resultado: number;
+  n_sem_resultado: number; cobertura_resultados: number | null; taxa_aceite_preliminar: boolean;
   taxa_aceite_real: number | null; taxa_aceite_esperada: number | null; desconto_real: number | null;
   ticket_medio_final: number | null; economia_esperada: number; economia_realizada: number;
   por_resultado: Record<string, number>; por_uf: LinhaEfetividade[]; por_escritorio: LinhaEfetividade[]; por_semana: LinhaEfetividade[];
+  backtest_potencial: {
+    n_casos: number; defender_tudo: number; acordar_tudo: number; politica: number;
+    economia_vs_defender: number; economia_pct: number; pct_acordo: number;
+    politica_versao: string; modelo_versao: string;
+  } | null;
   politica: { id: number; versao: number; nome: string; publicada_em: string | null; resumo_backtest: Backtest | null } | null;
   modelo: { versao: string; treinado_em: string; n_treino: number; metricas: Record<string, number>; importancias: Record<string, number> };
 }
@@ -210,6 +220,8 @@ export const api = {
   aderencia: (escritorioId?: number) =>
     req<Aderencia>(`/api/dashboard/aderencia${escritorioId ? `?escritorio_id=${escritorioId}` : ""}`),
   efetividade: () => req<Efetividade>("/api/dashboard/efetividade"),
+  gerarParecer: (decisaoId: number) =>
+    req<ParecerIA>(`/api/dashboard/desvios/${decisaoId}/parecer`, { method: "POST" }),
 
   aprovacoes: () => req<Aprovacao[]>("/api/aprovacoes"),
   aprovar: (decisaoId: number, acao: "aprovar" | "rejeitar", comentario?: string) =>
