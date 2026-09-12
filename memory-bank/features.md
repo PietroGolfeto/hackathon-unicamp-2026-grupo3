@@ -11,11 +11,11 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Política de custo esperado e backtest | 1, 2, 5 | Lucas; P1 calibra | ✅ | núcleo em `src/core/core/politica.py` (11 testes); backtest com resultados reais em `src/api/app/services/backtest.py` (~15 ms nos 60k) |
 | Auth por cookie, papéis advogado/gestor | 3 | Lucas | ✅ | `src/api/app/auth.py`, `routers/auth.py`; seed com 8 usuários (`senha123`) em `services/seed.py` |
 | Jobs: seed, load-historico, ingest, seed-demo, reset-demo | — | Lucas | ⬜ | `src/api/app/cli.py` |
-| Lista e detalhe de processos, arquivos | 3 | Lucas | ⬜ | `routers/processos.py`, `routers/files.py`, `pages/advogado` |
-| Recomendação gravada sob a política ativa | 1, 2, 4 | Lucas | 🔧 | `services/recomendacao.py` (get_or_create com ON CONFLICT); endpoint pendente |
-| Decisão com aderência, justificativa e aprovação | 4 | Lucas | ⬜ | `routers/processos.py` |
-| Resultado da negociação | 5 | Lucas | ⬜ | `routers/processos.py` |
-| Eventos de auditoria | 4 | Lucas | ⬜ | `routers/processos.py` |
+| Lista e detalhe de processos, arquivos | 3 | Lucas | 🔧 | API pronta em `routers/processos.py`, `routers/files.py`; `pages/advogado` pendente |
+| Recomendação gravada sob a política ativa | 1, 2, 4 | Lucas | ✅ | `GET /processos/{id}/recomendacao` → `services/recomendacao.py` (get_or_create com ON CONFLICT) |
+| Decisão com aderência, justificativa e aprovação | 4 | Lucas | ✅ | `POST /processos/{id}/decisoes`; regras em `services/recomendacao.avaliar_decisao`; devolve minutas e contato adverso |
+| Resultado da negociação | 5 | Lucas | ✅ | `POST /decisoes/{id}/resultado` (colunas em `decisoes`) |
+| Eventos de auditoria | 4 | Lucas | ✅ | `POST /eventos` + eventos automáticos abriu_caso, viu_recomendacao, abriu_documento |
 | Dashboard de aderência (números) | 4 | Lucas | ⬜ | `services/metricas.py` |
 | Dashboard de efetividade (números) | 5 | Lucas | ⬜ | `services/metricas.py` |
 | Políticas: simular, publicar, versões | 1, 5 | Lucas | ✅ | `routers/politicas.py`, `services/backtest.py`; `ativar` grava `resumo_backtest`; `/api/internal/reload-historico` |
