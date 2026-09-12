@@ -48,24 +48,80 @@ custo de decisão), [`docs/analises/resumo.md`](docs/analises/resumo.md) (análi
 
 ## Para os slides — parte do modelo (5 minutos, 6 slides)
 
-Público: advogados e gestores do banco. Cada slide tem **um número, uma figura e uma frase** que o jurado repete
-depois. Vocabulário: "chance de perder", "custo total de litigar", "ponto de indiferença", "vale esperar o documento".
-Sem AUC, Laplace, EVSI ou nome de algoritmo no slide — isso fica para as perguntas (seção 2b).
+Público: advogados e gestores do banco. Cada slide tem **um número, uma figura ou tabela e uma frase** que o jurado
+repete depois. Vocabulário: "chance de perder", "custo total de litigar", "ponto de indiferença", "vale esperar o
+documento". Sem AUC, Laplace, EVSI ou nome de algoritmo no slide — isso fica para as perguntas (seção 2b). As tabelas e o
+diagrama prontos para copiar estão logo abaixo do roteiro.
 
-| # | Slide | A frase | Figura / tabela | O que falar (30–50 s) |
+| # | Slide | A frase | Material | O que falar (≈ 45 s) |
 |---|---|---|---|---|
-| 1 | **O problema em dinheiro** | "Defender tudo custa R$ 5,7 mil por processo — R$ 28 milhões por mês. 24% dos casos concentram 59% do custo." | [`docs/backtest/faixas.png`](docs/backtest/faixas.png) | Hoje o advogado decide caso a caso sem ver o custo total: condenação + honorários + custas + correção + escritório. Poucos casos concentram o dinheiro; a política existe para achar esses casos antes da contestação. |
-| 2 | **O que o juiz olha** | "Com contrato o banco perde 13% das vezes; sem, 75%. Dossiê e laudo não mudam nada." | tabela "Evidência × perda" de [`docs/politica.md`](docs/politica.md) ou o painel esquerdo de [`docs/backtest/subsidios.png`](docs/backtest/subsidios.png) | Prova de anuência e de proveito econômico é o que o Judiciário exige. O banco paga perícia que o juiz ignora — primeiro insight para o gestor: o back-office que localiza contrato e extrato é a alavanca, não o laudo. |
-| 3 | **A regra e o ponto de indiferença** | "Só defender quando litigar custa menos do que acordar. Para cada caso dizemos a chance de perder a partir da qual o acordo compensa — e há uma terceira resposta: pedir o documento antes." | [`docs/analises/quem_acorda.png`](docs/analises/quem_acorda.png) | Três respostas, não duas: defender (64% dos casos), acordar já (3%) e pedir contrato/extrato ao banco antes de acordar (34%: em 5 dias, um par de documentos vira o caso). O ponto de indiferença sai do custo total, não é um número redondo. Caso 02: só com as flags, pedir os documentos; com o crédito em conta de terceiro, acordar já. |
-| 4 | **Quanto vale** | "R$ 106 milhões a menos nos 60 mil casos (−31%), com a mesma régua de custos para todas as regras — 70% do que um oráculo capturaria." | [`docs/backtest/baselines.png`](docs/backtest/baselines.png) | O que aconteceu, acordar tudo, as heurísticas de documento, a regra de limiar fixo e a nossa, todas com os mesmos custos. Uma frase de honestidade: o lado defesa é fato, o lado acordo é hipótese de aceite — a economia vai de 17% a 31% conforme o aceite, e a banda estatística é ±0,4 p.p. |
-| 5 | **Onde age e quanto oferecer** | "Em AP e AM, 60% dos casos vão a acordo e o custo cai 43%; no MA, 26% e 22%. Quando perde, o banco paga de 60% a 84% do pedido, conforme o estado." | [`docs/analises/mapa_uf.png`](docs/analises/mapa_uf.png) (apoio: [`severidade_uf.png`](docs/analises/severidade_uf.png)) + a escada do Caso 02 | A oferta não é um número solto: cancelamento + baixa do saldo + devolução das parcelas + indenização, com abertura, alvo e teto (Caso 02: R$ 9 mil · R$ 11.250 · R$ 17,5 mil). O teto nunca passa de 90% do custo de litigar; contraproposta acima do teto, defende. |
-| 6 | **Como a política aprende** (ponte para aderência e efetividade) | "A única coisa que a base não diz é quanto o autor aceita. Em ~300 acordos registrados no portal a curva já está aprendida." | [`docs/analises/aprendizado_aceite.png`](docs/analises/aprendizado_aceite.png) (para o gestor: [`fronteira_politica.png`](docs/analises/fronteira_politica.png)) | Cada acordo registrado informa a curva de aceite; 15% dos casos testam bandas de oferta. Se o autor aceitar menos do que assumimos, a política ainda economiza e o gestor pode escolher uma oferta mais robusta na fronteira. Daqui a apresentação passa para aderência e efetividade. |
+| 1 | **O problema em dinheiro** | "Defender tudo custa R$ 5,7 mil por processo — R$ 28 milhões por mês. 24% dos casos concentram 59% do custo." | [`docs/backtest/faixas.png`](docs/backtest/faixas.png) | Hoje o advogado decide caso a caso sem ver o custo total. Poucos casos concentram o dinheiro; a política existe para achar esses casos antes da contestação. Contrato e extrato decidem (perda de 13% com contrato, 75% sem); dossiê e laudo não mudam nada. |
+| 2 | **O custo total de litigar: a nossa conta × a conta padrão** | "Contar o custo todo muda a resposta: o ponto de indiferença cai de 58% para 26% de chance de perder — a diferença entre acordar 10% e 36% dos casos." | tabela **A** abaixo | A conta padrão compara a condenação com a oferta e corta num limiar redondo. A nossa soma o que o banco paga de fato ao perder: condenação corrigida pelo tempo, honorários de sucumbência, custas, o escritório que defende, e quanto se paga varia por estado (60% a 84% do pedido). O custo de acordar inclui a chance de o autor recusar. Por isso o ponto de indiferença sai da conta, caso a caso, e não é um número redondo. |
+| 3 | **Três respostas, não duas** | "Além de defender ou acordar, há uma terceira resposta: pedir o contrato e o extrato ao banco e decidir em 5 dias — vale em 34% dos casos." | tabela **B** abaixo + [`docs/analises/quem_acorda.png`](docs/analises/quem_acorda.png) | Verde: defender (57% dos casos). Vermelha: acordar já, na primeira oportunidade, com abertura, alvo e teto. Amarela: o caso pede acordo mas falta contrato e/ou extrato — e o par de documentos, se o banco localizar, vira o caso. Só esperamos quando o valor de esperar supera o custo dos 5 dias; sinal grave (crédito em conta de terceiro) não espera. Caso 02: só com as flags, pedir os documentos; com o crédito na conta de terceiro, acordar já. Para o gestor: o back-office que localiza documentos é a alavanca, não o laudo. |
+| 4 | **Quanto vale, com a mesma régua para todo mundo** | "R$ 106 milhões a menos nos 60 mil casos (−31%). A regra de limiar fixo que outros grupos usaram economiza 25%; nós capturamos 70% do que um oráculo capturaria." | tabela **C** abaixo + [`docs/backtest/baselines.png`](docs/backtest/baselines.png) | Mesmos custos para todas as linhas; só a regra de decisão muda. Acordar tudo é ruim (9%), as heurísticas de documento e o limiar fixo chegam a 24–25%, a política a 31%, e o teto teórico é 44%. Uma frase de honestidade: o lado defesa é fato, o lado acordo é hipótese de aceite — a economia vai de 17% a 31% conforme quanto os autores aceitam; a variação estatística é ±0,4 p.p. |
+| 5 | **Como funciona, em um diagrama** | "Sessenta mil sentenças ensinam a chance de perder e quanto se paga; o custo total decide entre três respostas; o portal grava o que o advogado fez e o que o autor aceitou — e isso realimenta a oferta." | diagrama **D** abaixo | Ler o diagrama da esquerda para a direita em 30 segundos: dados → chance de perder e severidade por estado → custo total → três respostas com a escada de oferta → portal do advogado e painel do gestor → acordos registrados ensinam a curva de aceite e recalibram a escada. É a ponte para a parte de aderência e efetividade. |
+| 6 | **Onde age, quanto oferecer e como aprende** | "Em AP e AM, 60% dos casos vão a acordo e o custo cai 43%; no MA, 26% e 22%. Em ~300 acordos registrados a curva de aceite já está aprendida." | [`docs/analises/mapa_uf.png`](docs/analises/mapa_uf.png) + escada do Caso 02; apoio: [`aprendizado_aceite.png`](docs/analises/aprendizado_aceite.png) | A oferta não é um número solto: cancelamento + baixa do saldo + devolução das parcelas + indenização, com abertura, alvo e teto (Caso 02: R$ 9 mil · R$ 11.250 · R$ 17,5 mil); o teto nunca passa de 90% do custo de litigar. A única coisa que a base não diz é quanto o autor aceita: cada acordo registrado no portal ensina isso, 15% dos casos testam bandas de oferta, e se o autor aceitar menos do que assumimos a política ainda economiza (o gestor escolhe uma oferta mais robusta na fronteira). |
 
 O que mais pesa para essa banca: (1) a régua única de custos com o número de dinheiro e o teto teórico ao lado;
 (2) a terceira resposta "pedir o documento" e o fato de que dossiê e laudo não movem nada — isso muda a operação do
 banco, não só a do advogado; (3) a honestidade sobre o que é fato e o que é hipótese. Para perguntas: por que uma
 regressão simples (todas as alternativas empatam), como validamos (out-of-fold; a decisão de acordar não é validável
 por dado histórico) e a conta do ponto de indiferença — tudo na seção 2b.
+
+### Material pronto para os slides
+
+**A. Slide 2 — a nossa conta × a conta padrão**
+
+| | Conta padrão (limiar fixo, usada por 3 grupos da edição UFMG) | A nossa conta |
+|---|---|---|
+| Chance de perder | modelo → corte num número redondo (0,60) | modelo calibrado nas 60 mil sentenças; chance por caso com intervalo |
+| O que se perde ao perder | condenação | condenação **corrigida pelo tempo até pagar** (1% a.m. × 18 meses = 1,196) + **honorários de sucumbência** (15%, CPC art. 85) + **custas** (2% do valor da causa) + **escritório que defende** (R$ 1.200) + saldo devedor que se anula |
+| Quanto se paga ao perder | um percentual fixo do valor da causa (~70%) | por estado e tipo de alegação: **60% (MA) a 84% (AM/AP)** do pedido |
+| Custo de acordar | a oferta | oferta × chance de aceite + custo de litigar se o autor recusar + R$ 300 de negociação |
+| Regra | acordo se a chance de perder passa de 60% | acordo se **custar menos**; o **ponto de indiferença** sai por caso (≈ 26% de chance de perder com oferta de 30% do valor da causa; 47% no alvo da escada) |
+| Respostas possíveis | defender · acordar | defender · acordar · **pedir o documento antes** |
+| Resultado nos 60 mil casos | 24% em acordo, **−24,8%** | 36% em acordo, **−31,0%** |
+
+**B. Slide 3 — as três respostas** (a tabela da seção 1, encurtada)
+
+| Resposta | Quando | O que o advogado faz | Casos |
+|---|---|---|---|
+| 🟢 **Defender** | contrato **e** extrato consistentes; chance de perder < 15% | contestação; se a petição contradiz o extrato, alegar má-fé | 57% |
+| 🟡 **Pedir o documento antes** | o caso pede acordo, falta contrato e/ou extrato, e vale mais esperar 5 dias do que acordar já | solicitar ao banco; veio → reavaliar (normalmente vira defesa); não veio → acordar | vale em 34% dos casos (93% dos que iriam a acordo) |
+| 🔴 **Acordar já** | chance de perder > 60% **ou** sinal grave (crédito em conta de terceiro, biometria ausente) | propor na primeira oportunidade: cancelamento + baixa do saldo + devolução + indenização, com abertura · alvo · teto | 24% (59% do custo) |
+
+**C. Slide 4 — quanto vale, com a mesma régua** (60 mil casos, probabilidade fora da amostra, mesmos custos)
+
+| Regra de decisão | Custo total | Economia | % acordo | Captura do máximo |
+|---|---|---|---|---|
+| Defender tudo (o que aconteceu) | R$ 342,9M | — | 0% | 0% |
+| Acordar tudo a 30% do valor da causa | R$ 313,3M | 8,6% | 100% | 20% |
+| Heurística "sem contrato → acordo" | R$ 260,7M | 24,0% | 28% | 54% |
+| Limiar fixo p > 0,60 (grupos da UFMG) | R$ 257,9M | 24,8% | 24% | 56% |
+| **Política (custo total + três respostas + escada)** | **R$ 236,8M** | **31,0% · R$ 106M** | 36% | **70%** |
+| Oráculo: resultado conhecido (teto teórico) | R$ 191,1M | 44,3% | 30% | 100% |
+
+Banda: 31,1% ± 0,4 p.p.; se os autores aceitarem 50% / 65% / 80% das ofertas: 17% / 23% / 29%.
+
+**D. Slide 5 — como funciona, em um diagrama**
+
+```mermaid
+flowchart LR
+  D[60 mil sentenças do banco<br/>+ autos e subsídios do caso] --> P[Chance de perder<br/>por caso, calibrada]
+  D --> S[Quanto se paga ao perder<br/>por estado e tipo de alegação]
+  P --> C[Custo total de litigar<br/>condenação corrigida + sucumbência<br/>+ custas + escritório]
+  S --> C
+  C --> A{Três respostas<br/>pelo menor custo esperado}
+  A -->|custa menos litigar| DEF[Defender]
+  A -->|custa menos acordar| ACO[Acordar<br/>abertura · alvo · teto]
+  A -->|vale esperar o documento| INS[Pedir contrato/extrato<br/>ao banco, 5 dias]
+  DEF --> PORTAL[Portal do advogado<br/>recomendação · decisão · resultado]
+  ACO --> PORTAL
+  INS --> PORTAL
+  PORTAL --> GESTOR[Painel do gestor<br/>aderência · efetividade]
+  PORTAL -->|acordos registrados| APR[Curva de aceite aprendida<br/>recalibra a escada]
+  APR --> ACO
+```
 
 ---
 
