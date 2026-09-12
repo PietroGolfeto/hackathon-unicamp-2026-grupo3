@@ -1,51 +1,56 @@
 # Setup e Execução
 
-> Preencha este arquivo com as instruções específicas da sua solução.
-
----
-
 ## Pré-requisitos
-
-Liste aqui as dependências necessárias para rodar a solução:
-
-- [ ] ...
-- [ ] ...
-
-## Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz do projeto com as variáveis necessárias:
-
-```env
-# Exemplo — adapte conforme sua solução
-OPENAI_API_KEY=sua_chave_aqui
-```
-
-> **Nunca commite o arquivo `.env` com credenciais reais.**  
-> Um arquivo `.env.example` com as variáveis (sem valores) já está incluído neste repo.
+- [uv](https://docs.astral.sh/uv/) (instala o Python 3.12 sozinho) — ou Python ≥ 3.11 com `pip`
+- `make`
+- Opcional: a planilha `Hackaton_Enter_Base_Candidatos.xlsx` fornecida pela organização (não versionada)
 
 ## Instalação
-
 ```bash
-# Descreva aqui os passos de instalação
+make setup            # cria .venv e instala dependências (uv sync --extra dev)
+cp .env.example .env  # opcional; nada é obrigatório para engine, backtest e API
 ```
-
-## Execução
-
-```bash
-# Descreva aqui como rodar a solução
-```
+Sem `uv`: `python -m venv .venv && .venv/bin/pip install -e ".[dev]"`.
 
 ## Dados
+Coloque a planilha em `data/raw/Hackaton_Enter_Base_Candidatos.xlsx` (pasta ignorada pelo git).
+Sem ela, tudo roda sobre `data/exemplos/sinteticos.csv` — 3 mil processos **fictícios gerados por nós** a partir
+dos modelos (nenhuma linha da Enter é versionada). Com a planilha, os números do backtest são os da base real.
 
-Coloque os arquivos de dados fornecidos na pasta `data/`. Consulte [`data/README.md`](./data/README.md) para instruções detalhadas.
-
-## Estrutura do Projeto
-
+## Execução
+```bash
+make data       # valida e cacheia a base (parquet em data/cache/)
+make train      # ajusta tabela de segmentos, logística calibrada e quantis de condenação → models/*.json
+make backtest   # replay da política com resultados reais → docs/backtest/resumo.md + gráficos
+make test       # 16 testes: casos 01/02, monotonicidade, escada, API, backtest
+make api        # http://localhost:8000/docs
+make demo       # data → train → backtest → test
 ```
-├── src/          # código-fonte
-├── data/         # dados (não versionados — ver .gitignore)
-├── docs/         # apresentação e documentação
-├── .env.example  # variáveis de ambiente necessárias
-├── SETUP.md      # este arquivo
-└── README.md     # descrição do desafio
+
+Exemplo de chamada da API (Caso 02):
+```bash
+curl -s localhost:8000/recomendacao -H 'content-type: application/json' -d '{
+  "uf": "AM", "sub_assunto": "Golpe", "valor_causa": 25000,
+  "docs": {"comprovante": "presente", "demonstrativo": "presente", "laudo": "presente"},
+  "conta_deposito_titular_autor": false, "liveness_presente": false,
+  "parcelas_pagas": 8, "valor_parcela": 180, "saldo_devedor": 2748.38
+}' | python -m json.tool
+```
+
+## Estrutura
+```
+src/enteros/
+  config.py            constantes (colunas, docs, rótulos, caminhos)
+  schemas.py           CaseFeatures / Recomendacao (pydantic)
+  data/load.py         xlsx ou CSV sintético → base canônica
+  policy/policy.yaml   parâmetros versionados da política
+  policy/model.py      tabela de segmentos + logística calibrada (JSON em models/)
+  policy/ratio.py      condenação/valor da causa dado perda, por UF × sub-assunto
+  policy/negotiation.py curva de aceite, escada abertura/alvo/teto, decomposição
+  policy/engine.py     decisão por valor esperado, faixas, VOI, regras duras
+  backtest/            replay com resultados reais, sensibilidade, gráficos
+  api/main.py          FastAPI
+  sinteticos.py        gerador do CSV sintético
+tests/                 pytest
+docs/                  politica.md, premissas.md, backtest/
 ```

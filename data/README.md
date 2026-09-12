@@ -1,31 +1,17 @@
 # Dados
 
-Coloque aqui os arquivos fornecidos pela organização do hackathon.
-
-## Estrutura esperada
-
 ```
 data/
-├── sentencas.csv          # 60.000 sentenças judiciais
-├── subsidios/             # documentos de subsídio por processo
-│   └── <id_processo>/
-│       ├── contrato.*
-│       ├── extrato.*
-│       ├── comprovante_credito.*
-│       ├── dossie.*
-│       ├── demonstrativo_divida.*
-│       └── laudo_referenciado.*
-└── processos_exemplo/     # 2 pastas de processos para simulação
-    ├── processo_01/
-    │   ├── autos/
-    │   └── subsidios/
-    └── processo_02/
-        ├── autos/
-        └── subsidios/
+├── raw/                 # NÃO versionado — planilha da Enter e pastas dos 2 processos exemplo
+│   ├── Hackaton_Enter_Base_Candidatos.xlsx
+│   └── casos/Caso_01_.../*.pdf, Caso_02_.../*.pdf
+├── cache/               # NÃO versionado — parquet gerado por `make data`
+└── exemplos/
+    └── sinteticos.csv   # versionado — 3 mil processos FICTÍCIOS gerados por `make sinteticos`
 ```
 
-## Importante
-
-- Os dados são fornecidos pela organização do hackathon e **não devem ser versionados** neste repositório.
-- O `.gitignore` já está configurado para ignorar os arquivos de dados.
-- Para fins de demonstração, você pode incluir dados sintéticos ou anonimizados.
+- Nenhum dado da Enter é versionado (regra da organização). O `.gitignore` bloqueia `data/raw/`, `data/cache/`
+  e qualquer `.xlsx`/`.csv` fora de `data/exemplos/`.
+- `sinteticos.csv` é amostrado dos modelos ajustados (segmentos, razão de condenação), com números CNJ inventados.
+  Mantém o schema original (mesmos cabeçalhos das duas abas, já juntas) para o pipeline rodar em clone limpo.
+- Com a planilha em `data/raw/`, `make data` usa a base real e o backtest reproduz os números do README.

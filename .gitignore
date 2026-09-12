@@ -5,6 +5,8 @@
 
 # Dados sensíveis — não versionar
 data/*.csv
+data/**/*.csv
+!data/exemplos/sinteticos*.csv
 data/subsidios/
 data/processos_exemplo/
 
@@ -43,3 +45,12 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Dados brutos do hackathon (não versionar) — ver data/README.md
+data/raw/
+data/*.xlsx
+data/*.parquet
+data/cache/
+
+# Artefatos de modelo gerados
+models/*.joblib
