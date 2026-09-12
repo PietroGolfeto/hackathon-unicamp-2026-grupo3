@@ -34,3 +34,13 @@ export function useContagem(alvo: number | null | undefined, ms = 700): number {
 
   return alvo == null ? 0 : atual;
 }
+
+/** Vira `true` um quadro depois de montar: barras que começam em zero e crescem até o valor. */
+export function useMontado(): boolean {
+  const [pronto, setPronto] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setPronto(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return pronto;
+}
