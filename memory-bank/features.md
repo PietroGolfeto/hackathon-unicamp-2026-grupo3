@@ -20,7 +20,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Dashboard de efetividade (números) | 5 | Lucas | ✅ | `GET /dashboard/efetividade` (aceite real vs hipótese, desconto, economia realizada, backtest da política ativa, ModeloInfo) |
 | Políticas: simular, publicar, versões | 1, 5 | Lucas | ✅ | `routers/politicas.py`, `services/backtest.py`; `ativar` grava `resumo_backtest`; `/api/internal/reload-historico` |
 | Link mágico `/demo` para a banca | 3 | Lucas | ✅ | `GET /api/demo?t=` reserva caso livre da Banca Demo por 15 min, rate limit 20/min |
-| Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | ✅ | `pages/{Login,advogado/*,gestor/*}.tsx`; painel faz poll de 5 s; política simula com debounce de 300 ms e publica com diff; P4/P5 polem a partir daqui |
+| Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | 🔧 | login, casos e caso prontos (`pages/advogado`); `pages/gestor` pendente |
 | Compose, Caddy, deploy VPS, standby homelab, backup | — | Lucas | ⬜ | `infra/`, `Makefile` |
 | Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 exporta o modelo | 🔧 | `data/exemplos/sinteticos.csv` ✅ e seed ✅; modelo exportado em `src/model/artifacts/` pendente (P1) |
 | Modelo XGBoost + scores OOF do histórico | 1, 2 | P1 | ⬜ | `src/model` |
