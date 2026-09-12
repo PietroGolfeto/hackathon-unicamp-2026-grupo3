@@ -37,11 +37,12 @@ check-secrets: ## bloqueia segredos e dados versionados
 	scripts/check_secrets.sh
 
 lint: ## ruff em core e api; tsc no web
-	$(PY) -m ruff check src/core src/api
+	$(PY) -m ruff check src/core src/api src/extractor
 	@if [ -f src/web/package.json ]; then echo "→ web (tsc)"; cd src/web && npm run lint --if-present; fi
 
 test: ## testes de todos os componentes (core, api com Postgres, engine, web build)
 	@if [ -f src/core/pyproject.toml ]; then echo "→ core"; $(PY) -m pytest -q src/core; fi
+	@if [ -f src/extractor/pyproject.toml ]; then echo "→ extractor"; $(PY) -m pytest -q src/extractor; fi
 	@if [ -f src/api/pyproject.toml ]; then echo "→ api"; DATABASE_URL=$(TEST_DATABASE_URL) $(PY) -m pytest -q src/api; fi
 	@if [ -d tests ]; then echo "→ engine"; $(PY) -m pytest -q tests; fi
 	@if [ -f src/web/package.json ]; then echo "→ web"; cd src/web && npm run build; fi
@@ -119,6 +120,12 @@ sinteticos: ## gera data/exemplos/sinteticos.csv (dados nossos, sem linhas da En
 engine-api: ## API do engine em http://localhost:8001/docs (o portal roda em :8000)
 	$(PY) -m uvicorn enteros.api.main:app --reload --port 8001
 
+# ---------------------------------------------------------------- extração de documentos (src/extractor, P3)
+
+resumo: ## resume os principais pontos de um PDF com OCR + OpenAI: make resumo PDF=caminho.pdf
+	@test -n "$(PDF)" || (echo "uso: make resumo PDF=caminho/do/arquivo.pdf"; exit 1)
+	$(PY) -m extractor "$(PDF)"
+
 demo: data train backtest test ## pipeline do engine: dados → modelos → backtest → testes
 
 # ---------------------------------------------------------------- deploy e backup (VPS_HOST e VPS_DIR no .env)
@@ -134,4 +141,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker data train backtest sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker data train backtest sinteticos engine-api demo resumo deploy backup

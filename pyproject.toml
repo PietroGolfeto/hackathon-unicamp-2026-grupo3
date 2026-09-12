@@ -19,6 +19,7 @@ dependencies = [
     # portal e contratos compartilhados (membros do workspace uv)
     "enter-core",
     "enter-api",
+    "enter-extractor",
 ]
 
 [project.optional-dependencies]
@@ -44,8 +45,9 @@ target-version = "py311"
 index-url = "https://pypi.org/simple"
 
 [tool.uv.workspace]
-members = ["src/core", "src/api"]
+members = ["src/core", "src/api", "src/extractor"]
 
 [tool.uv.sources]
 enter-core = { workspace = true }
 enter-api = { workspace = true }
+enter-extractor = { workspace = true }

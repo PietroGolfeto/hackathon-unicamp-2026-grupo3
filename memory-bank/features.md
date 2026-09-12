@@ -27,6 +27,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Engine de valor esperado, faixas, escada de negociação e backtest do engine | 1, 2, 5 | P1 | ✅ | `src/enteros/policy/{engine,negotiation}.py`, `policy.yaml`, `src/enteros/backtest/`, `docs/backtest/`, `make backtest` |
 | API própria do engine (`POST /recomendacao`) | 3 | P1 | ✅ | `src/enteros/api/main.py`, `make engine-api` (:8001) |
 | Integração engine → portal (adapter `ModeloScores`) | 1, 2 | Lucas | ✅ | `src/api/app/modelo_enteros.py` (padrão de `MODEL_IMPL`); `load-historico` pontua os 60k com a logística do engine quando não há `historico_scored.csv`; 4 testes |
+| Resumo dos principais pontos de um PDF (OCR + OpenAI) | 3 | P3 | ✅ | `src/extractor/extractor/{leitura,resumo,__main__}.py`; `make resumo PDF=caminho.pdf` (precisa de `OPENAI_API_KEY` no `.env`); texto nativo por página, OCR local só nas escaneadas; ainda não aparece no portal |
 | Extração LLM dos PDFs + sinais de alerta | 1, 3 | P3 | ⬜ | `src/extractor` |
 | Análise e minutas em linguagem jurídica | 3 | P3 | ⬜ | `src/extractor` |
 | Portal do advogado polido + vídeo | 3 | P4 | ⬜ | `pages/advogado`, `docs/video.*` |

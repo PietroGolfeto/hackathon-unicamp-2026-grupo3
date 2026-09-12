@@ -117,6 +117,10 @@ jobs:
         run: uv sync --frozen --extra dev
       - name: Testes do engine
         run: uv run pytest tests -q
+      - name: Lint e testes do extractor
+        run: |
+          uv run ruff check src/extractor
+          uv run pytest src/extractor -q
 
   web:
     name: web (lint + build)

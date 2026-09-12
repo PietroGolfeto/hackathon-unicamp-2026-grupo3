@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enter-extractor"
+version = "0.1.0"
+description = "P3: leitura dos PDFs dos processos (pdf-inspector) e resumo com LLM (OpenAI)"
+requires-python = ">=3.12"
+dependencies = [
+  "pdf-inspector>=1.19",
+  # só fornecem as bibliotecas nativas que o OCR do pdf-inspector carrega (PDFium e ONNX Runtime)
+  "pypdfium2>=5.13",
+  "onnxruntime>=1.30",
+  "openai>=3.13",
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+  # contratos e utilitários compartilhados (membro do workspace uv)
+  "enter-core",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "ruff>=0.5"]
+
+[tool.setuptools]
+packages = ["extractor"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
