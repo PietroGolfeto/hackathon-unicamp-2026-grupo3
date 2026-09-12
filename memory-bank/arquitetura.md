@@ -6,7 +6,7 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 ✅ Documentação e regras: `CLAUDE.md`, `memory-bank/`
 ✅ CI de PR e hooks locais: `.github/workflows/ci.yml`, `scripts/`, `Makefile` (`make hooks`, `make check`)
 ✅ `src/core`: pacote `core` com parsing dos CSVs, UF por CNJ, contratos P1/P3 e política em numpy, 32 testes
-🔧 `src/api`: FastAPI com auth por cookie, 8 tabelas via `create_all`, seed idempotente; rotas de negócio em andamento
+✅ `src/api`: FastAPI completa (auth, processos, recomendação, decisão, resultado, eventos, políticas, dashboards, aprovações, demo, arquivos) + CLI de jobs; 20 testes contra Postgres
 ⬜ `src/web`, `src/model`, `src/extractor`, `infra/`: ainda não existem
 
 ## Visão geral
@@ -25,7 +25,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 | Componente | Pasta | Estado | Responsabilidade |
 |---|---|---|---|
 | core | `src/core` | ✅ | parsing (`colunas.py`, `cnj.py`), contratos (`caso.py`, `modelo.py`, `docs.py`), política e backtest vetorizados (`politica.py`). Só pydantic e numpy |
-| api | `src/api` | 🔧 | FastAPI (`app/`): `config.py`, `db.py`, `models.py`, `auth.py`, `main.py` com lifespan (create_all → seed → cache do histórico → plugins); routers e services em andamento |
+| api | `src/api` | ✅ | FastAPI (`app/`): `main.py` com lifespan (create_all → seed → cache do histórico → plugins); `routers/{auth,processos,files,politicas,dashboard,aprovacoes,demo}.py`; `services/{seed,historico,backtest,recomendacao,metricas,ingest,seed_demo}.py`; `cli.py` |
 | web | `src/web` | ⬜ | SPA React + Vite + TS + Mantine: login, casos, caso, painel, política, aprovações |
 | model | `src/model` | ⬜ | P1: treino XGBoost, `RealScorer`, export do histórico com scores OOF |
 | extractor | `src/extractor` | ⬜ | P3: extração LLM dos PDFs, sinais de alerta, análise e minutas em linguagem jurídica |
@@ -57,4 +57,4 @@ VPS com domínio: um Caddy com TLS automático servindo o `dist/` e fazendo prox
 `data/` não é versionado: `make deploy` sincroniza por rsync para a VPS. Sem os CSVs da Enter a API sobe normalmente e a tela de simular avisa que o histórico não está carregado.
 
 ## Convenções de API
-Prefixo `/api`. Cookie HttpOnly assinado, 12 h. IDs inteiros nas URLs (número CNJ só em busca). Erros `{detail: "texto em português"}`. Datas ISO 8601. Dinheiro em número; formatação BRL só no front.
+Prefixo `/api` (`/api/health`, `/api/docs`). Cookie HttpOnly assinado, 12 h. IDs inteiros nas URLs (número CNJ só em busca). Erros `{detail: "texto em português"}`. Datas ISO 8601. Dinheiro em número; formatação BRL só no front.

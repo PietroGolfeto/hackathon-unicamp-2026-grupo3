@@ -10,7 +10,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Contratos P1/P3 e stubs | — | Lucas | ✅ | contratos em `src/core/core/{caso,modelo,docs}.py`; `StubModelo` (lookup no histórico) e `StubExtrator` (regex nos autos) em `src/api/app/stubs.py`; seleção por env em `plugins.py` |
 | Política de custo esperado e backtest | 1, 2, 5 | Lucas; P1 calibra | ✅ | núcleo em `src/core/core/politica.py` (11 testes); backtest com resultados reais em `src/api/app/services/backtest.py` (~15 ms nos 60k) |
 | Auth por cookie, papéis advogado/gestor | 3 | Lucas | ✅ | `src/api/app/auth.py`, `routers/auth.py`; seed com 8 usuários (`senha123`) em `services/seed.py` |
-| Jobs: seed, load-historico, ingest, seed-demo, reset-demo | — | Lucas | ⬜ | `src/api/app/cli.py` |
+| Jobs: seed, load-historico, ingest, seed-demo, reset-demo, reset | — | Lucas | ✅ | `python -m app.cli`; `seed-demo` lê `data/exemplos/sinteticos.csv` (340 processos, 300 decisões simuladas em 8 semanas) |
 | Lista e detalhe de processos, arquivos | 3 | Lucas | 🔧 | API pronta em `routers/processos.py`, `routers/files.py`; `pages/advogado` pendente |
 | Recomendação gravada sob a política ativa | 1, 2, 4 | Lucas | ✅ | `GET /processos/{id}/recomendacao` → `services/recomendacao.py` (get_or_create com ON CONFLICT) |
 | Decisão com aderência, justificativa e aprovação | 4 | Lucas | ✅ | `POST /processos/{id}/decisoes`; regras em `services/recomendacao.avaliar_decisao`; devolve minutas e contato adverso |
@@ -22,7 +22,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Link mágico `/demo` para a banca | 3 | Lucas | ✅ | `GET /api/demo?t=` reserva caso livre da Banca Demo por 15 min, rate limit 20/min |
 | Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | ⬜ | `src/web/src/pages` |
 | Compose, Caddy, deploy VPS, standby homelab, backup | — | Lucas | ⬜ | `infra/`, `Makefile` |
-| Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 exporta o modelo | ⬜ | `src/model/artifacts/`, `data/exemplos/sinteticos.csv`, seed |
+| Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 exporta o modelo | 🔧 | `data/exemplos/sinteticos.csv` ✅ e seed ✅; modelo exportado em `src/model/artifacts/` pendente (P1) |
 | Modelo XGBoost + scores OOF do histórico | 1, 2 | P1 | ⬜ | `src/model` |
 | Extração LLM dos PDFs + sinais de alerta | 1, 3 | P3 | ⬜ | `src/extractor` |
 | Análise e minutas em linguagem jurídica | 3 | P3 | ⬜ | `src/extractor` |

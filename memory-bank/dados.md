@@ -5,7 +5,7 @@
 |---|---|---|
 | `Hackaton_Enter_Base_Candidatos.xlsx - Resultados dos processos.csv` | 60.000 | Número do processo, UF, Assunto, Sub-assunto, Resultado macro, Resultado micro, Valor da causa, Valor da condenação/indenização |
 | `Hackaton_Enter_Base_Candidatos.xlsx - Subsídios disponibilizados.csv` | 60.000 | Número do processo**s**, Contrato, Extrato, Comprovante de crédito, Dossiê, Demonstrativo de evolução da dívida, Laudo referenciado |
-| `processos_exemplo/<numero>/autos/*.pdf`, `subsidios/*.pdf` | 2 pastas | petição inicial e documentos do banco (ainda não copiadas para o repo) |
+| `exemplos/<numero>/autos/*.pdf`, `exemplos/<numero>/subsidios/*.pdf` | 2 pastas | petição inicial e documentos do banco; pasta com o nome do número CNJ, ignorada pelo git; `python -m app.cli ingest` lê |
 
 Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação de política fica desabilitada com aviso.
 

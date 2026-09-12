@@ -52,3 +52,6 @@ Thumbs.db
 
 # Plano de implementação local (não versionar)
 plano-implementacao.md
+
+# Pastas dos processos exemplo da Enter (só o CSV sintético e o README ficam)
+data/exemplos/*/
