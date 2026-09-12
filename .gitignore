@@ -49,3 +49,9 @@ Thumbs.db
 # Caches de ferramentas
 .pytest_cache/
 .ruff_cache/
+
+# Plano de implementação local (não versionar)
+plano-implementacao.md
+
+# Pastas dos processos exemplo da Enter (só o CSV sintético e o README ficam)
+data/exemplos/*/

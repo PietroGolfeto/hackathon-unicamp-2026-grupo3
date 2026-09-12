@@ -1,0 +1,14 @@
+# Override para dev e para o standby do homelab: sem TLS, tudo em http://localhost:8080.
+#   docker compose -f infra/compose.yml -f infra/compose.local.yml --project-directory . up -d --build
+services:
+  db:
+    ports:
+      - "5432:5432"
+  api:
+    ports:
+      - "8000:8000"
+  caddy:
+    environment:
+      DOMAIN: ":8080"
+    ports: !override
+      - "8080:8080"

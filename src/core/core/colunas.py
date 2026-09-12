@@ -7,6 +7,7 @@ lê CSV no projeto passa por aqui para que api, model e extractor usem os mesmos
 
 from __future__ import annotations
 
+import math
 import re
 import unicodedata
 from collections.abc import Iterable
@@ -79,7 +80,7 @@ def parse_brl(valor: object) -> float | None:
     if isinstance(valor, bool):
         return float(valor)
     if isinstance(valor, (int, float)):
-        return None if valor != valor else float(valor)  # NaN != NaN
+        return None if math.isnan(valor) else float(valor)
 
     texto = str(valor).strip()
     if not texto or texto.lower() in {"nan", "none", "null", "-"}:
@@ -101,7 +102,7 @@ def resultado_macro_para_int(valor: object) -> int | None:
     if isinstance(valor, bool):
         return int(valor)
     if isinstance(valor, (int, float)):
-        return None if valor != valor else int(valor)
+        return None if math.isnan(valor) else int(valor)
     texto = normalizar_nome(valor or "")
     if texto in {"exito", "1", "true", "sim"}:
         return 1

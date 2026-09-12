@@ -1,31 +1,18 @@
-# Dados
+# data/
 
-Coloque aqui os arquivos fornecidos pela organização do hackathon.
-
-## Estrutura esperada
+Nada da Enter é versionado aqui (decisão 19 em `memory-bank/decisoes.md`). Coloque os arquivos assim:
 
 ```
 data/
-├── sentencas.csv          # 60.000 sentenças judiciais
-├── subsidios/             # documentos de subsídio por processo
-│   └── <id_processo>/
-│       ├── contrato.*
-│       ├── extrato.*
-│       ├── comprovante_credito.*
-│       ├── dossie.*
-│       ├── demonstrativo_divida.*
-│       └── laudo_referenciado.*
-└── processos_exemplo/     # 2 pastas de processos para simulação
-    ├── processo_01/
-    │   ├── autos/
-    │   └── subsidios/
-    └── processo_02/
-        ├── autos/
-        └── subsidios/
+├── Hackaton_Enter_Base_Candidatos.xlsx - Resultados dos processos.csv      # 60.000 sentenças
+├── Hackaton_Enter_Base_Candidatos.xlsx - Subsídios disponibilizados.csv    # 6 flags por processo
+├── exemplos/
+│   ├── README.md                      # versionado
+│   ├── sinteticos.csv                 # versionado: 340 processos fictícios nossos (seed-demo)
+│   └── <numero-cnj>/                  # ignorado: as 2 pastas de processos exemplo
+│       ├── autos/*.pdf
+│       └── subsidios/*.pdf            # o nome do arquivo define a flag (contrato, extrato, …)
+└── derived/                           # ignorado: saídas de P1/P3 (historico_scored.csv, extraidos/, scores/)
 ```
 
-## Importante
-
-- Os dados são fornecidos pela organização do hackathon e **não devem ser versionados** neste repositório.
-- O `.gitignore` já está configurado para ignorar os arquivos de dados.
-- Para fins de demonstração, você pode incluir dados sintéticos ou anonimizados.
+`make historico` carrega os CSVs; `make ingest` lê `exemplos/<numero>/`; `make seed-demo` lê `sinteticos.csv`. Sem os CSVs a API sobe normalmente e só a simulação da política fica desabilitada.

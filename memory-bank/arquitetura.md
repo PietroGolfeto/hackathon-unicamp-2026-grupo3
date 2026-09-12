@@ -5,8 +5,11 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 ## Estado atual
 ✅ Documentação e regras: `CLAUDE.md`, `memory-bank/`
 ✅ CI de PR e hooks locais: `.github/workflows/ci.yml`, `scripts/`, `Makefile` (`make hooks`, `make check`)
-🔧 `src/core`: pacote `core` com parsing dos CSVs e UF por CNJ, 17 testes; contratos e política ainda não
-⬜ `src/api`, `src/web`, `src/model`, `src/extractor`, `infra/`: ainda não existem
+✅ `src/core`: pacote `core` com parsing dos CSVs, UF por CNJ, contratos P1/P3 e política em numpy, 32 testes
+✅ `src/api`: FastAPI completa (auth, processos, recomendação, decisão, resultado, eventos, políticas, dashboards, aprovações, demo, arquivos) + CLI de jobs; 20 testes contra Postgres
+✅ `src/web`: Vite + React 19 + Mantine 8 + TanStack Query + react-router 7; login, casos, caso, painel, política e aprovações; `npm run build` = tsc estrito + vite
+🔧 `infra/` + `Makefile`: `make up` sobe db/api/caddy em :8080 (testado), `make jobs-docker` roda os jobs no container, `make deploy`/`make backup` para a VPS; VPS e standby ainda não subiram
+⬜ `src/model`, `src/extractor`: ainda não existem (P1, P3)
 
 ## Visão geral
 ```
@@ -23,12 +26,12 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 ## Componentes
 | Componente | Pasta | Estado | Responsabilidade |
 |---|---|---|---|
-| core | `src/core` | 🔧 | parsing de CSV e número CNJ prontos (`colunas.py`, `cnj.py`); contratos pydantic e política em numpy ainda não. Só pydantic e numpy |
-| api | `src/api` | ⬜ | FastAPI: auth por cookie, processos, recomendações, decisões, dashboards, políticas, arquivos, link de demo, CLI de jobs |
-| web | `src/web` | ⬜ | SPA React + Vite + TS + Mantine: login, casos, caso, painel, política, aprovações |
+| core | `src/core` | ✅ | parsing (`colunas.py`, `cnj.py`), contratos (`caso.py`, `modelo.py`, `docs.py`), política e backtest vetorizados (`politica.py`). Só pydantic e numpy |
+| api | `src/api` | ✅ | FastAPI (`app/`): `main.py` com lifespan (create_all → seed → cache do histórico → plugins); `routers/{auth,processos,files,politicas,dashboard,aprovacoes,demo}.py`; `services/{seed,historico,backtest,recomendacao,metricas,ingest,seed_demo}.py`; `cli.py` |
+| web | `src/web` | ✅ | SPA (`src/`): `api/client.ts` (tipos = schemas da API), `auth/useSession.ts`, `lib/format.ts` (BRL, %, datas), `components/{Layout,Badges,Stat}.tsx`, `pages/Login.tsx`, `pages/advogado/{Casos,Caso}.tsx` (cabeçalho com sinais → card da recomendação → análise → documentos → decisão com cronômetro → contato, minutas copiáveis e resultado); `pages/gestor/{Painel,Politica,Aprovacoes}.tsx` (números; gráficos são de P5). Dev: proxy `/api` → :8000 |
 | model | `src/model` | ⬜ | P1: treino XGBoost, `RealScorer`, export do histórico com scores OOF |
 | extractor | `src/extractor` | ⬜ | P3: extração LLM dos PDFs, sinais de alerta, análise e minutas em linguagem jurídica |
-| infra | `infra/` | ⬜ | compose (db, api, caddy), Caddyfile, Dockerfiles, compose local sem TLS |
+| infra | `infra/` | 🔧 | `compose.yml` (db, api, caddy; invocar com `--project-directory .`), `compose.local.yml` (porta 8080, sem TLS), `Caddyfile` (`{$DOMAIN}`), `api.Dockerfile` (instala core/api e model/extractor se existirem), `web.Dockerfile` (node build → caddy) |
 | ci | `.github/`, `scripts/`, `Makefile` | ✅ | verificações de PR e testes por componente |
 
 ## Tabelas (8, Postgres, `create_all`, sem migrações)
@@ -48,11 +51,12 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 2. **Advogado abre caso**: `GET /processos/{id}/recomendacao` → get_or_create sob a política ativa → grava evento.
 3. **Decisão**: `POST /processos/{id}/decisoes` → calcula `aderente`; divergência exige justificativa; valor fora da banda ou causa alta vira `pendente_aprovacao`; devolve minutas e contato adverso quando acordo. Depois `POST /decisoes/{id}/resultado`.
 4. **Gestor**: `POST /politicas/simular` roda a política sobre o histórico com resultados reais; `ativar` grava o resumo; painel lê agregados de `decisoes`/`eventos` e o resumo da política ativa.
-5. **Banca**: `GET /api/demo?t=<token>` loga um advogado do escritório "Banca Demo", reserva um caso livre por 15 min e redireciona para `/casos/{id}`.
+5. **Banca**: `GET /api/demo?t=<token>` loga um advogado do escritório "Banca Demo", reserva um caso livre por 15 min (`FOR UPDATE SKIP LOCKED`) e redireciona para `/casos/{id}`; sem caso livre, vai para `/casos`.
+6. **Aprovação**: `GET /aprovacoes` lista `pendente_aprovacao`; `POST /aprovacoes/{id}` aprova ou rejeita com comentário.
 
 ## Deploy
 VPS com domínio: um Caddy com TLS automático servindo o `dist/` e fazendo proxy de `/api/*` para a API (mesma origem, sem CORS). Volume `caddy_data` persistido. Homelab roda o mesmo compose como standby permanente em `standby.<dominio>` via túnel; `pg_dump` da VPS para o homelab a cada 10 min. Dev e standby usam `infra/compose.local.yml` (porta 8080, sem TLS).
-`data/` não é versionado: `make deploy` sincroniza por rsync para a VPS. Sem os CSVs da Enter a API sobe normalmente e a tela de simular avisa que o histórico não está carregado.
+`data/` não é versionado: `make deploy` sincroniza por rsync para a VPS e faz `git pull` + `compose up --build`; `make backup` traz um `pg_dump`. Localmente: `make up` (compose com override sem TLS), `make dev-api`/`make dev-web` fora do Docker, jobs via `make seed|historico|ingest|seed-demo|reset-demo|reset` (rodam contra o `DATABASE_URL` do `.env`). Sem os CSVs da Enter a API sobe normalmente e a tela de simular avisa que o histórico não está carregado.
 
 ## Convenções de API
-Prefixo `/api`. Cookie HttpOnly assinado, 12 h. IDs inteiros nas URLs (número CNJ só em busca). Erros `{detail: "texto em português"}`. Datas ISO 8601. Dinheiro em número; formatação BRL só no front.
+Prefixo `/api` (`/api/health`, `/api/docs`). Cookie HttpOnly assinado, 12 h. IDs inteiros nas URLs (número CNJ só em busca). Erros `{detail: "texto em português"}`. Datas ISO 8601. Dinheiro em número; formatação BRL só no front.
