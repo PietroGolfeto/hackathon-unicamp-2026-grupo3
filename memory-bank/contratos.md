@@ -48,7 +48,9 @@ class ContratoInfo(BaseModel):
     assinatura: Literal["fisica", "digital", "biometria", "ausente", "desconhecida"] = "desconhecida"
     credito_conta_terceiro: bool | None; valor: float | None; parcelas: int | None; data: date | None
 class SinalAlerta(BaseModel): codigo: str; descricao: str; severidade: Literal["baixa", "media", "alta"]; fonte: str | None
-# códigos previstos: IDOSO, CREDITO_CONTA_TERCEIRO, BOLETIM_OCORRENCIA, RECLAMACAO_BACEN, SEM_CONTRATO, ASSINATURA_DIVERGENTE, CANAL_DIGITAL_SEM_PERFIL
+# códigos previstos: IDOSO, CREDITO_CONTA_TERCEIRO, BOLETIM_OCORRENCIA, RECLAMACAO_BACEN, SEM_CONTRATO, ASSINATURA_DIVERGENTE,
+#   CANAL_DIGITAL_SEM_PERFIL, LIVENESS_AUSENTE_CANAL_DIGITAL (canal digital sem vídeo de liveness), DOCUMENTO_SUSPEITO (emitido pelo
+#   extractor, não pelo LLM: PDF com script/ação/anexo ou texto com instrução embutida; o trecho sai do brief e o arquivo vai em `fonte`)
 
 class DadosExtraidos(BaseModel):
     numero: str; origem: Literal["llm", "stub"]; modelo: str | None
@@ -130,5 +132,5 @@ Mapa `PoliticaParams` (API) ↔ `policy.yaml` (engine), para P1 calibrar os defa
 | `taxa_aceite_esperada` 0,65 fixa | curva logística (`aceite_s50` 30% da causa, largura 0,06) | API mede o aceite real e substitui |
 | `fator_oferta` 0,80 × prejuízo esperado | alvo = argmin do custo esperado na grade | |
 | `piso/teto_oferta_pct_causa` 10% / 60% | 10% / 70%; teto também ≤ 90% do EV de defesa | |
-| `sinais_forcam_acordo` [CREDITO_CONTA_TERCEIRO] | + LIVENESS_AUSENTE_CANAL_DIGITAL | adicionar o segundo código em `core/caso.py` quando P3 extrair liveness |
+| `sinais_forcam_acordo` [CREDITO_CONTA_TERCEIRO] | + LIVENESS_AUSENTE_CANAL_DIGITAL | o segundo código já existe em `core/caso.py`; o extractor o emite quando o laudo diz que o liveness não foi localizado em contratação digital |
 
