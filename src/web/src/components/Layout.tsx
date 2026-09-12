@@ -57,13 +57,13 @@ export function Layout() {
               {usuario && (
                 <Group gap={10} wrap="nowrap">
                   <Avatar size={30} radius="xl" color="tinta" variant="filled" fz={11} fw={600}>{iniciais(usuario.nome)}</Avatar>
-                  <Box visibleFrom="sm" style={{ lineHeight: 1.15 }}>
-                    <Text size="sm" fw={500} truncate maw={200}>{usuario.nome}</Text>
-                    <Text size="xs" c="dimmed" truncate maw={200}>
-                      {usuario.papel === "gestor" ? "Gestor · Banco UFMG" : usuario.escritorio_nome ?? "Advogado"}
+                  <Box visibleFrom="sm" w={190} style={{ lineHeight: 1.15 }}>
+                    <Text size="sm" fw={500} truncate>{usuario.nome}</Text>
+                    <Text size="xs" c="dimmed" truncate>
+                      {usuario.papel === "gestor" ? "Gestor · Banco Unicamp" : usuario.escritorio_nome ?? "Advogado"}
                     </Text>
                   </Box>
-                  {usuario.papel === "gestor" && <Badge size="sm" color="laranja" variant="light" hiddenFrom="sm">gestor</Badge>}
+                  {usuario.papel === "gestor" && <Badge size="sm" color="laranja" variant="light" hiddenFrom="sm">Gestor</Badge>}
                 </Group>
               )}
               <Tooltip label="Sair">
@@ -91,7 +91,7 @@ export function Layout() {
             <Outlet />
           </div>
           <Text size="xs" c="dimmed" ta="center" mt={48} pb="md">
-            Banco UFMG · Política de acordos · empréstimo não reconhecido
+            Banco Unicamp · Política de acordos · empréstimo não reconhecido
           </Text>
         </Container>
       </AppShell.Main>

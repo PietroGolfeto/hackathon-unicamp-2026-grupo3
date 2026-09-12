@@ -1,9 +1,7 @@
 import { Group, Text } from "@mantine/core";
 import { Link } from "react-router";
 
-import { IcoEnter } from "./Icones";
-
-/** Marca do produto: tecla Enter em laranja sobre tinta, "Acordos" em serifa e "Banco UFMG" em caixa alta. */
+/** Marca do produto: monograma "U" (Unicamp) em laranja sobre tinta, "Acordos" em serifa e "Banco Unicamp" em caixa alta. */
 export function Marca({ invertida = false, tamanho = "sm", to = "/" }: { invertida?: boolean; tamanho?: "sm" | "lg"; to?: string | null }) {
   const lado = tamanho === "lg" ? 44 : 30;
   const conteudo = (
@@ -15,7 +13,7 @@ export function Marca({ invertida = false, tamanho = "sm", to = "/" }: { inverti
           display: "grid", placeItems: "center",
         }}
       >
-        <IcoEnter size={Math.round(lado * 0.58)} strokeWidth={2.4} />
+        <span className="serif" style={{ fontSize: Math.round(lado * 0.6), fontWeight: 600, lineHeight: 1 }}>U</span>
       </span>
       <span style={{ display: "grid", lineHeight: 1.05 }}>
         <Text component="span" className="serif" fz={tamanho === "lg" ? 24 : 18} c={invertida ? "white" : "tinta.6"}>
@@ -23,7 +21,7 @@ export function Marca({ invertida = false, tamanho = "sm", to = "/" }: { inverti
         </Text>
         <Text component="span" fz={tamanho === "lg" ? 11 : 10} fw={500} tt="uppercase" lts=".1em"
           c={invertida ? "rgba(255,255,255,.64)" : "dimmed"}>
-          Banco UFMG
+          Banco Unicamp
         </Text>
       </span>
     </Group>

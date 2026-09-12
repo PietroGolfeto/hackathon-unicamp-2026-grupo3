@@ -142,7 +142,7 @@ export interface Politica {
   created_at: string; publicada_em: string | null; resumo_backtest: Backtest | null;
 }
 
-export interface LinhaAderencia { [k: string]: unknown; total: number; aderentes: number; pct_aderente: number; tempo_medio_s: number | null; pct_acordo: number }
+export interface LinhaAderencia { [k: string]: unknown; semana?: string; total: number; aderentes: number; pct_aderente: number; tempo_medio_s: number | null; pct_acordo: number }
 export interface Justificativa {
   decisao_id: number; created_at: string; numero: string; processo_id: number; advogado: string; escritorio: string;
   tipo: string; rec_tipo: string; valor_proposto: number | null; valor_sugerido: number | null; tipo_desvio: string;

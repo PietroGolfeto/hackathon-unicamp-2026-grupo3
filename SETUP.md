@@ -77,6 +77,8 @@ make dev-web       # http://localhost:5173 (proxy de /api para :8000)
 
 Jobs individuais: `make seed`, `make historico`, `make ingest`, `make seed-demo`, `make reset-demo` (apaga só decisões, eventos e recomendações; use antes de cada ensaio).
 
+Para ver o painel do gestor cheio durante o desenvolvimento: `make mock-painel` cria decisões, justificativas e resultados **sorteados** (decisão 44). Só roda contra banco local e não toca no pool da Banca Demo. **Rode `make reset-demo` antes de qualquer ensaio ou demonstração**, senão a banca vê número inventado como se fosse medido.
+
 ## 5. Testes e verificações
 
 ```bash
