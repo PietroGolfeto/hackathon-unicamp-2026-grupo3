@@ -34,7 +34,7 @@ LIMITES = {"peticao": 7000, "contrato": 2200, "extrato": 2500, "comprovante_cred
 LIMITE_BRIEF = 20000
 PISO_PETICAO = 4500
 # Mudou regra de parsing que altera o brief? Suba a versão: ela entra na chave do cache junto com o prompt.
-VERSAO_PARSING = "2026-09-12.2"
+VERSAO_PARSING = "2026-09-12.3"
 
 
 @dataclass
@@ -177,6 +177,9 @@ RE_LINHA_PARCELA = re.compile(r"^\s*\d{1,3}\s+\d{2}/\d{2}/\d{4}\s+[\d.,]+\s+[\d.
                               re.IGNORECASE | re.MULTILINE)
 RE_SALDO_DEVEDOR = re.compile(r"Saldo\s+devedor.{0,80}?R\$\s*([\d.]+,\d{2})", re.IGNORECASE | re.DOTALL)
 
+# até 120 caracteres sem ponto final; atravessa a quebra de linha do `pdftotext -layout`, mas não a linha em branco
+# que separa parágrafos ou itens de lista (senão "liveness" de um item casaria com "não localizado" do seguinte)
+_ATE_QUEBRA = r"(?:[^.\n]|\n(?![ \t]*\n)){0,120}"
 INDICIOS: dict[str, re.Pattern[str]] = {
     "autor_idoso": re.compile(r"\bidos[oa]s?\b", re.IGNORECASE),
     "autor_aposentado": re.compile(r"\baposentad[oa]", re.IGNORECASE),
@@ -195,8 +198,8 @@ INDICIOS: dict[str, re.Pattern[str]] = {
     "canal_correspondente": re.compile(r"correspondente\s+banc[áa]rio", re.IGNORECASE),
     "biometria_ou_liveness": re.compile(r"biometria|liveness|selfie|reconhecimento\s+facial", re.IGNORECASE),
     "liveness_nao_localizado": re.compile(
-        r"n[ãa]o\s+(foi\s+)?(localizad|encontrad)[oa][^.\n]{0,80}(liveness|biometria|v[íi]deo)"
-        r"|(liveness|biometria|v[íi]deo)[^.\n]{0,80}n[ãa]o\s+(foi\s+)?(localizad|encontrad)", re.IGNORECASE),
+        rf"n[ãa]o\s+(foi\s+)?(localizad|encontrad)[oa]{_ATE_QUEBRA}(liveness|biometria|v[íi]deo)"
+        rf"|(liveness|biometria|v[íi]deo){_ATE_QUEBRA}n[ãa]o\s+(foi\s+)?(localizad|encontrad)", re.IGNORECASE),
     "assinatura_manuscrita": re.compile(r"assinatura\s+manuscrita|de\s+forma\s+manual|firma\s+.{0,30}manual", re.IGNORECASE),
     "assinatura_eletronica": re.compile(r"assinatura\s+(digital|eletr[ôo]nica)|aceite\s+eletr[ôo]nico|senha\s+eletr[ôo]nica", re.IGNORECASE),
     "assinatura_divergente": re.compile(r"\bDIVERGENTE\b|INCOMPAT[ÍI]VEL|N[ÃA]O\s+COMPAT[ÍI]VEL", re.IGNORECASE),

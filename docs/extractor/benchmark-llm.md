@@ -34,9 +34,10 @@ Stress (casos sintéticos): extrato com 3.000 movimentos (330k caracteres) vira 
 
 Leitura: os sinais que a regra consegue decidir (idoso, BO, BACEN, sem contrato, crédito em conta de terceiro) saem certos com qualquer modelo, porque a regra entra se o LLM esqueceu e sai se ele inventou. A diferença entre modelos fica no que só o LLM preenche (tipo de assinatura, liveness, números do contrato, contradições) e na estabilidade entre chamadas. gpt-5-nano é o mais barato e o menos estável (uma chamada com 12/21 no caso 02); gpt-4.1-mini entrega os mesmos sinais finais que o gpt-5-mini em 1/4 do tempo e 1/3 a menos de custo; gpt-5-mini é o único que acertou o gabarito inteiro em 5 das 6 chamadas. Preços de tabela da OpenAI lidos em 2026-09-12; câmbio assumido R$ 5,40. Nas repetições dos gpt-5* a OpenAI serviu 6,5–8,3k tokens de entrada do prompt cache (mesmo prefixo em minutos); em produção cada processo é diferente e só as instruções (~1,7k tokens) se repetem, por isso a tabela usa o custo sem cache.
 
-### Lacuna encontrada pelo benchmark
+### Lacuna encontrada pelo benchmark (corrigida)
 
-A regex `liveness_nao_localizado` não casa no laudo do caso 02: `pdftotext -layout` quebra a linha entre "não foi localizado nos arquivos digitais o" e "vídeo de liveness", e o padrão usa `[^.\n]{0,80}`, que não atravessa a quebra. Consequência: o sinal LIVENESS_AUSENTE_CANAL_DIGITAL depende de o LLM devolver `liveness = nao_localizado`; quando ele não devolve, a regra de canal digital apaga até o sinal que o LLM acertou (aconteceu em 2 das 3 chamadas do gpt-5-nano). Correção candidata: permitir quebra de linha no padrão (`[^.]{0,120}`) e cobrir com um teste com o texto do laudo.
+A regex `liveness_nao_localizado` não casava no laudo do caso 02: `pdftotext -layout` quebra a linha entre "não foi localizado nos arquivos digitais o" e "vídeo de liveness", e o padrão usava `[^.
+]{0,80}`, que não atravessa a quebra. Consequência nas chamadas acima: o sinal LIVENESS_AUSENTE_CANAL_DIGITAL dependia de o LLM devolver `liveness = nao_localizado`; quando ele não devolvia, a regra de canal digital apagava até o sinal que o LLM acertou (2 das 3 chamadas do gpt-5-nano). Corrigido no parsing `2026-09-12.3`: o padrão atravessa a quebra de linha, mas não a linha em branco que separa parágrafos, com teste sobre o texto literal do laudo; o indício entra pela regra e o sinal deixa de depender do LLM. As chamadas da tabela são anteriores à correção.
 
 ---
 

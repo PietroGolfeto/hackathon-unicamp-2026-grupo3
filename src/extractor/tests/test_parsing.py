@@ -99,3 +99,16 @@ def test_movimentos_do_extrato_e_pista_de_uso_dos_valores():
     ext = parsing.parsear("extrato.txt", "subsidios", extrato, paginas=None, leitor="txt")
     pistas = parsing.pistas_cruzadas([pet, ext])
     assert any(p.startswith("Contradição candidata") and "2 saída(s)" in p for p in pistas)
+
+
+def test_liveness_nao_localizado_atravessa_quebra_de_linha_do_pdftotext():
+    # trecho literal do laudo do caso 02 como o `pdftotext -layout` o entrega: a frase quebra antes de "vídeo"
+    laudo = ("    preservados nos sistemas do Banco UFMG S.A. No entanto, não foi localizado nos arquivos digitais o\n"
+             "    vídeo de liveness (biometria facial) tradicionalmente capturado ao final do fluxo, fato reportado\n"
+             "    internamente para apuração pela área de Segurança da Informação. Não foi providenciada, até o\n"
+             "    momento, verificação grafotécnica complementar por empresa terceira.\n")
+    assert "liveness_nao_localizado" in parsing.fatos_subsidio("laudo_referenciado", laudo)["indicios"]
+    # não atravessa ponto final nem linha em branco (outro parágrafo ou outro item de lista)
+    padrao = parsing.INDICIOS["liveness_nao_localizado"]
+    assert not padrao.search("Não foi localizado o contrato físico. O vídeo de liveness foi capturado com sucesso.")
+    assert not padrao.search("    • Vídeo de liveness: capturado com sucesso\n\n    • Documento de identidade: não foi localizado\n")
