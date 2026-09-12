@@ -1,7 +1,7 @@
 """Compara variantes do modelo de P(perda) pela métrica que importa para a política: o custo de decisão
 out-of-fold em R$ (mesmos folds, mesmos custos, mesma regra de EV com oferta fixa — só `p` muda).
 
-Saída: docs/modelo/comparacao.{json,md}. É a evidência da decisão 30: a logística aditiva já está no teto;
+Saída: docs/modelo/comparacao.{json,md}. É a evidência da decisão 31: a logística aditiva já está no teto;
 interações, saturação, valor da causa, árvores e tabelas de células não compram nada.
 """
 

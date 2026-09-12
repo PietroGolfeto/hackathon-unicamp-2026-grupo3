@@ -112,7 +112,7 @@ Contratos próprios em `enteros/schemas.py`: `CaseFeatures` (uf, sub_assunto, va
 Mapa para o contrato do portal (`core.modelo.Scores`), implementado pelo adapter `src/api/app/modelo_enteros.py` (`ModeloEnteros`, padrão de `MODEL_IMPL`):
 | `core` | `enteros` |
 |---|---|
-| `p_exito_defesa` | `1 − p_perda` (logística única; a tabela de segmentos é só saída do modelo — decisão 30) |
+| `p_exito_defesa` | `1 − p_perda` (logística única; a tabela de segmentos é só saída do modelo — decisão 31) |
 | `condenacao_p20/p50/p80` | quantis de `ratio_condenacao` (UF × sub-assunto) × `valor_causa` |
 | `contribuicoes` (positivo = favorece o banco) | `ModeloPerda.contribuicoes` com o sinal invertido (lá positivo = mais risco) |
 | `ModeloInfo.metricas/calibracao` | `modelo.metricas` (auc_oof, brier_oof, ece_oof, n_treino) e `modelo.calibracao` |
