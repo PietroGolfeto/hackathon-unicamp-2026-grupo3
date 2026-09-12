@@ -4,7 +4,8 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 
 ## Estado atual
 ✅ Documentação e regras: `CLAUDE.md`, `memory-bank/`, `docs/plano-implementacao.md`
-⬜ CI de PR, `src/`, `infra/`: ainda não existem
+✅ CI de PR e hooks locais: `.github/workflows/ci.yml`, `scripts/`, `Makefile` (`make hooks`, `make check`)
+⬜ `src/`, `infra/`: ainda não existem
 
 ## Visão geral
 ```
@@ -27,7 +28,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 | model | `src/model` | ⬜ | P1: treino XGBoost, `RealScorer`, export do histórico com scores OOF |
 | extractor | `src/extractor` | ⬜ | P3: extração LLM dos PDFs, sinais de alerta, análise e minutas em linguagem jurídica |
 | infra | `infra/` | ⬜ | compose (db, api, caddy), Caddyfile, Dockerfiles, compose local sem TLS |
-| ci | `.github/`, `scripts/`, `Makefile` | ⬜ | verificações de PR e testes por componente |
+| ci | `.github/`, `scripts/`, `Makefile` | ✅ | verificações de PR e testes por componente |
 
 ## Tabelas (8, Postgres, `create_all`, sem migrações)
 | Tabela | Papel |

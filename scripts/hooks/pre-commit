@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Instalado por `make hooks` (git config core.hooksPath scripts/hooks).
+set -euo pipefail
+raiz="$(git rev-parse --show-toplevel)"
+"$raiz/scripts/check_secrets.sh"
+"$raiz/scripts/check_memory_bank.sh" --staged

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Instalado por `make hooks`. Recebe o caminho do arquivo com a mensagem.
+set -euo pipefail
+raiz="$(git rev-parse --show-toplevel)"
+"$raiz/scripts/check_commit_msg.sh" "$1"
