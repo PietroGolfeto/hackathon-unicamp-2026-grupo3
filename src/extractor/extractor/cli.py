@@ -55,7 +55,8 @@ def main(argv: list[str] | None = None) -> int:
             res = extrator.processar(args.pasta, args.numero, forcar=args.forcar)
             saida = {
                 "numero": res.numero, "cache_hit": res.cache_hit, "modelo": res.modelo,
-                "tokens": {"entrada": res.tokens_entrada, "saida": res.tokens_saida},
+                "tokens": {"entrada": res.tokens_entrada, "saida": res.tokens_saida, "cache": res.tokens_cache,
+                           "raciocinio": res.tokens_raciocinio, "segundos": res.segundos},
                 "brief_chars": len(res.brief), "documentos": [_doc(d) for d in res.docs],
                 "achados": [a.__dict__ for a in res.achados],
                 "dados": res.dados.model_dump(mode="json"), "analise": res.analise.model_dump(mode="json"),

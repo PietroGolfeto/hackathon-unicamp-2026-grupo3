@@ -176,3 +176,32 @@ def test_pistas_cruzadas_no_brief(pasta_exemplo: Path, fake: FakeCliente, tmp_pa
     assert "Canal de contratação segundo os subsídios: app (a petição alega" in res.brief
     assert "Idade do autor na data da petição: 69 anos (idoso: 60+)" in res.brief
     assert "boletim de ocorrência nº 2024.001122" in res.brief and "RDR nº 555555-1" in res.brief
+
+
+def test_analise_descarta_item_que_cita_subsidio_ausente(pasta_exemplo: Path, tmp_path: Path):
+    saida = saida_exemplo()  # a pasta de exemplo não tem dossiê nem extrato
+    saida.analise.pontos_fortes_banco.append("Assinatura compatível 91% [Dossiê]")
+    saida.analise.contradicoes.append("Petição afirma que nunca assinou; [Dossiê] mostra assinatura compatível")
+    saida.analise.riscos.append("[Extrato] mostra saques logo após o crédito")
+    saida.analise.pontos_fracos_banco.append("[Dossiê] ausente: sem perícia de assinatura")  # dizer que falta é legítimo
+    a = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(pasta_exemplo).analise
+    assert not any("91%" in p for p in a.pontos_fortes_banco)
+    assert not any("nunca assinou" in p for p in a.pontos_fortes_banco + a.riscos) and "nunca assinou" not in a.texto
+    assert not any("saques" in r for r in a.riscos)
+    assert any("[Dossiê] ausente" in p for p in a.pontos_fracos_banco)
+    assert any("[Comprovante] indica depósito" in p for p in a.pontos_fortes_banco)  # fonte presente continua
+
+
+def test_canal_dos_subsidios_vence_o_llm_e_apaga_liveness_em_canal_nao_digital(pasta_exemplo: Path, tmp_path: Path):
+    copia = tmp_path / NUMERO
+    shutil.copytree(pasta_exemplo, copia)
+    for arq in (copia / "subsidios").iterdir():  # o banco documenta telemarketing, não app
+        arq.write_text(arq.read_text(encoding="utf-8").replace(
+            "Digital - Aplicativo Mobile (self-service)", "Correspondente bancário - Canal Telefônico (Telemarketing)"),
+            encoding="utf-8")
+    saida = saida_exemplo()  # o LLM insiste em canal app e no sinal LIVENESS_AUSENTE_CANAL_DIGITAL (força acordo)
+    res = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(copia)
+    assert res.dados.contrato.canal == "correspondente"
+    assert "LIVENESS_AUSENTE_CANAL_DIGITAL" not in res.dados.codigos_sinais()
+    de_novo = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(copia)
+    assert de_novo.cache_hit and de_novo.dados == res.dados  # cache reaplica as mesmas regras

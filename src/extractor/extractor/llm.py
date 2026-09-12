@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -31,6 +32,9 @@ class Resposta[T: BaseModel]:
     modelo: str
     tokens_entrada: int
     tokens_saida: int
+    tokens_cache: int = 0  # parte da entrada servida do prompt cache da OpenAI (10× mais barata)
+    tokens_raciocinio: int = 0  # parte da saída gasta em raciocínio (gpt-5*): cobrada como saída
+    segundos: float = 0.0
 
 
 class ClienteLLM(Protocol):
@@ -54,6 +58,7 @@ class ClienteOpenAI:
         extras: dict[str, Any] = {}
         if self.modelo.startswith(("gpt-5", "o1", "o3", "o4")):
             extras["reasoning"] = {"effort": "low"}  # extração e resumo não precisam de raciocínio longo
+        inicio = time.perf_counter()
         try:
             resp = self._client.responses.parse(
                 model=self.modelo, instructions=instrucoes, input=entrada, text_format=esquema, **extras,
@@ -68,6 +73,9 @@ class ClienteOpenAI:
             saida=saida, modelo=getattr(resp, "model", None) or self.modelo,
             tokens_entrada=int(getattr(uso, "input_tokens", 0) or 0),
             tokens_saida=int(getattr(uso, "output_tokens", 0) or 0),
+            tokens_cache=int(getattr(getattr(uso, "input_tokens_details", None), "cached_tokens", 0) or 0),
+            tokens_raciocinio=int(getattr(getattr(uso, "output_tokens_details", None), "reasoning_tokens", 0) or 0),
+            segundos=round(time.perf_counter() - inicio, 2),
         )
 
 

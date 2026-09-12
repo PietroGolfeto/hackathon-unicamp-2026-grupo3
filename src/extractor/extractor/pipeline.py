@@ -76,6 +76,9 @@ class Resultado:
     brief: str
     docs: list[parsing.DocParseado]
     achados: list[Achado]
+    tokens_cache: int = 0
+    tokens_raciocinio: int = 0
+    segundos: float = 0.0
 
 
 class Extrator:
@@ -128,11 +131,13 @@ class Extrator:
         dados, analise = mapear(prep, resp.saida, resp.modelo)
         res = Resultado(numero=prep.numero, dados=dados, analise=analise, saida_llm=resp.saida, chave=chave,
                         modelo=resp.modelo, cache_hit=False, tokens_entrada=resp.tokens_entrada,
-                        tokens_saida=resp.tokens_saida, brief=prep.brief, docs=prep.docs, achados=prep.achados)
+                        tokens_saida=resp.tokens_saida, brief=prep.brief, docs=prep.docs, achados=prep.achados,
+                        tokens_cache=resp.tokens_cache, tokens_raciocinio=resp.tokens_raciocinio, segundos=resp.segundos)
         self.cache.gravar(chave, _payload(res, prep), prep.numero)
         self._memoria[prep.numero] = res
-        log.info("extractor %s: LLM %s, %d+%d tokens, %d docs, brief %d chars", prep.numero, res.modelo,
-                 res.tokens_entrada, res.tokens_saida, len(prep.docs), len(prep.brief))
+        log.info("extractor %s: LLM %s em %.1fs, %d+%d tokens (%d em cache, %d de raciocínio), %d docs, brief %d chars",
+                 prep.numero, res.modelo, res.segundos, res.tokens_entrada, res.tokens_saida, res.tokens_cache,
+                 res.tokens_raciocinio, len(prep.docs), len(prep.brief))
         return res
 
     # ---------------------------------------------------------------- contrato ExtratorDocs
@@ -228,7 +233,8 @@ def _fonte(valor: str | None, prep: Preparacao) -> str | None:
 def mapear(prep: Preparacao, saida: SaidaLLM, modelo: str) -> tuple[DadosExtraidos, Analise]:
     f = prep.fatos_peticao
     d = saida.dados
-    canal = d.contrato.canal if d.contrato.canal != "desconhecido" else (parsing.canal_dos_subsidios(prep.docs) or "desconhecido")
+    # "Canal de contratação" escrito num subsídio vence o LLM; sem isso, vale o que o LLM leu
+    canal = parsing.canal_dos_subsidios(prep.docs) or d.contrato.canal
     autor = Pessoa(nome=_ou(d.autor.nome, f.get("autor_nome")), cpf_mascarado=_cpf(_ou(d.autor.cpf_mascarado, f.get("autor_cpf_mascarado"))),
                    idade=_ou(d.autor.idade, f.get("autor_idade")), email=_ou(d.autor.email, f.get("autor_email")),
                    telefone=d.autor.telefone)
@@ -256,7 +262,7 @@ def mapear(prep: Preparacao, saida: SaidaLLM, modelo: str) -> tuple[DadosExtraid
         confianca=min(1.0, max(0.0, float(d.confianca))), gerado_em=_agora(),
     )
     houve_injecao = any(a.codigo == "INJECAO_PROMPT" for a in prep.achados)
-    return dados, _analise_de(prep.numero, saida.analise, modelo, houve_injecao)
+    return dados, _analise_de(prep.numero, saida.analise, modelo, houve_injecao, prep.ausentes)
 
 
 def _reconciliar_sinais(prep: Preparacao, sinais_llm: list[SinalAlerta], canal: str, liveness: str,
@@ -297,6 +303,8 @@ def _reconciliar_sinais(prep: Preparacao, sinais_llm: list[SinalAlerta], canal: 
         laudo = next((d.arquivo for d in prep.docs if "liveness_nao_localizado" in d.fatos.get("indicios", [])), None)
         decididos["LIVENESS_AUSENTE_CANAL_DIGITAL"] = (sem_liveness, "Contratação digital sem vídeo de liveness localizado",
                                                        laudo, "alta")
+    elif canal != "desconhecido":  # canal não digital: o sinal não se aplica; se o LLM o emitiu, sai (força acordo)
+        decididos["LIVENESS_AUSENTE_CANAL_DIGITAL"] = (False, "", None, "alta")
     finais = [s for s in sinais_llm if not (s.codigo in decididos and decididos[s.codigo][0] is False)]
     presentes = {s.codigo for s in finais}
     for codigo, (presente, descricao, fonte, severidade) in decididos.items():
@@ -307,14 +315,32 @@ def _reconciliar_sinais(prep: Preparacao, sinais_llm: list[SinalAlerta], canal: 
     return finais, conta
 
 
-def _analise_de(numero: str, a: AnaliseLLM, modelo: str, houve_injecao: bool = True) -> Analise:
-    fortes = list(a.pontos_fortes_banco)
-    riscos = [r for r in a.riscos if houve_injecao or not re.search(r"instru[cç][ãa]o\s+embutida", r, re.IGNORECASE)]
-    for c in a.contradicoes:  # contradição da petição favorece o banco; inconsistência entre subsídios é risco
+_TAG_SUBSIDIO = {"contrato": r"\[contrato\]", "extrato": r"\[extrato\]", "comprovante_credito": r"\[comprovante\]",
+                 "dossie": r"\[dossi[êe]\]", "demonstrativo_divida": r"\[demonstrativo\]", "laudo_referenciado": r"\[laudo\]"}
+_DIZ_AUSENTE = re.compile(r"ausente|n[ãa]o\s+(foi\s+)?(apresentad|juntad|entregu|const)", re.IGNORECASE)
+
+
+def _cita_ausente(item: str, ausentes: list[str]) -> bool:
+    """Item de análise que atribui um fato a subsídio que o banco não entregou: o LLM inventou a fonte."""
+    tags = [_TAG_SUBSIDIO[t] for t in ausentes if t in _TAG_SUBSIDIO]
+    return any(re.search(tag, item, re.IGNORECASE) for tag in tags) and not _DIZ_AUSENTE.search(item)
+
+
+def _analise_de(numero: str, a: AnaliseLLM, modelo: str, houve_injecao: bool = True,
+                ausentes: list[str] | None = None) -> Analise:
+    ausentes = list(ausentes or [])
+    fortes = [p for p in a.pontos_fortes_banco if not _cita_ausente(p, ausentes)]
+    riscos = [r for r in a.riscos if (houve_injecao or not re.search(r"instru[cç][ãa]o\s+embutida", r, re.IGNORECASE))
+              and not _cita_ausente(r, ausentes)]
+    contradicoes = [c for c in a.contradicoes if not _cita_ausente(c, ausentes)]
+    descartados = len(a.pontos_fortes_banco) + len(a.riscos) + len(a.contradicoes) - len(fortes) - len(riscos) - len(contradicoes)
+    if descartados:
+        log.info("extractor %s: %d item(ns) de análise citavam subsídio ausente e saíram", numero, descartados)
+    for c in contradicoes:  # contradição da petição favorece o banco; inconsistência entre subsídios é risco
         (fortes if re.match(r"\s*peti[cç][ãa]o", c, re.IGNORECASE) else riscos).append(f"Contradição: {c}")
     texto_final = a.texto.strip()
-    if a.contradicoes:
-        texto_final += "\n\nContradições identificadas: " + " ".join(a.contradicoes)
+    if contradicoes:
+        texto_final += "\n\nContradições identificadas: " + " ".join(contradicoes)
     return Analise(numero=numero, origem=f"{ORIGEM}:{modelo}", pontos_fortes_banco=fortes,
                    pontos_fracos_banco=list(a.pontos_fracos_banco), tese_provavel_autor=a.tese_provavel_autor.strip(),
                    riscos=riscos, texto=texto_final)
@@ -326,7 +352,8 @@ def _payload(res: Resultado, prep: Preparacao) -> dict[str, Any]:
     return {
         "numero": res.numero, "chave": res.chave, "modelo": res.modelo, "versao_prompt": prompts.VERSAO_PROMPT,
         "hash_esquema": hash_esquema(), "gerado_em": _agora().isoformat(),
-        "tokens": {"entrada": res.tokens_entrada, "saida": res.tokens_saida},
+        "tokens": {"entrada": res.tokens_entrada, "saida": res.tokens_saida, "cache": res.tokens_cache,
+                   "raciocinio": res.tokens_raciocinio, "segundos": res.segundos},
         "documentos": [{"arquivo": d.arquivo, "pasta": d.pasta, "tipo": d.tipo, "paginas": d.paginas,
                         "chars": d.chars, "chars_brief": d.chars_brief, "leitor": d.leitor,
                         "sha256": dict(prep.hashes).get(f"{d.pasta}/{d.arquivo}")} for d in prep.docs],
@@ -340,15 +367,20 @@ def _payload(res: Resultado, prep: Preparacao) -> dict[str, Any]:
 
 
 def _do_cache(entrada: dict[str, Any], prep: Preparacao, chave: str) -> Resultado | None:
+    """Reaplica `mapear` (regras atuais) sobre a saída gravada do LLM: correção de regra vale sem nova chamada."""
     try:
-        dados = DadosExtraidos.model_validate(entrada["dados"])
-        analise = Analise.model_validate(entrada["analise"])
+        gerado_em = DadosExtraidos.model_validate(entrada["dados"]).gerado_em
         saida = SaidaLLM.model_validate(entrada["saida_llm"])
     except (KeyError, ValueError) as exc:
         log.warning("cache %s… incompatível (%s); recomputando", chave[:12], exc)
         return None
+    modelo = str(entrada.get("modelo") or "")
+    dados, analise = mapear(prep, saida, modelo)
+    dados = dados.model_copy(update={"gerado_em": gerado_em})
     tokens = entrada.get("tokens") or {}
     return Resultado(numero=prep.numero, dados=dados, analise=analise, saida_llm=saida, chave=chave,
-                     modelo=str(entrada.get("modelo") or ""), cache_hit=True,
+                     modelo=modelo, cache_hit=True,
                      tokens_entrada=int(tokens.get("entrada", 0)), tokens_saida=int(tokens.get("saida", 0)),
-                     brief=prep.brief, docs=prep.docs, achados=prep.achados)
+                     brief=prep.brief, docs=prep.docs, achados=prep.achados,
+                     tokens_cache=int(tokens.get("cache", 0)), tokens_raciocinio=int(tokens.get("raciocinio", 0)),
+                     segundos=float(tokens.get("segundos", 0.0)))
