@@ -185,6 +185,33 @@ def test_seed_demo_cria_so_processos_pendentes(app_pronto, gestor: TestClient):
     assert depois["total"] == antes["total"]
 
 
+def test_mock_painel_enche_o_painel_sem_tocar_na_banca(app_pronto, gestor: TestClient):
+    """A exceção de desenvolvimento à decisão 28 preserva o pool da banca e é coerente."""
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import Decisao, Escritorio, Processo
+    from app.services import mock_painel
+
+    antes = gestor.get("/api/dashboard/aderencia").json()["total"]
+    with SessionLocal() as db:
+        demo_id = db.scalar(select(Escritorio.id).where(Escritorio.nome == "Banca Demo"))
+        resumo = mock_painel.rodar(db, app_pronto.state.modelo, n=60)
+        assert resumo["decisoes"] == 60 and 0 < resumo["divergentes"] < 60
+        criadas = list(db.scalars(select(Decisao).order_by(Decisao.id.desc()).limit(60)))
+        assert all(d.justificativa for d in criadas if not d.aderente)
+        assert all(d.tipo_desvio != "nenhum" for d in criadas if not d.aderente)
+        assert all(d.tipo == "acordo" for d in criadas if d.resultado)
+        assert all(d.resultado_em > d.created_at for d in criadas if d.resultado)
+        reservados = db.scalars(select(Processo).where(Processo.escritorio_id == demo_id))
+        assert all(p.status == "pendente" for p in reservados)
+
+    depois = gestor.get("/api/dashboard/aderencia").json()
+    assert depois["total"] == antes + 60
+    assert len(depois["por_semana"]) > 1 and len(depois["por_escritorio"]) > 1
+    assert gestor.get("/api/dashboard/efetividade").json()["n_com_resultado"] >= 1
+
+
 def test_demo_reserva_casos_distintos(anon: TestClient, app_pronto):
     assert anon.get("/api/demo", params={"t": "errado"}, follow_redirects=False).status_code == 403
     c1 = TestClient(app_pronto)

@@ -95,6 +95,9 @@ ingest: ## lê data/exemplos/<numero>/ (autos e subsídios) para processos
 seed-demo: ## processos sintéticos (data/exemplos/sinteticos_processos.csv), todos pendentes
 	$(CLI) seed-demo
 
+mock-painel: ## SÓ DESENVOLVIMENTO: decisões sorteadas para ver o painel do gestor cheio
+	$(CLI) mock-painel
+
 reset-demo: ## apaga decisões, eventos e recomendações; mantém processos e políticas
 	$(CLI) reset-demo
 
@@ -164,4 +167,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker extrair bench-extractor exemplos-docs data train backtest compare-models scored analises sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair bench-extractor exemplos-docs data train backtest compare-models scored analises sinteticos engine-api demo deploy backup

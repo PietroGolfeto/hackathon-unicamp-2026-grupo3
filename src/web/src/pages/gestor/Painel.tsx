@@ -1,17 +1,18 @@
 import {
-  Alert, Anchor, Badge, Box, Button, Card, Collapse, Divider, Grid, Group, Paper, Progress, SimpleGrid,
+  Alert, Anchor, Badge, Box, Button, Card, Divider, Grid, Group, Paper, Progress, SimpleGrid,
   Skeleton, Stack, Table, Text, ThemeIcon, Title,
 } from "@mantine/core";
-import { BarChart, DonutChart, LineChart } from "@mantine/charts";
-import { useDisclosure } from "@mantine/hooks";
+import { AreaChart, BarChart, DonutChart } from "@mantine/charts";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { api, type Justificativa, type ParecerIA } from "../../api/client";
 import { StatusBadge, TipoBadge } from "../../components/Badges";
-import { IcoCheck, IcoSeta } from "../../components/Icones";
-import { brl, brlCompacto, dataHora, duracao, num, pct } from "../../lib/format";
+import { IcoBaixo, IcoCheck } from "../../components/Icones";
+import { useContagem } from "../../lib/animacao";
+import { brl, brlCompacto, dataHora, num, pct } from "../../lib/format";
 
 const POLL = 5000;
 
@@ -51,18 +52,11 @@ export default function Painel() {
         </Group>
       </Group>
 
-      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-        <RespostaAderencia total={a.total} percentual={a.pct_aderente} />
-        <RespostaEconomia potencial={potencial} />
-      </SimpleGrid>
+      <ResumoExecutivo a={a} potencial={potencial} />
 
       <Secao numero="01" titulo="A política está sendo seguida?" subtitulo="Aderência">
-        <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
-          <GraficoEscritorios linhas={a.por_escritorio} />
-          <GraficoTendencia aderencia={a.por_semana} efetividade={e.por_semana} />
-        </SimpleGrid>
+        <PainelAderencia a={a} />
         <FilaDesvios justificativas={a.justificativas} />
-        <DetalhesAderencia a={a} />
       </Secao>
 
       <Secao numero="02" titulo="A política está gerando resultado?" subtitulo="Efetividade">
@@ -75,49 +69,126 @@ export default function Painel() {
   );
 }
 
-function RespostaAderencia({ total, percentual }: { total: number; percentual: number | null }) {
-  const valor = percentual ?? 0;
+function ResumoExecutivo({ a, potencial }: {
+  a: Awaited<ReturnType<typeof api.aderencia>>;
+  potencial: ReturnTypePotencial;
+}) {
+  const economia = useContagem(potencial?.economia_vs_defender);
+  const economiaPct = useContagem(potencial?.economia_pct);
+  const acordos = useContagem(potencial?.pct_acordo);
+  const aderencia = useContagem(a.pct_aderente);
+
   return (
-    <Card p="xl" style={{ borderTop: "3px solid var(--enter-tinta)" }}>
-      <Text size="xs" fw={600} tt="uppercase" lts=".08em" c="dimmed">Aderência operacional</Text>
-      <Group justify="space-between" align="end" mt="lg" wrap="nowrap">
-        <div>
-          <Text className="serif numero" fz={{ base: 44, sm: 58 }} lh={0.9}>{percentual == null ? "—" : pct(percentual)}</Text>
-          <Text size="sm" c="dimmed" mt="sm">{num(total)} decisões registradas</Text>
-        </div>
-        <Badge color={valor >= 0.8 ? "verde" : "laranja"} variant="light" size="lg">
-          {percentual == null ? "sem dados" : valor >= 0.8 ? "saudável" : "atenção"}
+    <Grid gutter="md" className="escalonado">
+      <Grid.Col span={{ base: 12, lg: 7 }}>
+        <Card p={{ base: "lg", sm: 32 }} bg="tinta.6" c="white" h="100%" pos="relative" style={{ overflow: "hidden" }}>
+          <Box pos="absolute" w={240} h={240} right={-70} top={-110}
+            style={{ borderRadius: 999, background: "rgba(255,174,53,.13)" }} />
+          <Text size="xs" fw={600} tt="uppercase" lts=".1em" c="laranja.5">Impacto financeiro potencial</Text>
+          <Text className="serif numero" fz={{ base: 50, sm: 72 }} lh={0.95} mt="lg">
+            {potencial ? brlCompacto(economia) : "—"}
+          </Text>
+          <Group gap="sm" mt="md">
+            <Badge color="laranja" variant="filled" size="lg">{potencial ? `${pct(economiaPct)} de economia` : "backtest indisponível"}</Badge>
+            {potencial && <Text size="sm" c="rgba(255,255,255,.68)">em {num(potencial.n_casos)} decisões históricas</Text>}
+          </Group>
+          <Divider color="rgba(255,255,255,.13)" my="xl" />
+          <Group justify="space-between" gap="xl" align="end">
+            <div>
+              <Text size="xs" c="rgba(255,255,255,.55)">Custo com a política</Text>
+              <Text className="serif numero" fz="xl">{potencial ? brlCompacto(potencial.politica) : "—"}</Text>
+            </div>
+            <div>
+              <Text size="xs" c="rgba(255,255,255,.55)">Custo defendendo tudo</Text>
+              <Text className="serif numero" fz="xl" c="rgba(255,255,255,.72)">{potencial ? brlCompacto(potencial.defender_tudo) : "—"}</Text>
+            </div>
+          </Group>
+        </Card>
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, lg: 2.5 }}>
+        <Card p="xl" h="100%" style={{ borderTop: "3px solid var(--enter-laranja)" }}>
+          <Text size="xs" fw={600} tt="uppercase" lts=".08em" c="dimmed">Casos em acordo</Text>
+          <Text className="serif numero" fz={{ base: 44, sm: 52 }} lh={1} mt="xl">
+            {potencial ? pct(acordos) : "—"}
+          </Text>
+          <Text size="sm" c="dimmed" mt="sm">selecionados pela política econômica</Text>
+        </Card>
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, lg: 2.5 }}>
+        <Card p="xl" h="100%" style={{ borderTop: "3px solid var(--enter-tinta)" }}>
+          <Text size="xs" fw={600} tt="uppercase" lts=".08em" c="dimmed">Aderência agora</Text>
+          <Text className="serif numero" fz={{ base: 44, sm: 52 }} lh={1} mt="xl">
+            {a.pct_aderente == null ? "—" : pct(aderencia)}
+          </Text>
+          <Text size="sm" c="dimmed" mt="sm">{num(a.total)} decisões operacionais</Text>
+        </Card>
+      </Grid.Col>
+    </Grid>
+  );
+}
+
+function PainelAderencia({ a }: { a: Awaited<ReturnType<typeof api.aderencia>> }) {
+  const desvios = Math.max(0, a.total - a.aderentes);
+  const valor = a.pct_aderente ?? 0;
+  const saudavel = valor >= 0.8;
+  const tendencia = a.por_semana.map((s) => ({
+    semana: rotuloSemana(s.semana ?? ""),
+    aderencia: Math.round((s.pct_aderente ?? 0) * 100),
+  }));
+
+  return (
+    <Card>
+      <Group justify="space-between" align="start">
+        <CabecalhoCard titulo="Pulso operacional" detalhe="Aderência das decisões registradas no portal" />
+        <Badge color={saudavel ? "verde" : "laranja"} variant="light" size="lg">
+          {a.pct_aderente == null ? "sem dados" : saudavel ? "saudável" : "atenção"}
         </Badge>
       </Group>
-      <Progress value={valor * 100} color={valor >= 0.8 ? "verde" : "laranja"} mt="xl" size="sm" radius="xl" />
+      <Grid gutter="xl" mt="lg" align="center">
+        <Grid.Col span={{ base: 12, sm: 4 }}>
+          <Text className="serif numero" fz={{ base: 52, sm: 64 }} lh={1} c={saudavel ? "verde.7" : "laranja.7"}>
+            {a.pct_aderente == null ? "—" : pct(valor)}
+          </Text>
+          <Text size="sm" c="dimmed" mt={6}>aderência atual · {num(a.total)} decisões</Text>
+          <Group gap="xl" mt="xl">
+            <MiniKpi rotulo="Aderentes" valor={num(a.aderentes)} cor="verde.7" />
+            <MiniKpi rotulo="Desvios" valor={num(desvios)} cor="laranja.7" />
+          </Group>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, sm: 8 }}>
+          {tendencia.length > 1 ? (
+            <>
+              <Text size="xs" c="dimmed" mb="xs">Aderência por semana</Text>
+              <AreaChart
+                h={196} data={tendencia} dataKey="semana"
+                series={[{ name: "aderencia", label: "Aderência", color: saudavel ? "verde.6" : "laranja.6" }]}
+                valueFormatter={(v) => `${v}%`} yAxisProps={{ domain: [0, 100], width: 34 }}
+                curveType="monotone" withDots withGradient gridAxis="xy"
+              />
+            </>
+          ) : (
+            <Vazio texto="Ainda não há semanas suficientes para a tendência." />
+          )}
+        </Grid.Col>
+      </Grid>
     </Card>
   );
 }
 
-function RespostaEconomia({ potencial }: { potencial: ReturnTypePotencial }) {
+function MiniKpi({ rotulo, valor, cor }: { rotulo: string; valor: string; cor?: string }) {
   return (
-    <Card p="xl" bg="tinta.6" c="white">
-      <Text size="xs" fw={600} tt="uppercase" lts=".08em" c="rgba(255,255,255,.62)">Economia potencial</Text>
-      <Group justify="space-between" align="end" mt="lg" wrap="nowrap">
-        <div>
-          <Text className="serif numero" fz={{ base: 44, sm: 58 }} lh={0.9}>
-            {potencial ? pct(potencial.economia_pct) : "—"}
-          </Text>
-          <Text size="sm" c="rgba(255,255,255,.64)" mt="sm">
-            {potencial ? `${brlCompacto(potencial.economia_vs_defender)} vs defender tudo` : "backtest indisponível"}
-          </Text>
-        </div>
-        {potencial && <Badge color="laranja" variant="filled" size="lg">{num(potencial.n_casos)} casos</Badge>}
-      </Group>
-      <Text size="xs" c="rgba(255,255,255,.5)" mt="xl">
-        Simulação histórica com resultados judiciais reais e premissas declaradas.
-      </Text>
-    </Card>
+    <div>
+      <Text size="xs" c="dimmed">{rotulo}</Text>
+      <Text className="serif numero" fz={30} c={cor}>{valor}</Text>
+    </div>
   );
+}
+
+function rotuloSemana(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 }
 
 type ReturnTypePotencial = Awaited<ReturnType<typeof api.efetividade>>["backtest_potencial"];
-type LinhaGrupo = { [k: string]: unknown; total?: number; pct_aderente?: number; taxa_aceite?: number };
 
 function Secao({ numero, titulo, subtitulo, children }: {
   numero: string; titulo: string; subtitulo: string; children: React.ReactNode;
@@ -136,61 +207,33 @@ function Secao({ numero, titulo, subtitulo, children }: {
   );
 }
 
-function GraficoEscritorios({ linhas }: { linhas: LinhaGrupo[] }) {
-  const dados = linhas
-    .map((l) => ({ escritorio: String(l.escritorio), aderencia: Number(l.pct_aderente) * 100, decisoes: l.total }))
-    .sort((x, y) => x.aderencia - y.aderencia);
-  return (
-    <Card>
-      <CabecalhoCard titulo="Aderência por escritório" detalhe="Pior desempenho primeiro" />
-      {dados.length ? (
-        <BarChart h={230} data={dados} dataKey="escritorio" orientation="vertical"
-          series={[{ name: "aderencia", label: "Aderência", color: "laranja.6" }]}
-          valueFormatter={(v) => `${Number(v).toFixed(0)}%`} gridAxis="x" xAxisProps={{ domain: [0, 100] }} />
-      ) : <Vazio texto="As bancas aparecem depois da primeira decisão." />}
-    </Card>
-  );
-}
-
-function GraficoTendencia({ aderencia, efetividade }: { aderencia: LinhaGrupo[]; efetividade: LinhaGrupo[] }) {
-  const aceite = new Map(efetividade.map((l) => [String(l.semana), Number(l.taxa_aceite) * 100]));
-  const dados = aderencia.map((l) => ({
-    semana: String(l.semana).slice(5),
-    aderencia: Number(l.pct_aderente) * 100,
-    aceite: aceite.get(String(l.semana)),
-  }));
-  return (
-    <Card>
-      <CabecalhoCard titulo="Evolução semanal" detalhe="Aderência e aceite real" />
-      {dados.length ? (
-        <LineChart h={230} data={dados} dataKey="semana" curveType="monotone"
-          series={[
-            { name: "aderencia", label: "Aderência", color: "tinta.6" },
-            { name: "aceite", label: "Aceite", color: "laranja.6" },
-          ]}
-          valueFormatter={(v) => `${Number(v).toFixed(0)}%`} yAxisProps={{ domain: [0, 100] }} />
-      ) : <Vazio texto="A evolução aparece conforme as decisões são registradas." />}
-    </Card>
-  );
-}
-
 function FilaDesvios({ justificativas }: { justificativas: Justificativa[] }) {
+  const [expandido, setExpandido] = useState(false);
+  const LIMITE = 3;
   const qc = useQueryClient();
   const parecer = useMutation({
     mutationFn: (id: number) => api.gerarParecer(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["aderencia"] }),
     onError: (erro) => notifications.show({ message: (erro as Error).message, color: "vermelho" }),
   });
+  const visiveis = expandido ? justificativas : justificativas.slice(0, LIMITE);
+  const restantes = justificativas.length - LIMITE;
   return (
     <Card>
-      <CabecalhoCard titulo="Desvios que pedem atenção" detalhe="A decisão é objetiva; a IA ajuda a triar a justificativa" />
-      <Table.ScrollContainer minWidth={920}>
+      <Group justify="space-between" align="start">
+        <CabecalhoCard titulo="Monitoramento de aderência"
+          detalhe="Decisões que divergiram da recomendação · a decisão é objetiva; a IA ajuda a triar a justificativa" />
+        {justificativas.length > 0 && (
+          <Badge color="laranja" variant="light" size="lg">{num(justificativas.length)} desvio(s)</Badge>
+        )}
+      </Group>
+      <Table.ScrollContainer minWidth={920} mt="md">
         <Table verticalSpacing="sm" highlightOnHover>
           <Table.Thead><Table.Tr>
             <Th>Processo</Th><Th>Advogado</Th><Th>Recomendado</Th><Th>Decidiu</Th><Th>Justificativa</Th><Th>Análise assistida</Th><Th>Situação</Th>
           </Table.Tr></Table.Thead>
           <Table.Tbody>
-            {justificativas.slice(0, 10).map((j) => (
+            {visiveis.map((j) => (
               <Table.Tr key={j.decisao_id}>
                 <Table.Td>
                   <Anchor component={Link} to={`/casos/${j.processo_id}`} c="tinta.6" fw={600} size="sm" className="numero">{j.numero}</Anchor>
@@ -213,6 +256,14 @@ function FilaDesvios({ justificativas }: { justificativas: Justificativa[] }) {
           </Table.Tbody>
         </Table>
       </Table.ScrollContainer>
+      {restantes > 0 && (
+        <Group justify="center" mt="sm">
+          <Button variant="subtle" color="tinta" size="compact-sm" onClick={() => setExpandido((v) => !v)}
+            rightSection={<IcoBaixo size={14} style={{ transform: expandido ? "rotate(180deg)" : undefined, transition: "transform .2s" }} />}>
+            {expandido ? "Mostrar menos" : `Ver mais ${restantes} desvio${restantes > 1 ? "s" : ""}`}
+          </Button>
+        </Group>
+      )}
     </Card>
   );
 }
@@ -231,28 +282,6 @@ function Parecer({ parecer }: { parecer: ParecerIA }) {
 
 function Decisao({ tipo, valor }: { tipo: string; valor: number | null }) {
   return <Stack gap={2}><TipoBadge tipo={tipo} size="xs" />{valor != null && <Text size="xs" className="numero">{brl(valor)}</Text>}</Stack>;
-}
-
-function DetalhesAderencia({ a }: { a: Awaited<ReturnType<typeof api.aderencia>> }) {
-  const [aberto, { toggle }] = useDisclosure(false);
-  return (
-    <Paper withBorder p="md">
-      <Group justify="space-between">
-        <Text size="sm" fw={500}>Detalhes operacionais</Text>
-        <Button variant="subtle" color="tinta" size="compact-sm" onClick={toggle} rightSection={<IcoSeta size={14} />}>
-          {aberto ? "Ocultar" : "Ver detalhes"}
-        </Button>
-      </Group>
-      <Collapse in={aberto}>
-        <SimpleGrid cols={{ base: 2, sm: 4 }} mt="md">
-          <Mini rotulo="Desvio de tipo" valor={pct(a.pct_desvio_tipo)} />
-          <Mini rotulo="Desvio de valor" valor={pct(a.pct_desvio_valor)} />
-          <Mini rotulo="Tempo médio" valor={duracao(a.tempo_medio_s)} />
-          <Mini rotulo="Sem ver recomendação" valor={pct(a.pct_sem_ver_recomendacao)} />
-        </SimpleGrid>
-      </Collapse>
-    </Paper>
-  );
 }
 
 function Potencial({ potencial }: { potencial: ReturnTypePotencial }) {
