@@ -6,7 +6,7 @@ import { RequireAuth, homeDe, useSession } from "./auth/useSession";
 import { Layout } from "./components/Layout";
 
 const Caso = lazy(() => import("./pages/advogado/Caso"));
-const Casos = lazy(() => import("./pages/advogado/Casos"));
+const Casos = lazy(() => import("./pages/advogado/casos/Casos.page"));
 const Aprovacoes = lazy(() => import("./pages/gestor/Aprovacoes"));
 const Painel = lazy(() => import("./pages/gestor/Painel"));
 const Politica = lazy(() => import("./pages/gestor/Politica"));
