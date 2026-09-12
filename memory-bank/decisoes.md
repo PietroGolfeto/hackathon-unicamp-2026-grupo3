@@ -24,3 +24,4 @@ Formato: número, decisão, por quê. Decisão revertida: edite a linha dizendo 
 20. **Pacote Python compartilhado chama-se `core` e mora em `src/core/core/`.** Projeto pip em `src/core`, import `from core import ...`.
 21. **Dependências da API:** fastapi, uvicorn, sqlalchemy 2, psycopg 3, pandas, pydantic-settings, itsdangerous (cookie assinado), bcrypt (sem passlib, que quebrou com bcrypt ≥ 4.1), pypdf (texto dos PDFs no stub). Testes com httpx.
 22. **`data/exemplos/sinteticos.csv` é gerado por nós e versionado; as pastas `data/exemplos/<numero>/` dos processos reais são ignoradas.** Clone limpo tem 340 processos e 300 decisões simuladas sem nenhum dado da Enter.
+23. **Front sem eslint: `npm run lint` é `tsc --noEmit` estrito.** Menos configuração para três pessoas; o build já falha em erro de tipo. `react-router` v7 (pacote único), Mantine 8, TanStack Query 5.

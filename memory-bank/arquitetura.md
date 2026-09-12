@@ -7,7 +7,8 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 ✅ CI de PR e hooks locais: `.github/workflows/ci.yml`, `scripts/`, `Makefile` (`make hooks`, `make check`)
 ✅ `src/core`: pacote `core` com parsing dos CSVs, UF por CNJ, contratos P1/P3 e política em numpy, 32 testes
 ✅ `src/api`: FastAPI completa (auth, processos, recomendação, decisão, resultado, eventos, políticas, dashboards, aprovações, demo, arquivos) + CLI de jobs; 20 testes contra Postgres
-⬜ `src/web`, `src/model`, `src/extractor`, `infra/`: ainda não existem
+🔧 `src/web`: Vite + React 19 + Mantine 8 + TanStack Query + react-router 7; login, sessão por cookie e layout prontos; páginas em andamento
+⬜ `src/model`, `src/extractor`, `infra/`: ainda não existem
 
 ## Visão geral
 ```
@@ -26,7 +27,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 |---|---|---|---|
 | core | `src/core` | ✅ | parsing (`colunas.py`, `cnj.py`), contratos (`caso.py`, `modelo.py`, `docs.py`), política e backtest vetorizados (`politica.py`). Só pydantic e numpy |
 | api | `src/api` | ✅ | FastAPI (`app/`): `main.py` com lifespan (create_all → seed → cache do histórico → plugins); `routers/{auth,processos,files,politicas,dashboard,aprovacoes,demo}.py`; `services/{seed,historico,backtest,recomendacao,metricas,ingest,seed_demo}.py`; `cli.py` |
-| web | `src/web` | ⬜ | SPA React + Vite + TS + Mantine: login, casos, caso, painel, política, aprovações |
+| web | `src/web` | 🔧 | SPA (`src/`): `api/client.ts` (tipos = schemas da API), `auth/useSession.ts`, `lib/format.ts` (BRL, %, datas), `components/{Layout,Badges,Stat}.tsx`, `pages/Login.tsx`; `pages/advogado`, `pages/gestor` em andamento. Dev: proxy `/api` → :8000 |
 | model | `src/model` | ⬜ | P1: treino XGBoost, `RealScorer`, export do histórico com scores OOF |
 | extractor | `src/extractor` | ⬜ | P3: extração LLM dos PDFs, sinais de alerta, análise e minutas em linguagem jurídica |
 | infra | `infra/` | ⬜ | compose (db, api, caddy), Caddyfile, Dockerfiles, compose local sem TLS |
