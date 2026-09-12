@@ -16,10 +16,10 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Decisão com aderência, justificativa e aprovação | 4 | Lucas | ✅ | `POST /processos/{id}/decisoes`; regras em `services/recomendacao.avaliar_decisao`; devolve minutas e contato adverso |
 | Resultado da negociação | 5 | Lucas | ✅ | `POST /decisoes/{id}/resultado` (colunas em `decisoes`) |
 | Eventos de auditoria | 4 | Lucas | ✅ | `POST /eventos` + eventos automáticos abriu_caso, viu_recomendacao, abriu_documento |
-| Dashboard de aderência (números) | 4 | Lucas | ⬜ | `services/metricas.py` |
-| Dashboard de efetividade (números) | 5 | Lucas | ⬜ | `services/metricas.py` |
+| Dashboard de aderência (números) | 4 | Lucas | ✅ | `GET /dashboard/aderencia` → `services/metricas.py` (por escritório, advogado, semana, justificativas, % sem ver recomendação) |
+| Dashboard de efetividade (números) | 5 | Lucas | ✅ | `GET /dashboard/efetividade` (aceite real vs hipótese, desconto, economia realizada, backtest da política ativa, ModeloInfo) |
 | Políticas: simular, publicar, versões | 1, 5 | Lucas | ✅ | `routers/politicas.py`, `services/backtest.py`; `ativar` grava `resumo_backtest`; `/api/internal/reload-historico` |
-| Link mágico `/demo` para a banca | 3 | Lucas | ⬜ | `routers/demo.py` |
+| Link mágico `/demo` para a banca | 3 | Lucas | ✅ | `GET /api/demo?t=` reserva caso livre da Banca Demo por 15 min, rate limit 20/min |
 | Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | ⬜ | `src/web/src/pages` |
 | Compose, Caddy, deploy VPS, standby homelab, backup | — | Lucas | ⬜ | `infra/`, `Makefile` |
 | Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 exporta o modelo | ⬜ | `src/model/artifacts/`, `data/exemplos/sinteticos.csv`, seed |
