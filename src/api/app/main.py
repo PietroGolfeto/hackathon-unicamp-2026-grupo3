@@ -42,11 +42,12 @@ api = APIRouter(prefix="/api")
 @api.get("/health")
 def health(request: Request) -> dict[str, object]:
     hist = request.app.state.historico
+    extrator = request.app.state.extrator
     return {
         "ok": True,
         "historico_linhas": 0 if hist is None else len(hist),
         "modelo": request.app.state.modelo.info().versao,
-        "extrator": type(request.app.state.extrator).__name__,
+        "extrator": None if extrator is None else type(extrator).__name__,
     }
 
 

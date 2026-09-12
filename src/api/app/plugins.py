@@ -1,8 +1,9 @@
-"""Escolhe a implementação real (P1/P3) por env e cai no stub se o import falhar.
+"""Escolhe a implementação real (P1/P3) por env.
 
-MODEL_IMPL=model.predict:Modelo · EXTRACTOR_IMPL=extractor.pipeline:Extrator
-A classe precisa ser instanciável sem argumentos. Falha vira log alto, não erro: a API sobe
-com stub e a UI mostra o badge "stub" pelo campo `origem`.
+MODEL_IMPL=app.modelo_enteros:ModeloEnteros · EXTRACTOR_IMPL=extractor.pipeline:Extrator
+A classe precisa ser instanciável sem argumentos. Falha vira log alto, não erro: o modelo cai no
+StubModelo (a UI mostra o badge "stub" pelo campo `origem`); a extração fica desligada (None) e o
+portal mostra só o que é determinístico: flags dos subsídios, scores e recomendação (decisão 27).
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from core.docs import ExtratorDocs
 from core.modelo import ModeloScores
 
 from app.config import settings
-from app.stubs import StubExtrator, StubModelo
+from app.stubs import StubModelo
 
 log = logging.getLogger(__name__)
 
@@ -38,16 +39,18 @@ def carregar_modelo(historico: pd.DataFrame | None) -> ModeloScores:
         return StubModelo(historico)
 
 
-def carregar_extrator() -> ExtratorDocs:
+def carregar_extrator() -> ExtratorDocs | None:
+    """Extrator de P3 ou None. Sem P3 não há extração: nada é inferido dos documentos."""
     try:
         extrator = _instanciar(settings.extractor_impl)
         log.info("extrator real carregado: %s", settings.extractor_impl)
         return extrator
     except Exception as exc:  # noqa: BLE001
         log.warning(
-            "EXTRACTOR_IMPL=%s indisponível (%s); usando StubExtrator", settings.extractor_impl, exc
+            "EXTRACTOR_IMPL=%s indisponível (%s); sem extração de documentos",
+            settings.extractor_impl, exc,
         )
-        return StubExtrator()
+        return None
 
 
 def recarregar(app: Any) -> None:

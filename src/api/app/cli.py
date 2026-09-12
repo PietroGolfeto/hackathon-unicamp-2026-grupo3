@@ -36,14 +36,13 @@ def cmd_load_historico() -> None:
     avisar_api()
 
 
-def _plugins():
-    hist = historico.carregar_cache(engine)
-    return plugins.carregar_modelo(hist), plugins.carregar_extrator()
+def _modelo():
+    return plugins.carregar_modelo(historico.carregar_cache(engine))
 
 
 def cmd_ingest(escritorio: str) -> None:
     Base.metadata.create_all(engine)
-    modelo, extrator = _plugins()
+    modelo, extrator = _modelo(), plugins.carregar_extrator()
     with SessionLocal() as db:
         seed.rodar(db)
         esc = db.scalar(select(Escritorio).where(Escritorio.nome == escritorio))
@@ -58,10 +57,10 @@ def cmd_seed_demo(csv: Path | None) -> None:
     caminho = csv or settings.exemplos_dir / "sinteticos_processos.csv"
     if not caminho.exists():
         sys.exit(f"{caminho} não encontrado")
-    modelo, extrator = _plugins()
+    modelo = _modelo()
     with SessionLocal() as db:
         seed.rodar(db)
-        resumo = seed_demo.rodar(db, caminho, modelo, extrator)
+        resumo = seed_demo.rodar(db, caminho, modelo)
     print(f"seed-demo: {resumo}")
 
 

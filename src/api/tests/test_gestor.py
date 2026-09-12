@@ -119,9 +119,9 @@ def test_seed_demo_idempotente(app_pronto, gestor: TestClient):
 
     SINTETICOS = Path(__file__).resolve().parents[3] / "data" / "exemplos" / "sinteticos_processos.csv"
     with SessionLocal() as db:
-        r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, app_pronto.state.extrator)
+        r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo)
         assert r1["processos_criados"] >= 300 and 220 <= r1["decisoes_criadas"] <= 280
-        r2 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, app_pronto.state.extrator)
+        r2 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo)
         assert r2 == {"processos_criados": 0, "decisoes_criadas": 0}
         n = db.scalar(select(func.count()).select_from(Decisao))
     a = gestor.get("/api/dashboard/aderencia").json()

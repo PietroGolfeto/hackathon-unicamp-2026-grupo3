@@ -104,7 +104,7 @@ banda         = oferta·(1 ± margem_banda_pct)
 Backtest usa **resultados reais**: `custo_defesa_real = custas + hon·causa + condenação·(1 + sucumb) se perdeu`. Baselines "defender tudo" e "acordar tudo" lado a lado.
 
 ## Seleção de implementação
-Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. A classe precisa ser instanciável **sem argumentos** (carrega seus artefatos sozinha). Import ou construção falha → stub, log alto, campo `origem` mostra "stub" na UI. `app/plugins.py` faz isso no start e em `POST /api/internal/reload-historico`.
+Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. A classe precisa ser instanciável **sem argumentos** (carrega seus artefatos sozinha). Import ou construção falha, log alto: o modelo cai em `StubModelo` (campo `origem` mostra "stub" na UI); o extrator vira `None` e nada é extraído, analisado ou redigido (decisão 27). `app/plugins.py` faz isso no start e em `POST /api/internal/reload-historico`.
 
 ## O que P1 entregou na fase 1 (`src/enteros`, pacote `enteros`)
 Contratos próprios em `enteros/schemas.py`: `CaseFeatures` (uf, sub_assunto, valor_causa, `docs` com status `presente|ausente|inconsistente`, opcionais da IA documental) → `Recomendacao` (decisão `defesa|acordo|instruir`, faixa, `p_perda` e intervalo, condenação p20/p50/p80, `ev_defesa`, `ev_acordo`, escada abertura/alvo/teto, decomposição, VOI, motivos, regras, contribuições). Parâmetros em `enteros/policy/policy.yaml`.

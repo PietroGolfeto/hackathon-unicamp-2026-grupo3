@@ -20,7 +20,7 @@ gestor do banco ────────────┤─ HTTPS ─ Caddy ─�
                             │                  └─ /*      ─ SPA React (estático)
 P1 engine (src/enteros) ─ modelos em models/*.json + policy.yaml ─▶ adapter app/modelo_enteros.py ─▶ scores por processo e dos 60k ─▶ API
                          └─ make backtest ─▶ docs/backtest/ (números do deck)
-P3 extração  ─ dados dos PDFs, sinais, análise, minutas ─▶ job ingest ─────────────────▶ Postgres
+P3 extração (⬜) ─ dados dos PDFs, sinais, análise, minutas ─▶ job ingest ─▶ Postgres · sem P3: só flags por nome de arquivo e UF pelo CNJ
 ```
 
 ## Duas políticas na fase 1, uma base
@@ -55,9 +55,9 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 
 ## Fluxos
 0. **Engine**: `make data` (xlsx em `data/raw/` ou `sinteticos.csv`) → `make train` grava `models/*.json` → `make backtest` grava `docs/backtest/resumo.{json,md}`, gráficos e o bloco marcado do README.
-1. **Carga**: `load-historico` lê os 2 CSVs → merge → scores OOF de P1 (ou stub) → `historico_sentencas`. `ingest` lê `data/exemplos/<numero>/` → extração de P3 (ou stub) → scores de P1 (ou stub) → `processos`. Idempotente; nunca toca `decisoes`.
+1. **Carga**: `load-historico` lê os 2 CSVs → merge → scores OOF de P1 (ou stub) → `historico_sentencas`. `ingest` lê `data/exemplos/<numero>/` → flags pelos nomes dos PDFs + UF pelo CNJ → extração de P3 se plugada (sem P3, `dados_extraidos` e `analise` ficam nulos) → scores de P1 (ou stub) → `processos`. Idempotente; nunca toca `decisoes`.
 2. **Advogado abre caso**: `GET /processos/{id}/recomendacao` → get_or_create sob a política ativa → grava evento.
-3. **Decisão**: `POST /processos/{id}/decisoes` → calcula `aderente`; divergência exige justificativa; valor fora da banda ou causa alta vira `pendente_aprovacao`; devolve minutas e contato adverso quando acordo. Depois `POST /decisoes/{id}/resultado`.
+3. **Decisão**: `POST /processos/{id}/decisoes` → calcula `aderente`; divergência exige justificativa; valor fora da banda ou causa alta vira `pendente_aprovacao`; devolve minutas e contato adverso quando acordo e P3 está plugado (sem P3, nulos). Depois `POST /decisoes/{id}/resultado`.
 4. **Gestor**: `POST /politicas/simular` roda a política sobre o histórico com resultados reais; `ativar` grava o resumo; painel lê agregados de `decisoes`/`eventos` e o resumo da política ativa.
 5. **Banca**: `GET /api/demo?t=<token>` loga um advogado do escritório "Banca Demo", reserva um caso livre por 15 min (`FOR UPDATE SKIP LOCKED`) e redireciona para `/casos/{id}`; sem caso livre, vai para `/casos`.
 6. **Aprovação**: `GET /aprovacoes` lista `pendente_aprovacao`; `POST /aprovacoes/{id}` aprova ou rejeita com comentário.

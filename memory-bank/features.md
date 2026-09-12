@@ -7,13 +7,13 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Regras de colaboração e memory-bank | — | Lucas | ✅ | `CLAUDE.md`, `memory-bank/` |
 | CI de PR: commits, memory-bank, segredos, testes por componente | — | Lucas | ✅ | `.github/workflows/ci.yml` (core: pytest; api e engine: `uv sync --frozen` + ruff + pytest, api com Postgres de serviço; web: tsc + build; compose: config); testes da API criam `enter_test` se faltar |
 | Parsing dos CSVs da Enter e UF por número CNJ | — | Lucas | ✅ | `src/core/core/colunas.py`, `src/core/core/cnj.py` |
-| Contratos P1/P3 e stubs | — | Lucas | ✅ | contratos em `src/core/core/{caso,modelo,docs}.py`; `StubModelo` (lookup no histórico) e `StubExtrator` (regex nos autos) em `src/api/app/stubs.py`; seleção por env em `plugins.py` |
+| Contratos P1/P3 e stub do modelo | — | Lucas | ✅ | contratos em `src/core/core/{caso,modelo,docs}.py`; `StubModelo` (lookup no histórico) em `src/api/app/stubs.py`; seleção por env em `plugins.py`; sem P3 não há stub de extração: `carregar_extrator` devolve None e o portal mostra só flags, scores e recomendação (decisão 27) |
 | Política de custo esperado e backtest | 1, 2, 5 | Lucas; P1 calibra | ✅ | núcleo em `src/core/core/politica.py` (11 testes); backtest com resultados reais em `src/api/app/services/backtest.py` (~15 ms nos 60k) |
 | Auth por cookie, papéis advogado/gestor | 3 | Lucas | ✅ | `src/api/app/auth.py`, `routers/auth.py`; seed com 8 usuários (`senha123`) em `services/seed.py` |
-| Jobs: seed, load-historico, ingest, seed-demo, reset-demo, reset | — | Lucas | ✅ | `python -m app.cli`; `seed-demo` lê `data/exemplos/sinteticos_processos.csv` (340 processos; ~255 decisões simuladas em 8 semanas; 15% ficam pendentes como fila do advogado) |
+| Jobs: seed, load-historico, ingest, seed-demo, reset-demo, reset | — | Lucas | ✅ | `python -m app.cli`; `seed-demo` lê `data/exemplos/sinteticos_processos.csv` (340 processos só com UF, sub-assunto, valor da causa, flags e escritório; ~255 decisões simuladas em 8 semanas; 15% ficam pendentes como fila do advogado) |
 | Lista e detalhe de processos, arquivos | 3 | Lucas | ✅ | `routers/processos.py`, `routers/files.py`; `pages/advogado/{Casos,Caso}.tsx` (PDFs em nova aba, abertos ficam marcados) |
 | Recomendação gravada sob a política ativa | 1, 2, 4 | Lucas | ✅ | `GET /processos/{id}/recomendacao` → `services/recomendacao.py` (get_or_create com ON CONFLICT) |
-| Decisão com aderência, justificativa e aprovação | 4 | Lucas | ✅ | `POST /processos/{id}/decisoes`; regras em `services/recomendacao.avaliar_decisao`; devolve minutas e contato adverso |
+| Decisão com aderência, justificativa e aprovação | 4 | Lucas | ✅ | `POST /processos/{id}/decisoes`; regras em `services/recomendacao.avaliar_decisao`; minutas e contato adverso só com P3 plugado |
 | Resultado da negociação | 5 | Lucas | ✅ | `POST /decisoes/{id}/resultado` (colunas em `decisoes`) |
 | Eventos de auditoria | 4 | Lucas | ✅ | `POST /eventos` + eventos automáticos abriu_caso, viu_recomendacao, abriu_documento |
 | Dashboard de aderência (números) | 4 | Lucas | ✅ | `GET /dashboard/aderencia` → `services/metricas.py` (por escritório, advogado, semana, justificativas, % sem ver recomendação) |
