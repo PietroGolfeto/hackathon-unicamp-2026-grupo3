@@ -5,7 +5,7 @@ import { Navigate, Outlet, Route, Routes } from "react-router";
 import { RequireAuth, homeDe, useSession } from "./auth/useSession";
 import { Layout } from "./components/Layout";
 
-const Caso = lazy(() => import("./pages/advogado/Caso"));
+const Caso = lazy(() => import("./pages/advogado/caso/Caso.page"));
 const Casos = lazy(() => import("./pages/advogado/casos/Casos.page"));
 const Aprovacoes = lazy(() => import("./pages/gestor/Aprovacoes"));
 const Painel = lazy(() => import("./pages/gestor/Painel"));
