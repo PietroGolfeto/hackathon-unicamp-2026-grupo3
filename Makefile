@@ -36,14 +36,15 @@ check-memory-bank: ## exige memory-bank atualizado nos commits de código em BAS
 check-secrets: ## bloqueia segredos e dados versionados
 	scripts/check_secrets.sh
 
-lint: ## ruff em core e api; tsc no web
-	$(PY) -m ruff check src/core src/api
+lint: ## ruff em core, api e extractor; tsc no web
+	$(PY) -m ruff check src/core src/api src/extractor
 	@if [ -f src/web/package.json ]; then echo "→ web (tsc)"; cd src/web && npm run lint --if-present; fi
 
 test: ## testes de todos os componentes (core, api com Postgres, engine, web build)
 	@if [ -f src/core/pyproject.toml ]; then echo "→ core"; $(PY) -m pytest -q src/core; fi
 	@if [ -f src/api/pyproject.toml ]; then echo "→ api"; DATABASE_URL=$(TEST_DATABASE_URL) $(PY) -m pytest -q src/api; fi
 	@if [ -d tests ]; then echo "→ engine"; $(PY) -m pytest -q tests; fi
+	@if [ -f src/extractor/pyproject.toml ]; then echo "→ extractor"; $(PY) -m pytest -q src/extractor; fi
 	@if [ -f src/web/package.json ]; then echo "→ web"; cd src/web && npm run build; fi
 	@echo "✓ testes ok"
 
@@ -59,6 +60,7 @@ install: ## .venv com uv (core, api e engine no mesmo workspace) e npm install d
 setup: install ## alias de install
 
 up: ## sobe db, api e caddy em http://localhost:8080 (sem TLS)
+	@mkdir -p data/cache
 	$(COMPOSE_LOCAL) up -d --build
 
 up-prod: ## sobe com TLS automático no DOMAIN do .env (VPS)
@@ -102,6 +104,20 @@ reset: ## recria o banco LOCAL e roda seed, histórico, ingest e seed-demo. Nunc
 jobs-docker: ## mesmo que `make reset` mas dentro do container api (após make up)
 	$(COMPOSE_LOCAL) exec api python -m app.cli reset
 
+# ---------------------------------------------------------------- extração dos PDFs (src/extractor, P3)
+
+extrair: ## roda o extractor numa pasta de processo: make extrair PASTA=data/exemplos/<numero> [ARGS="--sem-llm --brief"]
+	@test -n "$(PASTA)" || (echo "uso: make extrair PASTA=<pasta do processo> [ARGS=...]"; exit 1)
+	$(PY) -m extractor $(PASTA) $(ARGS)
+
+exemplos-docs: ## copia docs/Caso_*/ (PDFs da Enter, não versionados) para data/exemplos/<numero>/{autos,subsidios}
+	@for d in docs/Caso_*/; do \
+	  n=$$(basename "$$d" | sed -E 's/^Caso_[0-9]+_//; s/([0-9]{7})-([0-9]{2})-([0-9]{4})-([0-9])-([0-9]{2})-([0-9]{4})/\1-\2.\3.\4.\5.\6/'); \
+	  mkdir -p "data/exemplos/$$n/autos" "data/exemplos/$$n/subsidios"; \
+	  for f in "$$d"*.pdf; do case "$$(basename "$$f")" in *Autos*|*autos*|*Peticao*|*peticao*) cp "$$f" "data/exemplos/$$n/autos/";; *) cp "$$f" "data/exemplos/$$n/subsidios/";; esac; done; \
+	  echo "→ data/exemplos/$$n"; ls "data/exemplos/$$n"/*; \
+	done
+
 # ---------------------------------------------------------------- engine de política e backtest (src/enteros, P1)
 
 data: ## carrega a base (xlsx em $(RAW) ou data/exemplos/sinteticos.csv) e salva cache parquet
@@ -134,4 +150,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker data train backtest sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker extrair exemplos-docs data train backtest sinteticos engine-api demo deploy backup
