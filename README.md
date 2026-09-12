@@ -11,7 +11,8 @@ Este README consolida **todas as decisões** do grupo e o que aprendemos com os 
 UFMG. Documentos de apoio: [`docs/politica.md`](docs/politica.md) (política em linguagem jurídica),
 [`docs/premissas.md`](docs/premissas.md) (cada número: observado × premissa), [`docs/backtest/resumo.md`](docs/backtest/resumo.md)
 (números gerados por script), [`docs/modelo/comparacao.md`](docs/modelo/comparacao.md) (comparação de modelos pelo
-custo de decisão), [`SETUP.md`](SETUP.md) (como rodar).
+custo de decisão), [`docs/analises/resumo.md`](docs/analises/resumo.md) (análises e figuras para a demo),
+[`SETUP.md`](SETUP.md) (como rodar).
 
 ---
 
@@ -42,6 +43,29 @@ custo de decisão), [`SETUP.md`](SETUP.md) (como rodar).
   sentença — por isso o experimento de bandas de oferta em produção.
 - **Bayesian Optimization**: não — nem para prever (60 mil rótulos e verossimilhança fechada) nem para os knobs (o
   backtest custa milissegundos; grid basta).
+
+---
+
+## Para os slides — parte do modelo (5 minutos, 6 slides)
+
+Público: advogados e gestores do banco. Cada slide tem **um número, uma figura e uma frase** que o jurado repete
+depois. Vocabulário: "chance de perder", "custo total de litigar", "ponto de indiferença", "vale esperar o documento".
+Sem AUC, Laplace, EVSI ou nome de algoritmo no slide — isso fica para as perguntas (seção 2b).
+
+| # | Slide | A frase | Figura / tabela | O que falar (30–50 s) |
+|---|---|---|---|---|
+| 1 | **O problema em dinheiro** | "Defender tudo custa R$ 5,7 mil por processo — R$ 28 milhões por mês. 24% dos casos concentram 59% do custo." | [`docs/backtest/faixas.png`](docs/backtest/faixas.png) | Hoje o advogado decide caso a caso sem ver o custo total: condenação + honorários + custas + correção + escritório. Poucos casos concentram o dinheiro; a política existe para achar esses casos antes da contestação. |
+| 2 | **O que o juiz olha** | "Com contrato o banco perde 13% das vezes; sem, 75%. Dossiê e laudo não mudam nada." | tabela "Evidência × perda" de [`docs/politica.md`](docs/politica.md) ou o painel esquerdo de [`docs/backtest/subsidios.png`](docs/backtest/subsidios.png) | Prova de anuência e de proveito econômico é o que o Judiciário exige. O banco paga perícia que o juiz ignora — primeiro insight para o gestor: o back-office que localiza contrato e extrato é a alavanca, não o laudo. |
+| 3 | **A regra e o ponto de indiferença** | "Só defender quando litigar custa menos do que acordar. Para cada caso dizemos a chance de perder a partir da qual o acordo compensa — e há uma terceira resposta: pedir o documento antes." | [`docs/analises/quem_acorda.png`](docs/analises/quem_acorda.png) | Três respostas, não duas: defender (64% dos casos), acordar já (3%) e pedir contrato/extrato ao banco antes de acordar (34%: em 5 dias, um par de documentos vira o caso). O ponto de indiferença sai do custo total, não é um número redondo. Caso 02: só com as flags, pedir os documentos; com o crédito em conta de terceiro, acordar já. |
+| 4 | **Quanto vale** | "R$ 106 milhões a menos nos 60 mil casos (−31%), com a mesma régua de custos para todas as regras — 70% do que um oráculo capturaria." | [`docs/backtest/baselines.png`](docs/backtest/baselines.png) | O que aconteceu, acordar tudo, as heurísticas de documento, a regra de limiar fixo e a nossa, todas com os mesmos custos. Uma frase de honestidade: o lado defesa é fato, o lado acordo é hipótese de aceite — a economia vai de 17% a 31% conforme o aceite, e a banda estatística é ±0,4 p.p. |
+| 5 | **Onde age e quanto oferecer** | "Em AP e AM, 60% dos casos vão a acordo e o custo cai 43%; no MA, 26% e 22%. Quando perde, o banco paga de 60% a 84% do pedido, conforme o estado." | [`docs/analises/mapa_uf.png`](docs/analises/mapa_uf.png) (apoio: [`severidade_uf.png`](docs/analises/severidade_uf.png)) + a escada do Caso 02 | A oferta não é um número solto: cancelamento + baixa do saldo + devolução das parcelas + indenização, com abertura, alvo e teto (Caso 02: R$ 9 mil · R$ 11.250 · R$ 17,5 mil). O teto nunca passa de 90% do custo de litigar; contraproposta acima do teto, defende. |
+| 6 | **Como a política aprende** (ponte para aderência e efetividade) | "A única coisa que a base não diz é quanto o autor aceita. Em ~300 acordos registrados no portal a curva já está aprendida." | [`docs/analises/aprendizado_aceite.png`](docs/analises/aprendizado_aceite.png) (para o gestor: [`fronteira_politica.png`](docs/analises/fronteira_politica.png)) | Cada acordo registrado informa a curva de aceite; 15% dos casos testam bandas de oferta. Se o autor aceitar menos do que assumimos, a política ainda economiza e o gestor pode escolher uma oferta mais robusta na fronteira. Daqui a apresentação passa para aderência e efetividade. |
+
+O que mais pesa para essa banca: (1) a régua única de custos com o número de dinheiro e o teto teórico ao lado;
+(2) a terceira resposta "pedir o documento" e o fato de que dossiê e laudo não movem nada — isso muda a operação do
+banco, não só a do advogado; (3) a honestidade sobre o que é fato e o que é hipótese. Para perguntas: por que uma
+regressão simples (todas as alternativas empatam), como validamos (out-of-fold; a decisão de acordar não é validável
+por dado histórico) e a conta do ponto de indiferença — tudo na seção 2b.
 
 ---
 
@@ -371,6 +395,28 @@ defesa nunca é adiada: o engine lista os documentos que a fortalecem para pedir
 | A11 | Scores OOF para o portal (`make scored` → `data/derived/historico_scored.csv`, não versionado) | Backtest do gestor com probabilidade honesta |
 | A12 | Extinção = êxito (mantida); acordos históricos fora do treino, dentro do backtest como custo real | Extinção é ⅓ constante dos êxitos; acordos não são sentenças |
 
+### Análises para a demo (`make analises`, [`docs/analises/resumo.md`](docs/analises/resumo.md))
+
+Só leitura dos modelos e da base — nada muda no engine que o portal consome.
+
+- **Severidade por UF** ([`severidade_uf.png`](docs/analises/severidade_uf.png), [`severidade_distribuicao.png`](docs/analises/severidade_distribuicao.png)):
+  condenação ÷ VC dado perda vai de 0,61 (MA) a 0,85 (AP). Procedência total paga 0,90 do pedido em toda UF; **94% da
+  variação entre UFs vem do nível da parcial procedência**, 1% da fatia de procedência total. Em células pequenas a mediana
+  bruta pula entre as duas populações (sd 0,032 × 0,023 com o encolhimento que o modelo já usa).
+- **Fronteira de política** ([`fronteira_politica.png`](docs/analises/fronteira_politica.png)): 96 configurações de oferta
+  e faixas avaliadas sob mundos de aceite s50 ∈ {0,25 … 0,50}. Os limiares das faixas quase não movem nada — a regra de custo
+  esperado já decide. O knob que troca retorno por robustez é a âncora da oferta: a política atual rende 31% no mundo
+  assumido, 19,5% se s50 = 0,40 e 6% no estresse (0,50); ancorar em 0,35 rende 30% / 24% na média dos mundos; ancorar em
+  0,50 rende 22% esperado e 18% no estresse. Decisão do gestor, sem otimização sofisticada.
+- **Curva de aceite aprendida em produção** ([`aprendizado_aceite.png`](docs/analises/aprendizado_aceite.png)): cada acordo
+  registrado no portal informa um intervalo do limiar do autor (aceitou no degrau k da escada ⇒ entre o degrau k−1 e o k;
+  recusou tudo ⇒ acima do teto), mais 15% de bandas de exploração. Com 300 acordos a estimativa fica a menos de 0,02 do
+  valor verdadeiro em dois mundos simulados (s50 0,38 e 0,25). Se o mundo for 0,38, redesenhar a escada com a curva
+  aprendida vale R$ 7,7M (economia de 21% → 23%); se for 0,25, R$ 5,4M (35% → 36%).
+- **Figuras de apoio**: [`mapa_uf.png`](docs/analises/mapa_uf.png) (economia e % de acordos por UF),
+  [`quem_acorda.png`](docs/analises/quem_acorda.png) (as três ações sobre a distribuição da chance de perder),
+  [`instruir.png`](docs/analises/instruir.png) (quanto vale esperar o documento sob três chances de localizá-lo).
+
 ### O que dá para validar e o que não dá
 
 O **modelo** (p de perda e severidade) é validado out-of-fold em 5 folds estratificados — cada um dos 60 mil casos é
@@ -545,7 +591,8 @@ modelo de duração com datas reais; expansão a cartão e outras modalidades.
 ## Como rodar
 Ver [`SETUP.md`](SETUP.md). Resumo: `make install && make demo` roda o engine (sobre `data/exemplos/sinteticos.csv` se a
 planilha da Enter não estiver em `data/raw/`); `make compare-models` gera `docs/modelo/comparacao.md`; `make scored` gera
-os scores OOF para o portal em `data/derived/`; `make engine-api` → `http://localhost:8001/docs`. Portal completo com
+os scores OOF para o portal em `data/derived/`; `make analises` gera as tabelas e figuras da demo em `docs/analises/`;
+`make engine-api` → `http://localhost:8001/docs`. Portal completo com
 Postgres: `make up && make jobs-docker` → `http://localhost:8080` (usuários e senha em `SETUP.md`).
 
 ## Enunciado original do desafio
