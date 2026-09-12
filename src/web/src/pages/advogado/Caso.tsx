@@ -1,6 +1,6 @@
 import {
   Alert, Anchor, Badge, Box, Button, Card, Collapse, CopyButton, Divider, Group, List, NumberInput, Paper,
-  SegmentedControl, Select, SimpleGrid, Skeleton, Stack, Text, Textarea, ThemeIcon, Title, Tooltip, UnstyledButton,
+  SegmentedControl, Select, SimpleGrid, Skeleton, Stack, Text, Textarea, ThemeIcon, Title, UnstyledButton,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,13 +8,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 
 import {
-  api, type Contribuicao, type Decisao, type DecisaoRegistrada, type Minutas, type Pessoa, type ProcessoDetalhe,
+  api, type Decisao, type DecisaoRegistrada, type Minutas, type Pessoa, type ProcessoDetalhe,
   type Recomendacao, type Resultado, type TipoDecisao,
 } from "../../api/client";
 import { AderenciaBadge, OrigemBadge, SinalChip, StatusBadge, TipoBadge } from "../../components/Badges";
 import { IcoAcordo, IcoCheck, IcoCopiar, IcoDoc, IcoEscudo, IcoExterno, IcoRelogio, IcoVoltar } from "../../components/Icones";
 import { useMontado } from "../../lib/animacao";
-import { ROTULO_REGRA, ROTULO_RESULTADO, brl, dataHora, duracao, pct } from "../../lib/format";
+import { ROTULO_RESULTADO, brl, dataHora, duracao, pct } from "../../lib/format";
 
 const NOMES_SUBSIDIOS: Record<string, string> = {
   contrato: "Contrato", extrato: "Extrato", comprovante_credito: "Comprovante de crédito", dossie: "Dossiê",
@@ -91,7 +91,7 @@ function Cabecalho({ p }: { p: ProcessoDetalhe }) {
           <Group gap="lg" mt={autor?.nome ? 4 : "sm"}>
             <div>
               <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>Valor da causa</Text>
-              <Text className="serif numero" fz="lg">{brl(p.valor_causa, true)}</Text>
+              <Text className="numero" fz="lg">{brl(p.valor_causa, true)}</Text>
             </div>
             <div>
               <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>Escritório</Text>
@@ -116,66 +116,46 @@ function CardRecomendacao({ p, rec, carregando, erro }: { p: ProcessoDetalhe; re
   if (!rec) return null;
   const s = rec.scores_snapshot;
   const acordo = rec.tipo === "acordo";
-  const presentes = Object.entries(p.subsidios).filter(([, v]) => v).map(([k]) => NOMES_SUBSIDIOS[k] ?? k);
-  const ausentes = Object.entries(p.subsidios).filter(([, v]) => !v).map(([k]) => NOMES_SUBSIDIOS[k] ?? k);
   return (
     <Card style={{ borderColor: acordo ? "var(--enter-laranja)" : "var(--enter-tinta)", borderWidth: 2 }}>
-      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
-        <div>
-          <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>A política recomenda</Text>
-          <Group gap="sm" align="baseline" mt={4}>
+      <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>A política recomenda</Text>
+      <Group justify="space-between" align="flex-start" wrap="wrap" gap="xl" mt={4}>
+        <div style={{ flex: "1 1 280px" }}>
+          <Group gap="sm" align="baseline">
             <Title order={1} c={acordo ? "laranja.8" : "tinta.6"} className="subir">{acordo ? "Acordo" : "Defesa"}</Title>
-            {acordo && <Text className="serif numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
+            {acordo && <Text className="numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
           </Group>
-          <Text size="xs" c="dimmed" mt={6}>
-            política v{rec.politica_versao} · {ROTULO_REGRA[rec.regra] ?? rec.regra}
-          </Text>
           {acordo && rec.valor_min != null && rec.valor_max != null && rec.valor_sugerido != null && (
             <Box mt="md"><Banda min={rec.valor_min} sugerido={rec.valor_sugerido} max={rec.valor_max} causa={p.valor_causa} /></Box>
           )}
-          <SimpleGrid cols={{ base: 1, xs: 3 }} mt="lg" spacing="xs">
-            <Mini rotulo="Custo esperado da defesa" valor={brl(rec.custo_esperado_defesa)} />
-            <Mini rotulo="Custo esperado do acordo" valor={brl(rec.custo_esperado_acordo)} />
-            <Mini rotulo="Economia com acordo" valor={brl(rec.economia_esperada)} cor={rec.economia_esperada > 0 ? "verde.7" : "vermelho.6"} />
-          </SimpleGrid>
-          {rec.exige_aprovacao_valor_causa && (
-            <Alert color="laranja" variant="light" mt="sm" p="xs">Valor da causa acima do teto: acordo exige aprovação do gestor.</Alert>
-          )}
-        </div>
-        <Stack gap="md">
-          <div>
+          <Box mt="lg">
             <Group justify="space-between" align="baseline">
               <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>Probabilidade de êxito na defesa</Text>
               <Group gap={6}>
-                <Text className="serif numero" fz={26} lh={1}>{pct(s.p_exito_defesa)}</Text>
+                <Text className="numero" fz={26} lh={1}>{pct(s.p_exito_defesa)}</Text>
                 <OrigemBadge origem={s.origem} rotulo="score stub" />
               </Group>
             </Group>
             <Box mt={8}><Medidor valor={s.p_exito_defesa} /></Box>
             <Text size="xs" c="dimmed" mt={6} className="numero">
-              Se perder, condenação estimada entre {brl(s.condenacao_p20)} e {brl(s.condenacao_p80)} (mediana {brl(s.condenacao_p50)}) · {s.modelo_versao}
+              Se perder, condenação estimada entre {brl(s.condenacao_p20)} e {brl(s.condenacao_p80)} (mediana {brl(s.condenacao_p50)})
             </Text>
-          </div>
-          {s.contribuicoes?.length > 0 && (
-            <div>
-              <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500} mb={6}>O que pesou · + favorece a defesa</Text>
-              <Fatores itens={s.contribuicoes.slice(0, 5)} />
-            </div>
+          </Box>
+          {rec.exige_aprovacao_valor_causa && (
+            <Alert color="laranja" variant="light" mt="sm" p="xs">Valor da causa acima do teto: acordo exige aprovação do gestor.</Alert>
           )}
+        </div>
+        <Stack gap="xs" style={{ flex: "0 0 auto", minWidth: 200 }}>
+          <Mini rotulo="Custo esperado da defesa" valor={brl(rec.custo_esperado_defesa)} />
+          <Mini rotulo="Custo esperado do acordo" valor={brl(rec.custo_esperado_acordo)} />
+          <Mini rotulo="Economia com acordo" valor={brl(rec.economia_esperada)} cor={rec.economia_esperada > 0 ? "verde.7" : "vermelho.6"} />
         </Stack>
-      </SimpleGrid>
+      </Group>
 
       <Divider my="md" />
       <List spacing={6} size="sm" icon={<Box w={6} h={6} mt={7} bg="laranja.6" style={{ borderRadius: 999 }} />}>
         {rec.motivos.map((m, i) => <List.Item key={i}>{m}</List.Item>)}
       </List>
-      <Group gap={6} mt="md" wrap="wrap">
-        <Text size="xs" c="dimmed" mr={4}>Subsídios</Text>
-        {presentes.map((n) => (
-          <Badge key={n} color="tinta" variant="light" size="sm" leftSection={<IcoCheck size={11} />}>{n}</Badge>
-        ))}
-        {ausentes.map((n) => <Badge key={n} color="gray" variant="outline" size="sm" td="line-through">{n}</Badge>)}
-      </Group>
     </Card>
   );
 }
@@ -207,35 +187,6 @@ function Medidor({ valor }: { valor: number }) {
     <Box h={10} bg="gray.1" style={{ borderRadius: 5, overflow: "hidden" }}>
       <Box h="100%" bg="tinta.6" className="preencher" style={{ width: pronto ? `${valor * 100}%` : 0, borderRadius: 5 }} />
     </Box>
-  );
-}
-
-/** Contribuições do modelo como barras a partir do centro: verde favorece a defesa, vermelho pesa contra. */
-function Fatores({ itens }: { itens: Contribuicao[] }) {
-  const pronto = useMontado();
-  const maxAbs = Math.max(...itens.map((c) => Math.abs(c.contribuicao)), 0.01);
-  return (
-    <Stack gap={6}>
-      {itens.map((c) => {
-        const positivo = c.contribuicao >= 0;
-        const w = pronto ? (Math.abs(c.contribuicao) / maxAbs) * 50 : 0;
-        return (
-          <Tooltip key={c.feature} label={c.descricao ?? c.feature} position="top-start">
-            <Group gap="sm" wrap="nowrap">
-              <Text size="xs" c="dimmed" w={140} truncate style={{ flex: "none" }}>{c.feature}</Text>
-              <Box pos="relative" h={8} style={{ flex: 1 }}>
-                <Box pos="absolute" top={0} bottom={0} left="50%" w={1} bg="gray.3" />
-                <Box pos="absolute" top={0} bottom={0} bg={positivo ? "verde.6" : "vermelho.6"} className="preencher"
-                  style={{ ...(positivo ? { left: "50%" } : { right: "50%" }), width: `${w}%`, borderRadius: 4 }} />
-              </Box>
-              <Text size="xs" fw={500} w={36} ta="right" className="numero" c={positivo ? "verde.7" : "vermelho.6"}>
-                {positivo ? "+" : ""}{(c.contribuicao * 100).toFixed(0)}
-              </Text>
-            </Group>
-          </Tooltip>
-        );
-      })}
-    </Stack>
   );
 }
 
@@ -276,11 +227,23 @@ function CardAnalise({ p }: { p: ProcessoDetalhe }) {
 }
 
 function CardDocumentos({ p, abertos, onAbrir }: { p: ProcessoDetalhe; abertos: Set<string>; onAbrir: (a: string) => void }) {
+  const presentes = Object.entries(p.subsidios).filter(([, v]) => v).map(([k]) => NOMES_SUBSIDIOS[k] ?? k);
+  const ausentes = Object.entries(p.subsidios).filter(([, v]) => !v).map(([k]) => NOMES_SUBSIDIOS[k] ?? k);
+  const subsidios = (
+    <Group gap={6} mt="md" wrap="wrap">
+      <Text size="xs" c="dimmed" mr={4}>Subsídios</Text>
+      {presentes.map((n) => (
+        <Badge key={n} color="tinta" variant="light" size="sm" leftSection={<IcoCheck size={11} />}>{n}</Badge>
+      ))}
+      {ausentes.map((n) => <Badge key={n} color="gray" variant="outline" size="sm" td="line-through">{n}</Badge>)}
+    </Group>
+  );
   if (p.documentos.length === 0) {
     return (
       <Card>
         <Text fw={500}>Documentos</Text>
         <Text size="sm" c="dimmed" mt={4}>Processo sem PDFs anexados (caso sintético).</Text>
+        {subsidios}
       </Card>
     );
   }
@@ -315,6 +278,7 @@ function CardDocumentos({ p, abertos, onAbrir }: { p: ProcessoDetalhe; abertos: 
           );
         })}
       </SimpleGrid>
+      {subsidios}
     </Card>
   );
 }
@@ -359,12 +323,12 @@ function FormDecisao({ pid, rec, abertos, inicio, onOk }: { pid: number; rec: Re
             ]} />
           <Collapse in={tipo === "acordo"}>
             <NumberInput label="Valor proposto" value={valor ?? ""} onChange={(v) => setValor(typeof v === "number" ? v : v === "" ? null : Number(v))}
-              min={0} step={50} thousandSeparator="." decimalSeparator="," prefix="R$ " inputMode="decimal" size="md"
+              min={0} step={50} thousandSeparator="." decimalSeparator="," prefix="R$ " decimalScale={2} fixedDecimalScale inputMode="decimal" size="md"
               description={rec.tipo === "acordo" ? `Banda da política: ${brl(rec.valor_min)} a ${brl(rec.valor_max)}` : "A política recomendou defesa: acordo vai para aprovação do gestor."}
               error={foraDaBanda ? "Fora da banda: exige justificativa e aprovação do gestor" : undefined} />
           </Collapse>
           <Collapse in={diverge}>
-            <Textarea label="Justificativa" required={diverge} autosize minRows={2} value={justificativa}
+            <Textarea label="Justificativa" autosize minRows={2} value={justificativa}
               onChange={(e) => setJustificativa(e.currentTarget.value)}
               description="Sua decisão diverge da recomendação. Explique em uma ou duas frases; o gestor vê isso no painel." />
           </Collapse>
@@ -375,7 +339,7 @@ function FormDecisao({ pid, rec, abertos, inicio, onOk }: { pid: number; rec: Re
             </Group>
           )}
           {mutation.isError && <Alert color="vermelho" variant="light">{(mutation.error as Error).message}</Alert>}
-          <Button type="submit" loading={mutation.isPending} disabled={diverge && !justificativa.trim()} size="md">
+          <Button type="submit" loading={mutation.isPending} size="md">
             Registrar decisão
           </Button>
         </Stack>
@@ -395,7 +359,7 @@ function CardDecisaoAtual({ d, registrada, p, onNova, onResultado }: {
         <Group gap="sm" wrap="wrap">
           <Text fw={500}>Decisão registrada</Text>
           <TipoBadge tipo={d.tipo} size="sm" />
-          {d.tipo === "acordo" && <Text className="serif numero" fz="lg">{brl(d.valor_proposto)}</Text>}
+          {d.tipo === "acordo" && <Text className="numero" fz="lg">{brl(d.valor_proposto)}</Text>}
           <StatusBadge status={d.status} size="sm" />
           <AderenciaBadge aderente={d.aderente} tipoDesvio={d.tipo_desvio} size="sm" />
         </Group>

@@ -29,6 +29,6 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Integração engine → portal (adapter `ModeloScores`) | 1, 2 | Lucas | ✅ | `src/api/app/modelo_enteros.py` (padrão de `MODEL_IMPL`); `load-historico` pontua os 60k com a logística do engine quando não há `historico_scored.csv`; 4 testes |
 | Extração LLM dos PDFs + sinais de alerta | 1, 3 | P3 | ⬜ | `src/extractor` |
 | Análise e minutas em linguagem jurídica | 3 | P3 | ⬜ | `src/extractor` |
-| Portal do advogado polido + vídeo | 3 | P4 | ⬜ | `pages/advogado`, `docs/video.*` |
+| Portal do advogado polido + vídeo | 3 | P4 | 🔧 | `pages/advogado`; card de recomendação reorganizado (custos e economia ao lado do resultado, probabilidade abaixo dele, sem subtítulo/fatores/nome do modelo), subsídios movidos para o card de documentos, campo de valor com decimais e justificativa opcional; falta `docs/video.*` |
 | Gráficos do painel e tela de política | 4, 5 | P5 | ⬜ | `pages/gestor` |
 | Slides, README e SETUP finais | — | P5 | ⬜ | `docs/`, `SETUP.md`, `README.md` |
