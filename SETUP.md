@@ -114,7 +114,7 @@ Na VPS, o primeiro start precisa de `docker compose -f infra/compose.yml --proje
 | `DATA_DIR` | onde estão os CSVs e `exemplos/` (`/data` dentro do compose) |
 | `ENTEROS_RAW_XLSX` | planilha bruta para o engine (`make data/train/backtest`) |
 | `MODEL_IMPL`, `EXTRACTOR_IMPL` | implementações de P1 e P3 no portal |
-| `OPENAI_API_KEY`, `OPENAI_MODEL` | só a trilha de IA documental usa |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | extração documental e parecer consultivo das divergências |
 | `VPS_HOST`, `VPS_DIR` | `make deploy` e `make backup` |
 
 ## Estrutura

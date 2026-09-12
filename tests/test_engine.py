@@ -78,3 +78,66 @@ def test_contribuicoes_explicam_direcao(engine, caso_02):
     r = engine.recomendar(caso_02)
     nomes = {c["feature"]: c["contribuicao"] for c in r.contribuicoes}
     assert nomes["Contrato"] > 0 and nomes["Extrato"] > 0  # ausentes aumentam o risco
+
+
+# ---------- v2: três ações, breakeven, EVSI e saldo ----------
+
+def _caso(uf: str, sub: str, vc: float = 15000.0, **docs: str) -> CaseFeatures:
+    return CaseFeatures(uf=uf, sub_assunto=sub, valor_causa=vc, docs=DocsStatus(**docs))
+
+
+def test_caso_02_instrui_pelo_conjunto_contrato_extrato(engine, caso_02):
+    r = engine.recomendar(caso_02.model_copy(update={"conta_deposito_titular_autor": None, "liveness_presente": None}))
+    assert r.decisao == cfg.DECISAO_INSTRUIR
+    assert set(r.instrucao["docs"]) == {"contrato", "extrato"}
+    assert r.instrucao["evsi"] > 0 and r.ev_instruir < r.ev_acordo < r.ev_defesa
+    # cada documento sozinho vale pouco (o caso continua acordo); o par vira a decisão
+    assert r.instrucao["evsi"] > max(a["evsi"] for a in r.analise_subsidios.values())
+    assert 0 < r.instrucao["p_todos_encontrados"] < 1
+
+
+def test_p_falha_fecha_a_probabilidade_total(engine):
+    r = engine.recomendar(_caso("MA", cfg.SUB_GOLPE, contrato=cfg.STATUS_PRESENTE, comprovante=cfg.STATUS_PRESENTE))
+    a = r.analise_subsidios["demonstrativo"]
+    assert a["p_falha"] < 1.0  # caso não clipado
+    assert a["q"] * a["p_com"] + (1 - a["q"]) * a["p_falha"] == pytest.approx(r.p_perda, abs=2e-3)
+    assert a["p_com"] < r.p_perda < a["p_falha"]
+
+
+def test_breakeven_e_o_ponto_de_indiferenca(engine):
+    from enteros.policy import custos as cst
+
+    caso = _caso("SP", cfg.SUB_GOLPE, extrato=cfg.STATUS_PRESENTE, comprovante=cfg.STATUS_PRESENTE)
+    r = engine.recomendar(caso)
+    assert 0 < r.p_breakeven < 1
+    ev_def_star, _ = engine.ev_defesa(r.p_breakeven, caso.uf, caso.sub_assunto, caso.valor_causa)
+    esc = r.escada if r.escada is not None else engine.avaliar(caso, r.p_perda, 0.0).escada
+    ev_aco_star = cst.ev_acordo(esc.alvo, esc.p_aceite_alvo, ev_def_star, engine.politica.custos)
+    assert ev_aco_star == pytest.approx(ev_def_star, rel=1e-3)  # p_breakeven é exportado com 4 casas
+
+
+def test_saldo_devedor_entra_nos_dois_ramos(engine, caso_02):
+    com = engine.recomendar(caso_02)
+    sem = engine.recomendar(caso_02.model_copy(update={"saldo_devedor": None}))
+    assert com.saldo_no_ev == pytest.approx(caso_02.saldo_devedor)
+    assert com.ev_defesa - sem.ev_defesa == pytest.approx(com.p_perda * caso_02.saldo_devedor, rel=1e-3)
+    assert com.ev_acordo > sem.ev_acordo
+    assert com.escada.teto <= sem.escada.teto
+
+
+def test_defesa_lista_docs_que_fortalecem_sem_atrasar(engine):
+    r = engine.recomendar(_caso("SP", cfg.SUB_GOLPE, contrato=cfg.STATUS_PRESENTE, extrato=cfg.STATUS_PRESENTE,
+                                comprovante=cfg.STATUS_PRESENTE))
+    assert r.decisao == cfg.DECISAO_DEFESA and r.faixa == cfg.FAIXA_VERDE
+    assert r.docs_a_solicitar == []  # não se adia uma defesa
+    assert "demonstrativo" in r.docs_que_fortalecem
+    assert "SOLICITAR_EM_PARALELO_A_DEFESA" in r.regras_acionadas
+    assert r.voi_por_doc["demonstrativo"] > engine.politica.custos.custo_recuperar_subsidio
+
+
+def test_intervalo_e_epistemico_e_sensibilidade_e_rara(engine, caso_01, caso_02):
+    for caso in (caso_01, caso_02):
+        r = engine.recomendar(caso)
+        lo, hi = r.p_perda_intervalo
+        assert lo <= r.p_perda <= hi and hi - lo < 0.1
+        assert r.decisao_sensivel is False

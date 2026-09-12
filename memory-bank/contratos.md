@@ -36,8 +36,8 @@ class ModeloScores(Protocol):
     def score_batch(self, casos: list[CasoFeatures]) -> list[Scores]: ...
     def info(self) -> ModeloInfo: ...
 ```
-P1 também entrega `data/derived/historico_scored.csv` (local, não versionado; decisão 19) com colunas fixas em snake_case: `numero, uf, sub_assunto, resultado_macro (1/0), resultado_micro, valor_causa, valor_condenacao, contrato, extrato, comprovante_credito, dossie, demonstrativo_divida, laudo_referenciado, p_exito_oof, condenacao_p20_oof, condenacao_p50_oof, condenacao_p80_oof, fold`.
-P1 exporta ainda o modelo treinado em JSON ou UBJ do XGBoost em `src/model/artifacts/` (versionado), para o clone limpo subir com scores reais sem a base.
+P1 entrega `data/derived/historico_scored.csv` via `make scored` (local, não versionado; decisão 19): p out-of-fold dos 5 folds do treino e quantis de condenação ajustados sem o fold; acordos históricos ficam in-sample com `fold = -1`. `load-historico` prefere esse arquivo ao in-sample do adapter. Colunas fixas em snake_case: `numero, uf, sub_assunto, resultado_macro (1/0), resultado_micro, valor_causa, valor_condenacao, contrato, extrato, comprovante_credito, dossie, demonstrativo_divida, laudo_referenciado, p_exito_oof, condenacao_p20_oof, condenacao_p50_oof, condenacao_p80_oof, fold`.
+P1 exporta ainda o modelo treinado em JSON em `models/` (versionado; decisão 24), para o clone limpo subir com scores reais sem a base.
 
 ## P3 extração (`core/docs.py`)
 ```python
@@ -116,13 +116,25 @@ Contratos próprios em `enteros/schemas.py`: `CaseFeatures` (uf, sub_assunto, va
 Mapa para o contrato do portal (`core.modelo.Scores`), implementado pelo adapter `src/api/app/modelo_enteros.py` (`ModeloEnteros`, padrão de `MODEL_IMPL`):
 | `core` | `enteros` |
 |---|---|
-| `p_exito_defesa` | `1 − p_perda` (média entre tabela de segmentos e logística) |
+| `p_exito_defesa` | `1 − p_perda` (logística única; a tabela de segmentos é só saída do modelo — decisão 31) |
 | `condenacao_p20/p50/p80` | quantis de `ratio_condenacao` (UF × sub-assunto) × `valor_causa` |
 | `contribuicoes` (positivo = favorece o banco) | `ModeloPerda.contribuicoes` com o sinal invertido (lá positivo = mais risco) |
 | `ModeloInfo.metricas/calibracao` | `modelo.metricas` (auc_oof, brier_oof, ece_oof, n_treino) e `modelo.calibracao` |
 | `Subsidios` (bool) | `DocsStatus` (`presente`/`ausente`; `inconsistente` só vem da IA) |
 
-Mapa `PoliticaParams` (API) ↔ `policy.yaml` (engine), para P1 calibrar os defaults:
+Mapa `PoliticaParams` (API) ↔ `policy.yaml` (engine) e **proposta de calibração de P1** (decisão 25, pendente de o dono da API aplicar em `src/core`):
+| `PoliticaParams` | default hoje | proposta P1 | por quê |
+|---|---|---|---|
+| `custas_fixas_defesa` | 1.500 | **1.200** | escritório até sentença (premissa H2) |
+| `honorarios_defesa_pct` | 10% da causa | **0** | dobra com o custo fixo; custas só quando perde estão em `sucumbencia_pct`/fator abaixo |
+| `sucumbencia_pct` | 10% | **15%** (ou 0,375 para embutir a correção 1,196 do engine: (1+0,15)·1,196 − 1) | CPC art. 85 §2; engine corrige a condenação pelo tempo |
+| `limiar_defesa_forte` | 0,85 | 0,85 | = 1 − verde 0,15 |
+| `limiar_acordo_forte` | 0,30 | **0,40** | = 1 − vermelha 0,60 |
+| `teto_oferta_pct_causa` | 0,60 | **0,70** | igual ao engine; teto também ≤ 90% do EV de defesa |
+| `taxa_aceite_esperada` | 0,65 | 0,65 | ≈ curva no alvo; a API substitui pelo aceite medido |
+| `fator_oferta` | 0,80 | 0,80 (documentar como aproximação do argmin da escada) | |
+
+Mapa completo:
 | `PoliticaParams` (default) | `policy.yaml` | Nota |
 |---|---|---|
 | `limiar_defesa_forte` 0,85 | `1 − faixas.limiar_verde` = 0,85 | igual |

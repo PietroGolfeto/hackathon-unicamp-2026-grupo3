@@ -1,16 +1,14 @@
-import { ActionIcon, AppShell, Avatar, Badge, Box, Container, Group, Text, Tooltip, UnstyledButton } from "@mantine/core";
+import { ActionIcon, AppShell, Avatar, Badge, Box, Container, Group, SegmentedControl, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import { Link, Outlet, useLocation } from "react-router";
 
-import { useLogout, useSession } from "../auth/useSession";
+import type { Papel } from "../api/client";
+import { useLogout, useSession, useTrocarPapel } from "../auth/useSession";
 import { IcoSair } from "./Icones";
 import { Marca } from "./Marca";
 
 const LINKS_ADV = [{ to: "/casos", rotulo: "Casos" }];
 const LINKS_GESTOR = [
   { to: "/gestor/painel", rotulo: "Painel" },
-  { to: "/gestor/politica", rotulo: "Política" },
-  { to: "/gestor/aprovacoes", rotulo: "Aprovações" },
-  { to: "/casos", rotulo: "Casos" },
 ];
 
 function iniciais(nome: string): string {
@@ -32,6 +30,7 @@ function LinkTopo({ to, rotulo, ativo }: { to: string; rotulo: string; ativo: bo
 export function Layout() {
   const { data: usuario } = useSession();
   const logout = useLogout();
+  const trocar = useTrocarPapel();
   const { pathname } = useLocation();
   const links = usuario?.papel === "gestor" ? LINKS_GESTOR : LINKS_ADV;
   const ativo = (to: string) => pathname.startsWith(to);
@@ -48,6 +47,13 @@ export function Layout() {
               </Group>
             </Group>
             <Group gap="sm" wrap="nowrap">
+              {usuario && (
+                <Tooltip label="Ver como (troca sem sair)">
+                  <SegmentedControl visibleFrom="sm" size="xs" disabled={trocar.isPending} value={usuario.papel}
+                    onChange={(v) => trocar.mutate(v as Papel)}
+                    data={[{ label: "Advogado", value: "advogado" }, { label: "Gestor", value: "gestor" }]} />
+                </Tooltip>
+              )}
               {usuario && (
                 <Group gap={10} wrap="nowrap">
                   <Avatar size={30} radius="xl" color="tinta" variant="filled" fz={11} fw={600}>{iniciais(usuario.nome)}</Avatar>

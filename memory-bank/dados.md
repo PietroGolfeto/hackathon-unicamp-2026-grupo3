@@ -21,12 +21,14 @@ Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação d
 | Fato | Número | Implicação |
 |---|---|---|
 | Êxito global | 69,6% | base rate do stub; "defender tudo" já vence 7 em 10 |
-| `Extinção` | 23% da base, todas Êxito | mantida no backtest (decisão 5) |
-| `Acordo` no micro | 280 linhas, Não Êxito | acordos históricos; valor = pago |
+| `Extinção` | 23% da base, todas Êxito; é ⅓ constante dos êxitos em todo estrato de docs (P(ext \| êxito) ≈ 0,33) | mantida no backtest (decisão 5); **não** é sinal de litigância predatória nem independe dos docs |
+| `Acordo` no micro | 280 linhas, Não Êxito; razão pago/causa ≈ U(0,20–0,40), média 0,298; 74% sem contrato | não são sentenças: fora do treino de frequência e de severidade do engine; só âncora da curva de aceite |
 | Sub-assunto | Golpe 69% (êxito 63,6%) · Genérico 31% (êxito 83%) | feature forte |
 | UF | 26 UFs, exatamente 2.308 cada; êxito de 51,6% (AP) a 79,2% (MA) | base sintética (dizer nas limitações); UF tem sinal |
 | Valor da causa | R$ 1k–31k, mediana R$ 15k | **sem** efeito no êxito (69–70% em todas as faixas) |
 | Condenação quando perde | mediana R$ 10k; razão condenação/causa p25 0,55 · p50 0,74 · p75 0,86; nunca zero | stub: p20 = 0,55·causa, p50 = 0,74·causa, p80 = 0,86·causa |
+| Severidade por UF (razão condenação/causa dado perda) | MA 0,60 · MS/MT 0,61 · maioria ≈ 0,68 · BA 0,80 · AM/AP 0,84; Genérico 0,65 × Golpe 0,715; Procedência ≈ U(0,80–1,00) flat por UF, Parcial varia 0,48–0,82 por UF; P(procedência \| perda) 0,28 (MA) → 0,39 (AP) | severidade **não** é constante: fica por UF × sub-assunto |
+| Interações / valor da causa / árvores | logística aditiva 4 docs + sub + UF: AUC 0,9226 OOF; interações, saturação, VC e gradient boosting não mudam nada (≤ 0,001) | processo gerador aditivo em log-odds; escolha de modelo vale < R$ 1M de custo de decisão |
 | Contrato presente | êxito 87% vs 25% ausente | preditor dominante |
 | Extrato presente | êxito 81% vs 18% ausente | segundo preditor |
 | Comprovante de crédito | 80% vs 53% | terceiro |
@@ -45,11 +47,20 @@ Leitura: com custas R$ 1.500 + 10% de honorários, defender custa ≥ R$ 3k por 
 ## Backtest do engine (P1, `make backtest`, premissas em `docs/premissas.md`)
 | Medida | Valor |
 |---|---|
-| Modelo de perda (logística, OOF 5 folds) | AUC 0,923 · Brier 0,093 · ECE 0,003 · taxa de perda 30,4% |
+| Modelo de perda (logística, OOF 5 folds, sem os 280 acordos) | AUC 0,923 · log-loss 0,308 · Brier 0,093 · ECE 0,003 · taxa de perda 30,1% |
 | Defender tudo (condenação + honorários 15% + custas 2% + correção 1% a.m. × 18 meses + escritório R$ 1.200) | R$ 342,9M |
-| Acordar tudo no alvo (curva de aceite) | R$ 246,6M |
-| Política do engine (acordo em 36% dos casos) | R$ 236,7M, economia R$ 106M (31%) |
-| Faixas | verde 57% dos casos / 20% do custo · amarela 19% · vermelha 24% dos casos / 59% do custo |
+| Acordar tudo a 30% do VC, aceite 65% | R$ 313,3M (−8,6%) |
+| Heurística "sem contrato → acordo" | R$ 260,7M (−24,0%) |
+| Limiar fixo p_perda > 0,60 (3 grupos da UFMG) | R$ 257,9M (−24,8%; captura 56% do ganho máximo) |
+| Política do engine (p OOF, escada + curva de aceite; acordo em 36% dos casos) | **R$ 236,8M, economia R$ 106M (31,0%; captura 70% do ganho máximo)** |
+| Oráculo (resultado conhecido, mesma escada) | R$ 191,1M (−44,3%) — teto teórico |
+| Banda do headline | 31,1% ± 0,4 p.p. entre folds; bootstrap IC95 30,6–31,4% |
+| Sensibilidade ao aceite | 50% → 17% · 65% → 23% · 80% → 29% · curva → 31% |
+| Sensibilidade à âncora s50 | 0,25 → 34,8% · 0,30 → 31,0% · 0,40 → 23,9% · 0,50 → 17,6% |
+| Sensibilidade a custos | escritório ×0,5/×1,5, sucumbência 10/20%, tempo 10/22 meses: 28–32%; **JEC** (sem custas/sucumbência, 9 meses): 22,9% |
+| Breakeven p\* (no alvo da escada) | médio 0,47 (p5 0,24 · p95 0,84); com oferta fixa de 30% do VC e aceite 65% ≈ 0,26; 2,2% dos casos sensíveis (IC cruza p\*) |
+| Instruir (pedir contrato/extrato antes de acordar) | 33,6% dos casos (93% dos acordos) sob q_d cheio; 23,9% com q_d × 0,5; EVSI total R$ 50M (hipótese) |
+| Por UF | economia de 21,7% (MA) a 42,9% (AP); % acordo 26% (MA) → 60% (AP) |
 Os dois backtests (engine e API) usam resultados reais, mas premissas de custo diferentes; por isso os totais não batem. Ver decisão 25.
 
 ## Processos exemplo (PDFs em `docs/Caso_01_…/` e `docs/Caso_02_…/`, não versionados; `make exemplos-docs` copia para `data/exemplos/`)
@@ -68,7 +79,7 @@ Benchmark com chamadas reais (prompt 2026-09-12.4, 3 chamadas por modelo × caso
 | gpt-4.1-mini | 7.590 · 1.210 | 9,5 s (7–12) | 97%: "digital" em vez de biometria; 1 chamada sem LIVENESS_AUSENTE (regra recolocou) | 6/6 | US$ 0,0050 · US$ 25 |
 | gpt-5-nano | 7.588 · 2.650 (1.600) | 16,8 s (10–18) | 87%, instável: no caso 02 uma chamada 20/21 e outra 12/21 (perdeu nº do contrato, valor, parcelas, saldo e liveness) | 4/6: sem LIVENESS_AUSENTE em 2 chamadas | US$ 0,0014 · US$ 7 |
 | gpt-5-mini (padrão) | 7.588 · 2.804 (1.216) | 40,9 s (29–50) | 99%: 1 chamada inventou CREDITO_CONTA_TERCEIRO no caso 01 (regra apagou); contradição-chave certa nas 6 | 6/6 | US$ 0,0075 · US$ 38 |
-Leitura: a regra corrige tudo que o LLM erra nos sinais decidíveis; a diferença entre modelos fica nos campos que só o LLM preenche (assinatura, liveness, números do contrato, contradições) e na estabilidade entre chamadas. gpt-4.1-mini entrega os mesmos sinais finais que o gpt-5-mini em 1/4 do tempo e 1/3 a menos de custo (decisão 35, em aberto). Cache hit: 110–590 ms, zero tokens. Lacuna: a regex `liveness_nao_localizado` não casa no laudo do caso 02 porque `pdftotext -layout` quebra a linha entre "não foi localizado nos arquivos digitais o" e "vídeo de liveness" e o padrão `[^.\n]{0,80}` não atravessa a quebra; LIVENESS_AUSENTE_CANAL_DIGITAL fica dependente de o LLM devolver `liveness=nao_localizado`, e quando ele não devolve a regra de canal apaga até o sinal que o LLM acertou (2 chamadas do gpt-5-nano). Correção candidata: `[^.]{0,120}` + teste com o texto do laudo.
+Leitura: a regra corrige tudo que o LLM erra nos sinais decidíveis; a diferença entre modelos fica nos campos que só o LLM preenche (assinatura, liveness, números do contrato, contradições) e na estabilidade entre chamadas. gpt-4.1-mini entrega os mesmos sinais finais que o gpt-5-mini em 1/4 do tempo e 1/3 a menos de custo (decisão 43, em aberto). Cache hit: 110–590 ms, zero tokens. Lacuna: a regex `liveness_nao_localizado` não casa no laudo do caso 02 porque `pdftotext -layout` quebra a linha entre "não foi localizado nos arquivos digitais o" e "vídeo de liveness" e o padrão `[^.\n]{0,80}` não atravessa a quebra; LIVENESS_AUSENTE_CANAL_DIGITAL fica dependente de o LLM devolver `liveness=nao_localizado`, e quando ele não devolve a regra de canal apaga até o sinal que o LLM acertou (2 chamadas do gpt-5-nano). Correção candidata: `[^.]{0,120}` + teste com o texto do laudo.
 Benchmark da compressão (`make bench-extractor`, tiktoken o200k_base, relatório em `docs/extractor/benchmark.md`): brief 12.296 → 5.540 tokens (caso 01, −55%) e 10.039 → 3.750 (caso 02, −63%); a entrada real da API é brief + 1.653 de instruções + ~1.250 de esquema e moldura (mediana do cache), ~2.900 tokens fixos por chamada. Fatos-chave literais (23, 22 e 17 por caso): 100% no brief; corte ingênuo da cabeça de cada documento com o mesmo orçamento preserva 68–70%. Custo no gpt-5-mini: US$ 0,0074 por processo com brief vs 0,0091 sem compressão; a saída (~2,8k tokens com reasoning low, US$ 2/M) é 77% da conta. Segunda rodada = cache hit, zero chamadas.
 Achados do benchmark: (a) `RE_MOVIMENTO` gasta ~350 ms numa linha de extrato sem a coluna de saldo (`SALDO ANTERIOR` + espaços de layout): parsing do caso 01 leva 416 ms vs 15 ms no caso 02; grupos de tokens separados por um espaço (`(?:\S+[ \t])*?\S+`) capturam o mesmo em <1 ms. (b) Sem `pdftotext` (pypdf) o laudo vira um parágrafo único cortado em 600 chars: o brief perde "liveness não localizado" (caso 02) e os índices 91%/97,3% do dossiê (caso 01), ficando com 87–91% dos fatos. (c) A linha "Fatos detectados por regra" custa ~1,4k tokens por processo (26% do brief) e repete os trechos; o bloco do extrato sai 41% maior que o original. (d) Documentos pequenos (caso sintético dos testes) saem maiores que o original: cabeçalhos, fatos e pistas pesam ~500 tokens. (e) Nem 330k chars de extrato nem 16 documentos acionaram o laço de encolhimento de `montar_brief`: os limites por tipo bastam; tempo linear, ~0,5 ms por 1k chars.
 Regras de parsing dos PDFs: `pdftotext -layout` separa parágrafos por linha em branco e tabelas rótulo/valor por 2+ espaços; rodapé `Processo nº … - Página N` em toda página; "Saldo devedor … aproximadamente R$" quebra a linha antes do número; a petição segue I – DOS FATOS / II – DO DIREITO / III – DA TUTELA / IV – DOS PEDIDOS / procuração / RG / comprovante de residência.

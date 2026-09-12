@@ -30,7 +30,7 @@ Stress (casos sintéticos): extrato com 3.000 movimentos (330k caracteres) vira 
 | gpt-5-nano | 87% | 4/6 | 16,8 s (10–18) | 7,6k → 2,65k | US$ 0.0014 | US$ 7 (≈ R$ 39) |
 | gpt-5-mini (padrão) | 99% | 6/6 | 40,9 s (29–50) | 7,6k → 2,80k | US$ 0.0075 | US$ 38 (≈ R$ 203) |
 
-`Gabarito`: 20 critérios no caso 01 e 21 no caso 02 (números do contrato, parcelas, saldo, canal, assinatura, liveness, banco depositário, idade, valores da causa e do dano moral, OAB, sinais que devem e não devem aparecer, contradição-chave, citar só documentos entregues), conferidos na saída crua do LLM, antes das regras. `Sinais finais certos`: chamadas em que, após a reconciliação por regra (decisão 34), o conjunto de sinais tem todos os obrigatórios e nenhum proibido.
+`Gabarito`: 20 critérios no caso 01 e 21 no caso 02 (números do contrato, parcelas, saldo, canal, assinatura, liveness, banco depositário, idade, valores da causa e do dano moral, OAB, sinais que devem e não devem aparecer, contradição-chave, citar só documentos entregues), conferidos na saída crua do LLM, antes das regras. `Sinais finais certos`: chamadas em que, após a reconciliação por regra (decisão 42), o conjunto de sinais tem todos os obrigatórios e nenhum proibido.
 
 Leitura: os sinais que a regra consegue decidir (idoso, BO, BACEN, sem contrato, crédito em conta de terceiro) saem certos com qualquer modelo, porque a regra entra se o LLM esqueceu e sai se ele inventou. A diferença entre modelos fica no que só o LLM preenche (tipo de assinatura, liveness, números do contrato, contradições) e na estabilidade entre chamadas. gpt-5-nano é o mais barato e o menos estável (uma chamada com 12/21 no caso 02); gpt-4.1-mini entrega os mesmos sinais finais que o gpt-5-mini em 1/4 do tempo e 1/3 a menos de custo; gpt-5-mini é o único que acertou o gabarito inteiro em 5 das 6 chamadas. Preços de tabela da OpenAI lidos em 2026-09-12; câmbio assumido R$ 5,40. Nas repetições dos gpt-5* a OpenAI serviu 6,5–8,3k tokens de entrada do prompt cache (mesmo prefixo em minutos); em produção cada processo é diferente e só as instruções (~1,7k tokens) se repetem, por isso a tabela usa o custo sem cache.
 
@@ -53,7 +53,7 @@ Prompt `2026-09-12.4` · 3 chamadas por modelo × processo (`forcar=True`, cache
 | gpt-5-nano | 6 | 7.588 | 2.650 (1.600) | 16,8 s (10,5–18,3) | 87% | 4/6 | US$ 0.0013 | US$ 6 (≈ R$ 34) |
 | gpt-5-mini | 6 | 7.588 | 2.804 (1.216) | 40,9 s (29,3–49,6) | 99% | 6/6 | US$ 0.0058 | US$ 29 (≈ R$ 158) |
 
-`Gabarito`: critérios objetivos por caso (números do contrato, parcelas, saldo, canal, assinatura, liveness, banco depositário, idade, valores da causa e do dano moral, OAB, sinais que devem e não devem aparecer, contradição-chave, citar só documentos entregues) conferidos na saída crua do LLM, antes das regras. `Sinais finais certos`: após a reconciliação por regra (decisão 34), o conjunto de sinais tem todos os obrigatórios e nenhum proibido.
+`Gabarito`: critérios objetivos por caso (números do contrato, parcelas, saldo, canal, assinatura, liveness, banco depositário, idade, valores da causa e do dano moral, OAB, sinais que devem e não devem aparecer, contradição-chave, citar só documentos entregues) conferidos na saída crua do LLM, antes das regras. `Sinais finais certos`: após a reconciliação por regra (decisão 42), o conjunto de sinais tem todos os obrigatórios e nenhum proibido.
 
 ## Por processo
 

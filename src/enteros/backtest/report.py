@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 from pathlib import Path
 
@@ -89,6 +88,26 @@ def _grafico_voi(res: dict, out: Path) -> None:
     plt.close(fig)
 
 
+def _grafico_baselines(res: dict, out: Path) -> None:
+    b = pd.DataFrame(res["baselines"]["linhas"])
+    b["rotulo"] = [n.split(" (")[0].split(":")[-1].strip() for n in b["nome"]]
+    fig, ax = plt.subplots(figsize=(8, 4.2))
+    cores = ["#9e9e9e"] * (len(b) - 1) + ["#2e7d32"]
+    for i, nome in enumerate(b["nome"]):
+        if nome.startswith("Política EV") and "curva" in nome:
+            cores[i] = "#ffae35"
+    ax.barh(b["rotulo"], b["custo"] / 1e6, color=cores)
+    for i, (c, e) in enumerate(zip(b["custo"], b["economia_pct"], strict=True)):
+        ax.text(c / 1e6 + 2, i, f"R$ {c/1e6:.0f}M  (−{e:.0%})" if e > 0 else f"R$ {c/1e6:.0f}M", va="center", fontsize=8)
+    ax.invert_yaxis()
+    ax.set_xlabel("custo total de litigar nos 60 mil processos (R$ M)")
+    ax.set_title("Baselines: o que aconteceu, heurísticas, limiar fixo, política e teto teórico")
+    ax.set_xlim(0, b["custo"].max() / 1e6 * 1.25)
+    fig.tight_layout()
+    fig.savefig(out / "baselines.png", dpi=150)
+    plt.close(fig)
+
+
 MARCADOR_INICIO = "<!-- backtest:inicio -->"
 MARCADOR_FIM = "<!-- backtest:fim -->"
 
@@ -116,12 +135,54 @@ def linhas_resumo(res: dict, h: str = "#", imagens_prefixo: str = "") -> list[st
         f"- Custo real de **defender tudo** (condenação + honorários + custas + tempo + escritório): **{brl(res['custo_defender_tudo'])}**",
         f"- Custo de **acordar tudo** no alvo (curva de aceite): {brl(res['custo_acordar_tudo'])}",
         f"- Custo sob a **política** (curva de aceite): **{brl(res['custo_politica_curva'])}** → economia **{brl(res['economia_politica_curva'])} ({res['economia_pct_curva']:.1%})**, acordo em {res['share_acordo']:.1%} dos casos",
+        f"- Probabilidade usada no replay: {'**out-of-fold** (5 folds; cada caso pontuado por um modelo que não o viu)' if res.get('p_out_of_fold') else 'in-sample'}; "
+        f"acordos históricos ({res.get('n_acordos_historicos', 0)}) entram com o valor que de fato pagaram.",
         "",
-        f"{h}## Sensibilidade (economia vs. defender tudo)",
+        f"{h}## Baselines (mesmos custos; só a regra de decisão muda)",
+        "| regra | custo | economia | % | % acordo | captura do ganho máximo |", "|---|---|---|---|---|---|",
+        *[f"| {b['nome']} | {brl(b['custo'])} | {brl(b['economia'])} | {b['economia_pct']:.1%} | {b['share_acordo']:.1%} | {b['captura_do_ganho_maximo']:.0%} |"
+          for b in res["baselines"]["linhas"]],
+        "",
+        "Leitura: o ganho vem de decidir pelo custo total de litigar, não de prever melhor a sentença; a política captura a maior parte do que um oráculo capturaria.",
+        "",
+        img("baselines"),
+        "",
+        f"{h}## Banda do número (variação amostral)",
+        f"- Economia por fold: {' · '.join(f'{v:.1%}' for v in res['banda']['economia_pct_por_fold'])} → média **{res['banda']['media']:.1%} ± {res['banda']['sd']*100:.1f} p.p.**"
+        if res["banda"].get("media") is not None else "- Banda por fold indisponível (base pequena)",
+        f"- Bootstrap por caso ({res['banda']['n_bootstrap']}×): IC95 **{res['banda']['bootstrap_ic95'][0]:.1%} – {res['banda']['bootstrap_ic95'][1]:.1%}**",
+        "- O lado *acordo* é hipótese (curva de aceite): a banda mede só a variação amostral do modelo, não a incerteza sobre o aceite — ver sensibilidade.",
+        "",
+        f"{h}## Ponto de indiferença (breakeven) e decisões sensíveis",
+        f"- p\\* médio (p_perda em que acordar no alvo da escada custa o mesmo que defender): **{res['breakeven']['medio']:.2f}** "
+        f"(p5 {res['breakeven']['p05']:.2f} · p95 {res['breakeven']['p95']:.2f}); casos cujo IC95 de p cruza p\\*: **{res['breakeven']['share_sensiveis']:.1%}** (vão para revisão)",
+        "",
+        f"{h}## Sensibilidade ao aceite e ao valor da oferta (economia vs. defender tudo)",
         "| taxa de aceite | oferta × | custo | economia | % |", "|---|---|---|---|---|",
         *[f"| {s['taxa_aceite']} | {s['mult_oferta']} | {brl(s['custo'])} | {brl(s['economia'])} | {s['economia_pct']:.1%} |" for s in res["sensibilidade"]],
         "",
         img("sensibilidade"),
+        "",
+        f"{h}## Sensibilidade à âncora da curva de aceite (s50 = fração do VC em que 50% aceitam)",
+        "| s50 | custo da política | economia | % acordo |", "|---|---|---|---|",
+        *[f"| {s['s50']:.2f} | {brl(s['custo_politica'])} | {s['economia_pct']:.1%} | {s['share_acordo']:.1%} |" for s in res["sensibilidade_s50"]],
+        "",
+        f"{h}## Sensibilidade aos custos de litigar (defender tudo e política recalculados)",
+        "| cenário | defender tudo | política | economia | % acordo | p\\* médio |", "|---|---|---|---|---|---|",
+        *[f"| {s['cenario']} | {brl(s['custo_defender_tudo'])} | {brl(s['custo_politica'])} | {s['economia_pct']:.1%} | {s['share_acordo']:.1%} | {s['p_breakeven_medio']:.2f} |"
+          for s in res["sensibilidade_custos"]],
+        "",
+        f"{h}## Instruir antes de acordar (valor esperado da informação)",
+        f"- Casos em que vale pedir {' e/ou '.join(cfg.NOME_DOC[d].lower() for d in res['instruir']['docs_avaliados'])} antes de propor acordo: "
+        f"**{res['instruir']['n_instruir']:,} ({res['instruir']['share_instruir']:.1%} dos casos; {res['instruir']['share_dos_acordos']:.0%} dos acordos)**; "
+        f"EVSI total {brl(res['instruir']['evsi_total'])} — hipótese: q_d = P(doc | outros docs) é a chance de o back-office localizar o documento.",
+        "| chance de localizar (× q_d) | casos instruir | % | EVSI total | EVSI médio |", "|---|---|---|---|---|",
+        *[f"| × {q['mult_q']} | {q['n_instruir']:,} | {q['share_instruir']:.1%} | {brl(q['evsi_total'])} | {brl(q['evsi_medio'])} |" for q in res["instruir"]["por_mult_q"]],
+        "",
+        f"{h}## Por UF",
+        "| UF | % acordo | p\\* médio | severidade (cond/VC) | perda real | defender tudo | política | economia |", "|---|---|---|---|---|---|---|---|",
+        *[f"| {u['uf']} | {u['share_acordo']:.0%} | {u['p_breakeven']:.2f} | {u['ratio_media']:.2f} | {u['perda_real']:.0%} | {brl(u['defender_tudo'])} | {brl(u['politica'])} | {u['economia_pct']:.1%} |"
+          for u in res["por_uf"]],
         "",
         f"{h}## Faixas",
         "| faixa | casos | % casos | p perda prevista | perda real | condenação real | custo real defesa |", "|---|---|---|---|---|---|---|",
@@ -133,7 +194,7 @@ def linhas_resumo(res: dict, h: str = "#", imagens_prefixo: str = "") -> list[st
         "| documento | perda quando presente | perda quando ausente | Δ p.p. |", "|---|---|---|---|",
         *[f"| {cfg.NOME_DOC[d]} | {e['perda_com']:.1%} | {e['perda_sem']:.1%} | {(e['perda_sem']-e['perda_com'])*100:+.1f} |" for d, e in res["efeito_docs"].items()],
         "",
-        "Valor da informação — custo esperado de litigar evitável se o subsídio ausente fosse recuperado:",
+        "Ganho se encontrar — queda do custo esperado de litigar se o subsídio ausente fosse recuperado (limite superior do valor da informação):",
         "| documento | casos sem | ganho total | por caso |", "|---|---|---|---|",
         *[f"| {cfg.NOME_DOC[d]} | {v['casos_sem']:,} | {brl(v['ganho_total'])} | {brl(v['ganho_por_caso'])} |" for d, v in res["voi"].items()],
         "",
@@ -181,6 +242,7 @@ def main() -> None:
     _grafico_sensibilidade(res, args.out)
     _grafico_faixas(res, args.out)
     _grafico_voi(res, args.out)
+    _grafico_baselines(res, args.out)
     print((args.out / "resumo.md").read_text(encoding="utf-8"))
     _ = custo_politica  # exportado para uso externo
 

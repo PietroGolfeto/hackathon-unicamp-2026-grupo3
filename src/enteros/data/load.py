@@ -16,6 +16,7 @@ COLUNAS_CANONICAS = [
     "numero", "uf", "assunto", "sub_assunto", "resultado_macro", "resultado_micro",
     "valor_causa", "valor_condenacao", *cfg.DOCS,
 ]
+COLUNAS_DERIVADAS = ["perda", "acordo", "perda_sentenca", "ratio", "n_docs"]  # cache antigo sem elas é refeito
 
 
 def _ler_xlsx(caminho: Path) -> pd.DataFrame:
@@ -45,6 +46,9 @@ def enriquecer(base: pd.DataFrame) -> pd.DataFrame:
     base["valor_causa"] = base["valor_causa"].astype(float)
     base["valor_condenacao"] = base["valor_condenacao"].astype(float).fillna(0.0)
     base["perda"] = (base["resultado_macro"] == cfg.NAO_EXITO).astype(int)
+    # acordo histórico não é sentença: fica fora do treino de frequência e de severidade
+    base["acordo"] = (base["resultado_micro"] == cfg.MICRO_ACORDO).astype(int)
+    base["perda_sentenca"] = ((base["perda"] == 1) & (base["acordo"] == 0)).astype(int)
     base["ratio"] = (base["valor_condenacao"] / base["valor_causa"]).where(base["perda"] == 1)
     base["n_docs"] = base[list(cfg.DOCS)].sum(axis=1)
     if base["numero"].duplicated().any():
@@ -57,7 +61,10 @@ def carregar_base(raw: Path | None = None, usar_cache: bool = True) -> pd.DataFr
     raw = Path(raw) if raw else cfg.ARQ_RAW_XLSX
     if usar_cache and cfg.ARQ_CACHE_PARQUET.exists() and raw.exists():
         if cfg.ARQ_CACHE_PARQUET.stat().st_mtime >= raw.stat().st_mtime:
-            return pd.read_parquet(cfg.ARQ_CACHE_PARQUET)
+            cache = pd.read_parquet(cfg.ARQ_CACHE_PARQUET)
+            if all(c in cache.columns for c in COLUNAS_DERIVADAS):
+                return cache
+            log.info("cache sem colunas derivadas novas; refazendo a partir do xlsx")
     if raw.exists():
         base = enriquecer(_ler_xlsx(raw))
         cfg.DIR_CACHE.mkdir(parents=True, exist_ok=True)
