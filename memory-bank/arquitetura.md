@@ -6,7 +6,8 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 ✅ Documentação e regras: `CLAUDE.md`, `memory-bank/`
 ✅ CI de PR e hooks locais: `.github/workflows/ci.yml`, `scripts/`, `Makefile` (`make hooks`, `make check`)
 ✅ `src/core`: pacote `core` com parsing dos CSVs, UF por CNJ, contratos P1/P3 e política em numpy, 32 testes
-⬜ `src/api`, `src/web`, `src/model`, `src/extractor`, `infra/`: ainda não existem
+🔧 `src/api`: FastAPI com auth por cookie, 8 tabelas via `create_all`, seed idempotente; rotas de negócio em andamento
+⬜ `src/web`, `src/model`, `src/extractor`, `infra/`: ainda não existem
 
 ## Visão geral
 ```
@@ -24,7 +25,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 | Componente | Pasta | Estado | Responsabilidade |
 |---|---|---|---|
 | core | `src/core` | ✅ | parsing (`colunas.py`, `cnj.py`), contratos (`caso.py`, `modelo.py`, `docs.py`), política e backtest vetorizados (`politica.py`). Só pydantic e numpy |
-| api | `src/api` | ⬜ | FastAPI: auth por cookie, processos, recomendações, decisões, dashboards, políticas, arquivos, link de demo, CLI de jobs |
+| api | `src/api` | 🔧 | FastAPI (`app/`): `config.py`, `db.py`, `models.py`, `auth.py`, `main.py` com lifespan (create_all → seed → cache do histórico → plugins); routers e services em andamento |
 | web | `src/web` | ⬜ | SPA React + Vite + TS + Mantine: login, casos, caso, painel, política, aprovações |
 | model | `src/model` | ⬜ | P1: treino XGBoost, `RealScorer`, export do histórico com scores OOF |
 | extractor | `src/extractor` | ⬜ | P3: extração LLM dos PDFs, sinais de alerta, análise e minutas em linguagem jurídica |
