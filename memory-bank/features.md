@@ -10,7 +10,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Contratos P1/P3 e stubs | — | Lucas | ✅ | contratos em `src/core/core/{caso,modelo,docs}.py`; `StubModelo` (lookup no histórico) e `StubExtrator` (regex nos autos) em `src/api/app/stubs.py`; seleção por env em `plugins.py` |
 | Política de custo esperado e backtest | 1, 2, 5 | Lucas; P1 calibra | ✅ | núcleo em `src/core/core/politica.py` (11 testes); backtest com resultados reais em `src/api/app/services/backtest.py` (~15 ms nos 60k) |
 | Auth por cookie, papéis advogado/gestor | 3 | Lucas | ✅ | `src/api/app/auth.py`, `routers/auth.py`; seed com 8 usuários (`senha123`) em `services/seed.py` |
-| Jobs: seed, load-historico, ingest, seed-demo, reset-demo, reset | — | Lucas | ✅ | `python -m app.cli`; `seed-demo` lê `data/exemplos/sinteticos.csv` (340 processos; ~255 decisões simuladas em 8 semanas; 15% ficam pendentes como fila do advogado) |
+| Jobs: seed, load-historico, ingest, seed-demo, reset-demo, reset | — | Lucas | ✅ | `python -m app.cli`; `seed-demo` lê `data/exemplos/sinteticos_processos.csv` (340 processos; ~255 decisões simuladas em 8 semanas; 15% ficam pendentes como fila do advogado) |
 | Lista e detalhe de processos, arquivos | 3 | Lucas | ✅ | `routers/processos.py`, `routers/files.py`; `pages/advogado/{Casos,Caso}.tsx` (PDFs em nova aba, abertos ficam marcados) |
 | Recomendação gravada sob a política ativa | 1, 2, 4 | Lucas | ✅ | `GET /processos/{id}/recomendacao` → `services/recomendacao.py` (get_or_create com ON CONFLICT) |
 | Decisão com aderência, justificativa e aprovação | 4 | Lucas | ✅ | `POST /processos/{id}/decisoes`; regras em `services/recomendacao.avaliar_decisao`; devolve minutas e contato adverso |
@@ -22,8 +22,11 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Link mágico `/demo` para a banca | 3 | Lucas | ✅ | `GET /api/demo?t=` reserva caso livre da Banca Demo por 15 min, rate limit 20/min |
 | Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | ✅ | `pages/{Login,advogado/*,gestor/*}.tsx`; painel faz poll de 5 s; política simula com debounce de 300 ms e publica com diff; P4/P5 polem a partir daqui |
 | Compose, Caddy, deploy VPS, standby homelab, backup | — | Lucas | 🔧 | `make up` + `make jobs-docker` testados localmente via Caddy em :8080; `make deploy`/`make backup` escritos (VPS_HOST/VPS_DIR no .env) mas VPS e standby ainda não subiram |
-| Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 exporta o modelo | 🔧 | `data/exemplos/sinteticos.csv` ✅ e seed ✅; modelo exportado em `src/model/artifacts/` pendente (P1) |
-| Modelo XGBoost + scores OOF do histórico | 1, 2 | P1 | ⬜ | `src/model` |
+| Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 | ✅ | modelos em `models/*.json`, `docs/backtest/resumo.json`, `data/exemplos/sinteticos.csv` (engine) e `sinteticos_processos.csv` (portal) |
+| Modelo de perda (logística calibrada + tabela de segmentos) e razão de condenação | 1, 2 | P1 | ✅ | `src/enteros/policy/{model,ratio}.py` → `models/*.json`; AUC 0,923 OOF. Scores OOF para o portal (`data/derived/historico_scored.csv`) pendentes |
+| Engine de valor esperado, faixas, escada de negociação e backtest do engine | 1, 2, 5 | P1 | ✅ | `src/enteros/policy/{engine,negotiation}.py`, `policy.yaml`, `src/enteros/backtest/`, `docs/backtest/`, `make backtest` |
+| API própria do engine (`POST /recomendacao`) | 3 | P1 | ✅ | `src/enteros/api/main.py`, `make engine-api` (:8001) |
+| Integração engine → portal (adapter `ModeloScores`) | 1, 2 | Lucas | ⬜ | `src/api/app/` via `MODEL_IMPL` |
 | Extração LLM dos PDFs + sinais de alerta | 1, 3 | P3 | ⬜ | `src/extractor` |
 | Análise e minutas em linguagem jurídica | 3 | P3 | ⬜ | `src/extractor` |
 | Portal do advogado polido + vídeo | 3 | P4 | ⬜ | `pages/advogado`, `docs/video.*` |

@@ -105,3 +105,30 @@ Backtest usa **resultados reais**: `custo_defesa_real = custas + hon·causa + co
 
 ## Seleção de implementação
 Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. A classe precisa ser instanciável **sem argumentos** (carrega seus artefatos sozinha). Import ou construção falha → stub, log alto, campo `origem` mostra "stub" na UI. `app/plugins.py` faz isso no start e em `POST /api/internal/reload-historico`.
+
+## O que P1 entregou na fase 1 (`src/enteros`, pacote `enteros`)
+Contratos próprios em `enteros/schemas.py`: `CaseFeatures` (uf, sub_assunto, valor_causa, `docs` com status `presente|ausente|inconsistente`, opcionais da IA documental) → `Recomendacao` (decisão `defesa|acordo|instruir`, faixa, `p_perda` e intervalo, condenação p20/p50/p80, `ev_defesa`, `ev_acordo`, escada abertura/alvo/teto, decomposição, VOI, motivos, regras, contribuições). Parâmetros em `enteros/policy/policy.yaml`.
+
+Mapa para o contrato do portal (`core.modelo.Scores`), usado pelo adapter em `src/api`:
+| `core` | `enteros` |
+|---|---|
+| `p_exito_defesa` | `1 − p_perda` (média entre tabela de segmentos e logística) |
+| `condenacao_p20/p50/p80` | quantis de `ratio_condenacao` (UF × sub-assunto) × `valor_causa` |
+| `contribuicoes` (positivo = favorece o banco) | `ModeloPerda.contribuicoes` com o sinal invertido (lá positivo = mais risco) |
+| `ModeloInfo.metricas/calibracao` | `modelo.metricas` (auc_oof, brier_oof, ece_oof, n_treino) e `modelo.calibracao` |
+| `Subsidios` (bool) | `DocsStatus` (`presente`/`ausente`; `inconsistente` só vem da IA) |
+
+Mapa `PoliticaParams` (API) ↔ `policy.yaml` (engine), para P1 calibrar os defaults:
+| `PoliticaParams` (default) | `policy.yaml` | Nota |
+|---|---|---|
+| `limiar_defesa_forte` 0,85 | `1 − faixas.limiar_verde` = 0,85 | igual |
+| `limiar_acordo_forte` 0,30 | `1 − faixas.limiar_vermelha` = 0,40 | engine acorda mais cedo |
+| `custas_fixas_defesa` 1.500 | `custos.custo_escritorio_defesa` 1.200 | |
+| `honorarios_defesa_pct` 10% da causa | `custas_pct_valor_causa` 2% + correção `fator_tempo` 1,196 sobre a condenação | estruturas diferentes |
+| `sucumbencia_pct` 10% | `honorarios_sucumbencia_pct` 15% | |
+| `custo_operacional_acordo` 300 | `custo_escritorio_acordo` 300 | igual |
+| `taxa_aceite_esperada` 0,65 fixa | curva logística (`aceite_s50` 30% da causa, largura 0,06) | API mede o aceite real e substitui |
+| `fator_oferta` 0,80 × prejuízo esperado | alvo = argmin do custo esperado na grade | |
+| `piso/teto_oferta_pct_causa` 10% / 60% | 10% / 70%; teto também ≤ 90% do EV de defesa | |
+| `sinais_forcam_acordo` [CREDITO_CONTA_TERCEIRO] | + LIVENESS_AUSENTE_CANAL_DIGITAL | adicionar o segundo código em `core/caso.py` quando P3 extrair liveness |
+

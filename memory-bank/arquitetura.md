@@ -9,16 +9,21 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 ✅ `src/api`: FastAPI completa (auth, processos, recomendação, decisão, resultado, eventos, políticas, dashboards, aprovações, demo, arquivos) + CLI de jobs; 20 testes contra Postgres
 ✅ `src/web`: Vite + React 19 + Mantine 8 + TanStack Query + react-router 7; login, casos, caso, painel, política e aprovações; `npm run build` = tsc estrito + vite
 🔧 `infra/` + `Makefile`: `make up` sobe db/api/caddy em :8080 (testado), `make jobs-docker` roda os jobs no container, `make deploy`/`make backup` para a VPS; VPS e standby ainda não subiram
-⬜ `src/model`, `src/extractor`: ainda não existem (P1, P3)
+✅ `src/enteros` (P1, fase 1): loader da planilha, tabela de segmentos + logística calibrada (AUC 0,923 OOF), razão de condenação por UF×sub-assunto, engine de valor esperado com escada de negociação, backtest com resultados reais (`docs/backtest/`), API própria (:8001) e 16 testes em `tests/`
+⬜ integração engine → portal (adapter `ModeloScores`); `src/extractor` (P3) ainda não existe
 
 ## Visão geral
 ```
 advogado (celular/desktop) ─┐
 gestor do banco ────────────┤─ HTTPS ─ Caddy ─┬─ /api/*  ─ FastAPI ─ Postgres
                             │                  └─ /*      ─ SPA React (estático)
-P1 modelo    ─ scores por processo + scores OOF dos 60k ─▶ jobs ingest / load-historico ─▶ Postgres
+P1 engine (src/enteros) ─ modelos em models/*.json + policy.yaml ─▶ scores por processo (adapter) ─▶ API
+                         └─ make backtest ─▶ docs/backtest/ (números do deck)
 P3 extração  ─ dados dos PDFs, sinais, análise, minutas ─▶ job ingest ─────────────────▶ Postgres
 ```
+
+## Duas políticas na fase 1, uma base
+**Engine (P1)** é a política de referência: `policy.yaml` + modelos em JSON → faixa, decisão, escada e o backtest que dá o número financeiro do deck (economia de 31% vs defender tudo, acordo em 36% dos casos). **API do portal** é a camada operacional: grava a recomendação que o advogado viu, mede aderência e efetividade e deixa o gestor simular parâmetros ao vivo sobre os 60k. A convergência prevista é a API consumir o modelo do engine via adapter e P1 calibrar os `PoliticaParams` a partir do `policy.yaml` (mapa em `contratos.md`).
 
 ## Princípio central: scores ≠ política
 Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contribuições), calculados uma vez por processo e gravados. Política é uma função pura barata em numpy sobre scores + parâmetros versionados. Isso permite: gestor simular parâmetros sobre 60 mil casos em < 100 ms, recomendação gravada no momento em que o advogado abre o caso, e P1 entregar só scores.
@@ -29,8 +34,9 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 | core | `src/core` | ✅ | parsing (`colunas.py`, `cnj.py`), contratos (`caso.py`, `modelo.py`, `docs.py`), política e backtest vetorizados (`politica.py`). Só pydantic e numpy |
 | api | `src/api` | ✅ | FastAPI (`app/`): `main.py` com lifespan (create_all → seed → cache do histórico → plugins); `routers/{auth,processos,files,politicas,dashboard,aprovacoes,demo}.py`; `services/{seed,historico,backtest,recomendacao,metricas,ingest,seed_demo}.py`; `cli.py` |
 | web | `src/web` | ✅ | SPA (`src/`): `api/client.ts` (tipos = schemas da API), `auth/useSession.ts`, `lib/format.ts` (BRL, %, datas), `components/{Layout,Badges,Stat}.tsx`, `pages/Login.tsx`, `pages/advogado/{Casos,Caso}.tsx` (cabeçalho com sinais → card da recomendação → análise → documentos → decisão com cronômetro → contato, minutas copiáveis e resultado); `pages/gestor/{Painel,Politica,Aprovacoes}.tsx` (números; gráficos são de P5). Dev: proxy `/api` → :8000 |
-| model | `src/model` | ⬜ | P1: treino XGBoost, `RealScorer`, export do histórico com scores OOF |
+| enteros (P1) | `src/enteros`, `models/`, `tests/` | ✅ | pacote `enteros` do pyproject raiz: `data/load.py` (xlsx → base canônica, cache parquet), `policy/{model,ratio}.py` (logística + segmentos com shrinkage; quantis de condenação), `policy/{engine,negotiation,params}.py` + `policy.yaml` (valor esperado, faixas verde/amarela/vermelha, escada abertura/alvo/teto, VOI), `backtest/{replay,report}.py`, `api/main.py`. Substitui o `src/model` previsto |
 | extractor | `src/extractor` | ⬜ | P3: extração LLM dos PDFs, sinais de alerta, análise e minutas em linguagem jurídica |
+| ambiente | `pyproject.toml`, `uv.lock`, `Makefile` | ✅ | um `.venv` via uv workspace (raiz = enteros; membros `src/core`, `src/api`); `make install`; alvos do engine (`data`, `train`, `backtest`, `sinteticos`, `engine-api`, `demo`) e do portal no mesmo Makefile |
 | infra | `infra/` | 🔧 | `compose.yml` (db, api, caddy; invocar com `--project-directory .`), `compose.local.yml` (porta 8080, sem TLS), `Caddyfile` (`{$DOMAIN}`), `api.Dockerfile` (instala core/api e model/extractor se existirem), `web.Dockerfile` (node build → caddy) |
 | ci | `.github/`, `scripts/`, `Makefile` | ✅ | verificações de PR e testes por componente |
 
@@ -47,6 +53,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 | `eventos` | abriu_caso, viu_recomendacao, abriu_documento |
 
 ## Fluxos
+0. **Engine**: `make data` (xlsx em `data/raw/` ou `sinteticos.csv`) → `make train` grava `models/*.json` → `make backtest` grava `docs/backtest/resumo.{json,md}`, gráficos e o bloco marcado do README.
 1. **Carga**: `load-historico` lê os 2 CSVs → merge → scores OOF de P1 (ou stub) → `historico_sentencas`. `ingest` lê `data/exemplos/<numero>/` → extração de P3 (ou stub) → scores de P1 (ou stub) → `processos`. Idempotente; nunca toca `decisoes`.
 2. **Advogado abre caso**: `GET /processos/{id}/recomendacao` → get_or_create sob a política ativa → grava evento.
 3. **Decisão**: `POST /processos/{id}/decisoes` → calcula `aderente`; divergência exige justificativa; valor fora da banda ou causa alta vira `pendente_aprovacao`; devolve minutas e contato adverso quando acordo. Depois `POST /decisoes/{id}/resultado`.

@@ -4,11 +4,15 @@ HEAD ?= HEAD
 VENV := .venv
 PY := $(if $(wildcard $(VENV)/bin/python),$(VENV)/bin/python,python3)
 UV := $(shell command -v uv 2>/dev/null)
+# Força o índice público mesmo em máquinas com espelho corporativo configurado no uv do usuário.
+UVENV := UV_DEFAULT_INDEX=https://pypi.org/simple
 COMPOSE := docker compose -f infra/compose.yml --project-directory .
 COMPOSE_LOCAL := $(COMPOSE) -f infra/compose.local.yml
 CLI := PYTHONPATH=src/api $(PY) -m app.cli
 # testes da API sempre num banco próprio: nunca o DATABASE_URL do .env (drop_all!)
 TEST_DATABASE_URL ?= postgresql+psycopg://enter:enter@localhost:5432/enter_test
+# planilha bruta da Enter para o engine (não versionada); sem ela roda sobre data/exemplos/sinteticos.csv
+RAW ?= data/raw/Hackaton_Enter_Base_Candidatos.xlsx
 -include .env
 export
 
@@ -36,20 +40,23 @@ lint: ## ruff em core e api; tsc no web
 	$(PY) -m ruff check src/core src/api
 	@if [ -f src/web/package.json ]; then echo "→ web (tsc)"; cd src/web && npm run lint --if-present; fi
 
-test: ## testes dos componentes que existirem (core, api com Postgres, web build)
+test: ## testes de todos os componentes (core, api com Postgres, engine, web build)
 	@if [ -f src/core/pyproject.toml ]; then echo "→ core"; $(PY) -m pytest -q src/core; fi
 	@if [ -f src/api/pyproject.toml ]; then echo "→ api"; DATABASE_URL=$(TEST_DATABASE_URL) $(PY) -m pytest -q src/api; fi
+	@if [ -d tests ]; then echo "→ engine"; $(PY) -m pytest -q tests; fi
 	@if [ -f src/web/package.json ]; then echo "→ web"; cd src/web && npm run build; fi
 	@echo "✓ testes ok"
 
 # ---------------------------------------------------------------- ambiente local
 
-install: ## cria .venv (Python 3.12) com core+api e instala o web
-	@if [ -n "$(UV)" ]; then uv venv -q -p 3.12 $(VENV); uv pip install -q --python $(VENV)/bin/python -e src/core -e "src/api[test]"; \
-	else python3 -m venv $(VENV) && $(VENV)/bin/pip install -q -e src/core -e "src/api[test]"; fi
+install: ## .venv com uv (core, api e engine no mesmo workspace) e npm install do web
+	@if [ -n "$(UV)" ]; then $(UVENV) uv sync --extra dev; \
+	else python3 -m venv $(VENV) && $(VENV)/bin/pip install -q -e ".[dev]" -e src/core -e "src/api[test]"; fi
 	@for p in model extractor; do if [ -f src/$$p/pyproject.toml ]; then $(VENV)/bin/pip install -q -e src/$$p; fi; done
 	cd src/web && npm install --no-audit --no-fund
-	@echo "✓ pronto: make up (docker) ou make dev-api + make dev-web"
+	@echo "✓ pronto: make up (docker) ou make dev-api + make dev-web; engine: make demo"
+
+setup: install ## alias de install
 
 up: ## sobe db, api e caddy em http://localhost:8080 (sem TLS)
 	$(COMPOSE_LOCAL) up -d --build
@@ -66,13 +73,13 @@ logs: ## acompanha logs da api e do caddy
 psql: ## abre psql no Postgres do compose
 	$(COMPOSE_LOCAL) exec db psql -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}
 
-dev-api: ## API com reload em :8000 (usa .env e o Postgres de `make up` ou local)
+dev-api: ## API do portal com reload em :8000 (usa .env e o Postgres de `make up` ou local)
 	$(PY) -m uvicorn --app-dir src/api app.main:app --reload --port 8000
 
 dev-web: ## Vite em :5173 com proxy de /api para :8000
 	cd src/web && npm run dev
 
-# ---------------------------------------------------------------- jobs de carga (rodam onde estiver o DATABASE_URL)
+# ---------------------------------------------------------------- jobs de carga do portal (rodam onde estiver o DATABASE_URL)
 
 seed: ## escritórios, usuários e política v1 (idempotente)
 	$(CLI) seed
@@ -83,7 +90,7 @@ historico: ## carrega os 2 CSVs da Enter de data/ e avisa a API
 ingest: ## lê data/exemplos/<numero>/ (autos e subsídios) para processos
 	$(CLI) ingest
 
-seed-demo: ## processos sintéticos + decisões simuladas (idempotente)
+seed-demo: ## processos sintéticos (data/exemplos/sinteticos_processos.csv) + decisões simuladas
 	$(CLI) seed-demo
 
 reset-demo: ## apaga decisões, eventos e recomendações; mantém processos e políticas
@@ -95,11 +102,30 @@ reset: ## recria o banco LOCAL e roda seed, histórico, ingest e seed-demo. Nunc
 jobs-docker: ## mesmo que `make reset` mas dentro do container api (após make up)
 	$(COMPOSE_LOCAL) exec api python -m app.cli reset
 
+# ---------------------------------------------------------------- engine de política e backtest (src/enteros, P1)
+
+data: ## carrega a base (xlsx em $(RAW) ou data/exemplos/sinteticos.csv) e salva cache parquet
+	$(PY) -m enteros.data.load --raw $(RAW)
+
+train: ## ajusta tabela de segmentos, logística calibrada e quantis de condenação; salva em models/
+	$(PY) -m enteros.policy.model --raw $(RAW)
+
+backtest: ## replay da política nos 60k com sensibilidade; gera docs/backtest/resumo.md e gráficos
+	$(PY) -m enteros.backtest.report --raw $(RAW)
+
+sinteticos: ## gera data/exemplos/sinteticos.csv (dados nossos, sem linhas da Enter) a partir dos modelos
+	$(PY) -m enteros.sinteticos --raw $(RAW)
+
+engine-api: ## API do engine em http://localhost:8001/docs (o portal roda em :8000)
+	$(PY) -m uvicorn enteros.api.main:app --reload --port 8001
+
+demo: data train backtest test ## pipeline do engine: dados → modelos → backtest → testes
+
 # ---------------------------------------------------------------- deploy e backup (VPS_HOST e VPS_DIR no .env)
 
 deploy: ## rsync de data/ + git pull + compose up --build na VPS
 	@test -n "$(VPS_HOST)" || (echo "defina VPS_HOST e VPS_DIR no .env"; exit 1)
-	rsync -az --delete --exclude 'derived/' data/ $(VPS_HOST):$(VPS_DIR)/data/
+	rsync -az --delete --exclude 'derived/' --exclude 'cache/' data/ $(VPS_HOST):$(VPS_DIR)/data/
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && git pull --ff-only && docker compose -f infra/compose.yml --project-directory . up -d --build'
 
 backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
@@ -108,4 +134,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker data train backtest sinteticos engine-api demo deploy backup

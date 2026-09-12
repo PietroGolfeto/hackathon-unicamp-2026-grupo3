@@ -55,7 +55,7 @@ def cmd_ingest(escritorio: str) -> None:
 
 def cmd_seed_demo(csv: Path | None) -> None:
     Base.metadata.create_all(engine)
-    caminho = csv or settings.exemplos_dir / "sinteticos.csv"
+    caminho = csv or settings.exemplos_dir / "sinteticos_processos.csv"
     if not caminho.exists():
         sys.exit(f"{caminho} não encontrado")
     modelo, extrator = _plugins()

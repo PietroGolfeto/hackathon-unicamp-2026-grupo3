@@ -7,7 +7,7 @@
 | `Hackaton_Enter_Base_Candidatos.xlsx - Subsídios disponibilizados.csv` | 60.000 | Número do processo**s**, Contrato, Extrato, Comprovante de crédito, Dossiê, Demonstrativo de evolução da dívida, Laudo referenciado |
 | `exemplos/<numero>/autos/*.pdf`, `exemplos/<numero>/subsidios/*.pdf` | 2 pastas | petição inicial e documentos do banco; pasta com o nome do número CNJ, ignorada pelo git; `python -m app.cli ingest` lê |
 
-Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação de política fica desabilitada com aviso.
+Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação de política fica desabilitada com aviso. O engine (`src/enteros`) lê a **planilha** `data/raw/Hackaton_Enter_Base_Candidatos.xlsx` (mesmos dados, duas abas) e, sem ela, `data/exemplos/sinteticos.csv`.
 
 ## Regras de parsing
 - CSV de subsídios tem **uma linha de legenda antes do cabeçalho**: ler com `header=1`.
@@ -40,6 +40,16 @@ Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação d
 | defaults, com Extinção | 49,7% | R$ 313M | R$ 392M | R$ 283M |
 | defaults, sem Extinção | 55,3% | R$ 270M | R$ 351M | R$ 246M |
 Leitura: com custas R$ 1.500 + 10% de honorários, defender custa ≥ R$ 3k por processo, enquanto uma oferta no piso (10% da causa) com 65% de aceite custa menos; por isso "acordar tudo" vence a política sob essa hipótese. Calibração de P1 na H5: piso/fator de oferta e taxa de aceite realistas (meta 25–40% de acordo), ou custo de defesa menor. `load-historico` roda em 0,2 s; `simular` em ~15 ms.
+
+## Backtest do engine (P1, `make backtest`, premissas em `docs/premissas.md`)
+| Medida | Valor |
+|---|---|
+| Modelo de perda (logística, OOF 5 folds) | AUC 0,923 · Brier 0,093 · ECE 0,003 · taxa de perda 30,4% |
+| Defender tudo (condenação + honorários 15% + custas 2% + correção 1% a.m. × 18 meses + escritório R$ 1.200) | R$ 342,9M |
+| Acordar tudo no alvo (curva de aceite) | R$ 246,6M |
+| Política do engine (acordo em 36% dos casos) | R$ 236,7M, economia R$ 106M (31%) |
+| Faixas | verde 57% dos casos / 20% do custo · amarela 19% · vermelha 24% dos casos / 59% do custo |
+Os dois backtests (engine e API) usam resultados reais, mas premissas de custo diferentes; por isso os totais não batem. Ver decisão 25.
 
 ## Processos exemplo (do vencedor anterior; confirmar que são os mesmos)
 `0654321-09.2024.8.04.0001` (Manaus/AM): idoso, aposentado, contratação por app, crédito caiu em conta da Caixa que não é do autor, boletim de ocorrência, reclamação BACEN. `0801234-56.2024.8.10.0001` (MA): 6 subsídios presentes.

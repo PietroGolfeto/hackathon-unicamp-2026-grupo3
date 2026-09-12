@@ -1,5 +1,7 @@
 """Políticas (simular/ativar), dashboards, aprovações e o link de demo."""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from core.politica import PoliticaParams
@@ -114,8 +116,8 @@ def test_seed_demo_idempotente(app_pronto, gestor: TestClient):
     from app.db import SessionLocal
     from app.models import Decisao
     from app.services import seed_demo
-    from tests.conftest import SINTETICOS
 
+    SINTETICOS = Path(__file__).resolve().parents[3] / "data" / "exemplos" / "sinteticos_processos.csv"
     with SessionLocal() as db:
         r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, app_pronto.state.extrator)
         assert r1["processos_criados"] >= 300 and 220 <= r1["decisoes_criadas"] <= 280

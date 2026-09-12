@@ -22,7 +22,6 @@ os.environ["MODEL_IMPL"] = "nao.existe:Modelo"
 os.environ["EXTRACTOR_IMPL"] = "nao.existe:Extrator"
 
 SENHA = "senha123"
-SINTETICOS = Path(__file__).resolve().parents[3] / "data" / "exemplos" / "sinteticos.csv"
 
 
 @pytest.fixture(scope="session")
