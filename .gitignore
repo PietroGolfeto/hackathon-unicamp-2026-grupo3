@@ -7,6 +7,8 @@
 data/*.csv
 data/subsidios/
 data/processos_exemplo/
+data/derived/
+data/policy_artifacts/
 
 # Dependências de pacotes
 node_modules/
@@ -43,3 +45,7 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Caches de ferramentas
+.pytest_cache/
+.ruff_cache/
