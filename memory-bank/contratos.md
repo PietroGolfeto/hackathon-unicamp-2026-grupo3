@@ -1,6 +1,6 @@
 # Contratos
 
-**Estado: implementado em `src/core/core/{caso,modelo,politica}.py`, com testes.** Congela na hora 2 do evento. Depois disso, mudança exige editar este arquivo no mesmo commit e avisar o grupo. Tudo aqui vive em `src/core` e depende só de pydantic e numpy.
+**Estado: implementado em `src/core/core/{caso,modelo,docs,politica}.py`, com testes.** Congela na hora 2 do evento. Depois disso, mudança exige editar este arquivo no mesmo commit e avisar o grupo. Tudo aqui vive em `src/core` e depende só de pydantic e numpy.
 
 Fronteira **arquivo primeiro**: P1 e P3 são chamados pelo job `ingest`, mas cada um também grava sua saída em `data/derived/`. O ingest prefere o arquivo se existir. Import quebrado não derruba a API.
 
@@ -68,6 +68,7 @@ class ExtratorDocs(Protocol):
     def analisar(self, caso: CasoFeatures, dados: DadosExtraidos, scores: Scores) -> Analise: ...
     def redigir(self, caso: CasoFeatures, dados: DadosExtraidos, rec: Recomendacao) -> Minutas: ...
 ```
+`core/docs.py` também tem `subsidios_por_arquivos(nomes) -> Subsidios`: deduz as seis flags pelos nomes dos PDFs da pasta `subsidios/`. O ingest usa isso; P3 pode reutilizar.
 
 ## Política (`core/politica.py`, dona: API; P1 calibra os defaults)
 ```python
