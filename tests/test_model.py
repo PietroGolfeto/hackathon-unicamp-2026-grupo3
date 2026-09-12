@@ -81,3 +81,16 @@ def test_ajuste_roda_na_base_sintetica():
     assert len(m.cov) == len(m.colunas_cov) == len(m.cov[0])
     assert dict(zip(m.colunas, m.coef, strict=True))["contrato"] < 0
     assert m.versao.endswith("20260912")
+
+
+def test_ratio_sem_acordos_monotono_e_por_uf(engine):
+    r = engine.ratio
+    assert r.global_["n"] == sum(c["n"] for c in r.por_uf_sub.values())
+    assert r.global_["n"] == sum(c["n"] for c in r.por_sub.values())
+    for c in [*r.por_uf_sub.values(), *r.por_sub.values(), r.global_]:
+        assert 0.2 <= c["p20"] <= c["p50"] <= c["p80"] <= 1.0
+        assert 0 < c["p_procedencia"] < 1
+        assert c["media_parcial"] < c["media_procedencia"]
+    assert r.para("MA", cfg.SUB_GENERICO)["media"] < r.para("AP", cfg.SUB_GOLPE)["media"]
+    assert r.para("AM", cfg.SUB_GOLPE)["media"] > 0.75 > r.para("MA", cfg.SUB_GOLPE)["media"]
+    assert set(("media", "p20", "p50", "p80", "n")) <= set(r.para("", "nan"))  # fallback do adapter
