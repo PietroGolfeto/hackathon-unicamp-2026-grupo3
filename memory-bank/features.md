@@ -28,6 +28,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | API própria do engine (`POST /recomendacao`) | 3 | P1 | ✅ | `src/enteros/api/main.py`, `make engine-api` (:8001) |
 | Integração engine → portal (adapter `ModeloScores`) | 1, 2 | Lucas | ✅ | `src/api/app/modelo_enteros.py` (padrão de `MODEL_IMPL`); `load-historico` pontua os 60k com a logística do engine quando não há `historico_scored.csv`; 4 testes |
 | Resumo dos principais pontos de um PDF (OCR + OpenAI) | 3 | P3 | ✅ | `src/extractor/extractor/{leitura,resumo,__main__}.py`; `make resumo PDF=caminho.pdf` (precisa de `OPENAI_API_KEY` no `.env`); texto nativo por página, OCR local só nas escaneadas; ainda não aparece no portal |
+| Ficha do caso por pasta de PDFs (extração LLM + engine) | 1, 2, 3 | P3 | 🔧 | `src/extractor/extractor/caso.py`; `make caso DIR=data/processos_exemplo/processo_01`; testes com cliente falso e engine real; nos 2 processos exemplo, com `gpt-5.4-mini` (`--modelo` ou `OPENAI_MODEL`) a ficha segue a referência do time, inclusive a contradição petição × extrato da Maria, que o `gpt-4o-mini` perde; no José as contradições ainda citam registro interno do banco (laudo, comprovante) |
 | Extração LLM dos PDFs + sinais de alerta | 1, 3 | P3 | ⬜ | `src/extractor` |
 | Análise e minutas em linguagem jurídica | 3 | P3 | ⬜ | `src/extractor` |
 | Portal do advogado polido + vídeo | 3 | P4 | ⬜ | `pages/advogado`, `docs/video.*` |

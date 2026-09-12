@@ -52,5 +52,11 @@ Leitura: com custas R$ 1.500 + 10% de honorários, defender custa ≥ R$ 3k por 
 | Faixas | verde 57% dos casos / 20% do custo · amarela 19% · vermelha 24% dos casos / 59% do custo |
 Os dois backtests (engine e API) usam resultados reais, mas premissas de custo diferentes; por isso os totais não batem. Ver decisão 25.
 
-## Processos exemplo (do vencedor anterior; confirmar que são os mesmos)
+## Processos exemplo
 `0654321-09.2024.8.04.0001` (Manaus/AM): idoso, aposentado, contratação por app, crédito caiu em conta da Caixa que não é do autor, boletim de ocorrência, reclamação BACEN. `0801234-56.2024.8.10.0001` (MA): 6 subsídios presentes.
+Em `data/processos_exemplo/processo_01` (Maria) e `processo_02` (José), não versionados, layout plano: `01_Autos_Processo_<cnj>.pdf` + subsídios numerados (`02_Contrato_...`, `03_Extrato_Bancario`, `04_Comprovante_de_Credito_BACEN`, `05_Dossie_Veritas`, `06_Demonstrativo_Evolucao_Divida`, `07_Laudo_Referenciado`). Os 11 PDFs têm texto nativo (sem OCR); ~35 mil caracteres por caso.
+
+| Caso | Subsídios | Engine (`recomendar`, features esperadas) | Referência do time |
+|---|---|---|---|
+| 01 Maria, São Luís/MA, Genérico, VC R$ 20k | 6/6; extrato mostra TED/PIX/saque do crédito | defesa; p_perda 0,9%; condenação esperada 0,5% do VC | p_perda 0,6%, custo 0,3% do VC |
+| 02 José, Manaus/AM, Golpe, VC R$ 25k | 3/6 (comprovante, demonstrativo, laudo); crédito em conta Caixa contestada; laudo sem vídeo de liveness | acordo forçado (`CREDITO_CONTA_TERCEIRO`, `LIVENESS_AUSENTE_CANAL_DIGITAL`); p_perda 97,3%; condenação esperada R$ 20.552 (82% do VC); escada 9.000 / 11.250 / 17.500 | p_perda 97%, custo 82% do VC; abertura ~30% do VC |

@@ -126,6 +126,10 @@ resumo: ## resume os principais pontos de um PDF com OCR + OpenAI: make resumo P
 	@test -n "$(PDF)" || (echo "uso: make resumo PDF=caminho/do/arquivo.pdf"; exit 1)
 	$(PY) -m extractor "$(PDF)"
 
+caso: ## ficha do caso (LLM + engine) a partir da pasta de PDFs: make caso DIR=data/processos_exemplo/processo_01
+	@test -n "$(DIR)" || (echo "uso: make caso DIR=pasta/do/processo"; exit 1)
+	$(PY) -m extractor "$(DIR)"
+
 demo: data train backtest test ## pipeline do engine: dados → modelos → backtest → testes
 
 # ---------------------------------------------------------------- deploy e backup (VPS_HOST e VPS_DIR no .env)
@@ -141,4 +145,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker data train backtest sinteticos engine-api demo resumo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker data train backtest sinteticos engine-api demo resumo caso deploy backup

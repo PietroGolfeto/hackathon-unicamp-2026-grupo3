@@ -1,13 +1,15 @@
-"""CLI: `python -m extractor arquivo.pdf [--modelo gpt-4o-mini] [--json]`."""
+"""CLI: `python -m extractor <arquivo.pdf | pasta do processo> [--modelo gpt-4o-mini] [--json]`."""
 
 from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
 from openai import OpenAIError
 
+from extractor.caso import resumir_caso
 from extractor.leitura import ErroLeitura
 from extractor.resumo import ErroResumo, ResumoDocumento, resumir_pdf
 
@@ -28,9 +30,9 @@ def _texto(r: ResumoDocumento) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m extractor",
-        description="Resume os principais pontos de um PDF.",
+        description="Resume um PDF ou monta a ficha do caso a partir da pasta do processo.",
     )
-    parser.add_argument("caminho", help="arquivo PDF")
+    parser.add_argument("caminho", help="arquivo PDF (resumo) ou pasta do processo (ficha do caso)")
     parser.add_argument("--modelo", help="modelo da OpenAI (padrão: OPENAI_MODEL ou gpt-4o-mini)")
     parser.add_argument("--json", action="store_true", help="imprime o resultado em JSON")
     args = parser.parse_args(argv)
@@ -38,8 +40,12 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv(find_dotenv(usecwd=True))
 
     try:
-        r = resumir_pdf(args.caminho, modelo=args.modelo)
-        print(r.model_dump_json(indent=2) if args.json else _texto(r))
+        if Path(args.caminho).is_dir():
+            ficha = resumir_caso(args.caminho, modelo=args.modelo)
+            print(ficha.model_dump_json(indent=2) if args.json else ficha.texto())
+        else:
+            r = resumir_pdf(args.caminho, modelo=args.modelo)
+            print(r.model_dump_json(indent=2) if args.json else _texto(r))
     except (ErroLeitura, ErroResumo) as exc:
         print(f"erro: {exc}", file=sys.stderr)
         return 1
