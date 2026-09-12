@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router";
+import { Navigate, Outlet, Route, Routes } from "react-router";
 
 import { RequireAuth, homeDe, useSession } from "./auth/useSession";
 import { Layout } from "./components/Layout";
@@ -22,7 +22,7 @@ export default function App() {
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path="/casos" element={<Casos />} />
         <Route path="/casos/:id" element={<Caso />} />
-        <Route element={<RequireAuth papel="gestor"><Layout /></RequireAuth>}>
+        <Route element={<RequireAuth papel="gestor"><Outlet /></RequireAuth>}>
           <Route path="/gestor/painel" element={<Painel />} />
           <Route path="/gestor/politica" element={<Politica />} />
           <Route path="/gestor/aprovacoes" element={<Aprovacoes />} />

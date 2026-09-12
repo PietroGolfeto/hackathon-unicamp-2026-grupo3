@@ -72,7 +72,7 @@ Branch curta, PR pequeno para `main`, CI verde antes do merge, template de PR pr
 
 ## Convenções de código
 **Python**: 3.12, type hints em tudo, pydantic v2 para dados que cruzam fronteira, SQLAlchemy 2 estilo `Mapped[...]`, `ruff` com linha 100. Funções pequenas. Nomes de domínio em português (`processo`, `recomendacao`, `decisao`), termos técnicos em inglês (`router`, `service`, `client`). Erros de API via `HTTPException` com `detail` legível pelo usuário.
-**TypeScript**: `strict`, componentes funcionais, dados via TanStack Query, UI via Mantine, formatação de dinheiro e data só em `src/web/src/lib/format.ts`. Sem CSS solto além do que Mantine oferece.
+**TypeScript**: `strict`, componentes funcionais, dados via TanStack Query, UI via Mantine, formatação de dinheiro e data só em `src/web/src/lib/format.ts`. CSS só em `src/web/src/theme.css` (tokens, fontes, keyframes); o resto via tema e props do Mantine.
 **Testes**: `pytest` em `tests/` ao lado do pacote, com valores reais da base sempre que possível. Front: lint e build são o teste mínimo.
 **Português** em commits, docs, nomes de domínio e mensagens ao usuário.
 

@@ -1,7 +1,9 @@
-import { AppShell, Badge, Button, Container, Group, Text } from "@mantine/core";
+import { ActionIcon, AppShell, Avatar, Badge, Box, Container, Group, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import { Link, Outlet, useLocation } from "react-router";
 
 import { useLogout, useSession } from "../auth/useSession";
+import { IcoSair } from "./Icones";
+import { Marca } from "./Marca";
 
 const LINKS_ADV = [{ to: "/casos", rotulo: "Casos" }];
 const LINKS_GESTOR = [
@@ -11,55 +13,80 @@ const LINKS_GESTOR = [
   { to: "/casos", rotulo: "Casos" },
 ];
 
+function iniciais(nome: string): string {
+  return nome.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
+}
+
+function LinkTopo({ to, rotulo, ativo }: { to: string; rotulo: string; ativo: boolean }) {
+  return (
+    <UnstyledButton component={Link} to={to} px="sm" h="100%" pos="relative" display="inline-flex" style={{ alignItems: "center" }}>
+      <Text size="sm" fw={500} c={ativo ? "tinta.6" : "dimmed"} style={{ transition: "color .15s" }}>{rotulo}</Text>
+      {ativo && (
+        <Box className="crescer" pos="absolute" left="var(--mantine-spacing-sm)" right="var(--mantine-spacing-sm)" bottom={-1} h={2}
+          bg="laranja.6" style={{ borderRadius: 2 }} />
+      )}
+    </UnstyledButton>
+  );
+}
+
 export function Layout() {
   const { data: usuario } = useSession();
   const logout = useLogout();
   const { pathname } = useLocation();
   const links = usuario?.papel === "gestor" ? LINKS_GESTOR : LINKS_ADV;
+  const ativo = (to: string) => pathname.startsWith(to);
+
   return (
-    <AppShell header={{ height: 56 }} padding="md">
-      <AppShell.Header>
+    <AppShell header={{ height: 60 }} padding={{ base: "md", sm: "lg" }}>
+      <AppShell.Header style={{ borderColor: "var(--enter-traco)" }}>
         <Container size="xl" h="100%">
-          <Group h="100%" justify="space-between" wrap="nowrap" gap="xs">
-            <Group gap="xs" wrap="nowrap">
-              <Text fw={700} size="sm" component={Link} to="/" c="indigo" style={{ textDecoration: "none" }}>
-                Acordos · Banco UFMG
-              </Text>
-              <Group gap={4} visibleFrom="xs">
-                {links.map((l) => (
-                  <Button
-                    key={l.to} component={Link} to={l.to} size="compact-sm"
-                    variant={pathname.startsWith(l.to) ? "light" : "subtle"}
-                  >
-                    {l.rotulo}
-                  </Button>
-                ))}
+          <Group h="100%" justify="space-between" wrap="nowrap" gap="md">
+            <Group gap="lg" wrap="nowrap" h="100%">
+              <Marca />
+              <Group gap={0} wrap="nowrap" h="100%" visibleFrom="xs">
+                {links.map((l) => <LinkTopo key={l.to} to={l.to} rotulo={l.rotulo} ativo={ativo(l.to)} />)}
               </Group>
             </Group>
-            <Group gap="xs" wrap="nowrap">
+            <Group gap="sm" wrap="nowrap">
               {usuario && (
-                <Text size="xs" c="dimmed" visibleFrom="sm" truncate maw={220}>
-                  {usuario.nome}{usuario.escritorio_nome ? ` · ${usuario.escritorio_nome}` : ""}
-                </Text>
+                <Group gap={10} wrap="nowrap">
+                  <Avatar size={30} radius="xl" color="tinta" variant="filled" fz={11} fw={600}>{iniciais(usuario.nome)}</Avatar>
+                  <Box visibleFrom="sm" style={{ lineHeight: 1.15 }}>
+                    <Text size="sm" fw={500} truncate maw={200}>{usuario.nome}</Text>
+                    <Text size="xs" c="dimmed" truncate maw={200}>
+                      {usuario.papel === "gestor" ? "Gestor · Banco UFMG" : usuario.escritorio_nome ?? "Advogado"}
+                    </Text>
+                  </Box>
+                  {usuario.papel === "gestor" && <Badge size="sm" color="laranja" variant="light" hiddenFrom="sm">gestor</Badge>}
+                </Group>
               )}
-              {usuario?.papel === "gestor" && <Badge size="sm" variant="outline">gestor</Badge>}
-              <Button size="compact-sm" variant="default" onClick={() => logout.mutate()} loading={logout.isPending}>
-                Sair
-              </Button>
+              <Tooltip label="Sair">
+                <ActionIcon variant="subtle" color="tinta" size="lg" radius="xl" aria-label="Sair"
+                  onClick={() => logout.mutate()} loading={logout.isPending}>
+                  <IcoSair size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
           </Group>
         </Container>
       </AppShell.Header>
       <AppShell.Main>
         <Container size="xl" px={{ base: 0, sm: "md" }}>
-          <Group gap={4} hiddenFrom="xs" mb="sm">
+          <Group gap={4} hiddenFrom="xs" mb="md">
             {links.map((l) => (
-              <Button key={l.to} component={Link} to={l.to} size="compact-xs" variant={pathname.startsWith(l.to) ? "light" : "subtle"}>
-                {l.rotulo}
-              </Button>
+              <UnstyledButton key={l.to} component={Link} to={l.to} px="sm" py={6}
+                bg={ativo(l.to) ? "white" : "transparent"}
+                style={{ borderRadius: 6, border: `1px solid ${ativo(l.to) ? "var(--enter-traco-forte)" : "transparent"}` }}>
+                <Text size="sm" fw={500} c={ativo(l.to) ? "tinta.6" : "dimmed"}>{l.rotulo}</Text>
+              </UnstyledButton>
             ))}
           </Group>
-          <Outlet />
+          <div key={pathname} className="subir">
+            <Outlet />
+          </div>
+          <Text size="xs" c="dimmed" ta="center" mt={48} pb="md">
+            Banco UFMG · Política de acordos · empréstimo não reconhecido
+          </Text>
         </Container>
       </AppShell.Main>
     </AppShell>

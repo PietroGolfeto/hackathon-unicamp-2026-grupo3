@@ -1,12 +1,35 @@
 import { Paper, Text } from "@mantine/core";
 import type { ReactNode } from "react";
 
-export function Stat({ rotulo, valor, detalhe, cor }: { rotulo: string; valor: ReactNode; detalhe?: ReactNode; cor?: string }) {
+import { useContagem } from "../lib/animacao";
+
+type Props = {
+  rotulo: string;
+  /** Texto já formatado. Ignorado quando `numero` e `formatar` são dados. */
+  valor?: ReactNode;
+  /** Valor bruto: anima do valor anterior ao novo e formata a cada quadro. */
+  numero?: number | null;
+  formatar?: (n: number) => string;
+  detalhe?: ReactNode;
+  cor?: string;
+  /** Cartão em tinta com texto branco, para o número principal de um bloco. */
+  destaque?: boolean;
+  className?: string;
+};
+
+export function Stat({ rotulo, valor, numero, formatar, detalhe, cor, destaque, className }: Props) {
+  const animado = useContagem(numero);
+  const mostrado = numero != null && formatar ? formatar(animado) : valor ?? "—";
+  const secundario = destaque ? "rgba(255,255,255,.64)" : "dimmed";
+  const vazio = mostrado === "—";
   return (
-    <Paper withBorder p="sm" radius="md">
-      <Text size="xs" c="dimmed" tt="uppercase" fw={600}>{rotulo}</Text>
-      <Text size="xl" fw={700} c={cor}>{valor}</Text>
-      {detalhe && <Text size="xs" c="dimmed">{detalhe}</Text>}
+    <Paper withBorder={!destaque} p="md" bg={destaque ? "tinta.6" : "white"} className={className} miw={0}>
+      <Text size="xs" fw={500} tt="uppercase" lts=".06em" c={secundario}>{rotulo}</Text>
+      <Text className="serif numero" fz={{ base: 24, sm: 28 }} lh={1.15} mt={4}
+        c={vazio ? secundario : cor ?? (destaque ? "white" : "tinta.6")}>
+        {vazio ? "sem dado" : mostrado}
+      </Text>
+      {detalhe && <Text size="xs" mt={4} c={secundario}>{detalhe}</Text>}
     </Paper>
   );
 }
