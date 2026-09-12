@@ -38,7 +38,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 | enteros (P1) | `src/enteros`, `models/`, `tests/` | ✅ | pacote `enteros` do pyproject raiz: `data/load.py` (xlsx → base canônica, cache parquet), `policy/{model,ratio}.py` (logística + segmentos com shrinkage; quantis de condenação), `policy/{engine,negotiation,params}.py` + `policy.yaml` (valor esperado, faixas verde/amarela/vermelha, escada abertura/alvo/teto, VOI), `backtest/{replay,report}.py`, `api/main.py`. Substitui o `src/model` previsto |
 | extractor | `src/extractor` | ⬜ | P3: extração LLM dos PDFs, sinais de alerta, análise e minutas em linguagem jurídica |
 | ambiente | `pyproject.toml`, `uv.lock`, `Makefile` | ✅ | um `.venv` via uv workspace (raiz = enteros; membros `src/core`, `src/api`); `make install`; alvos do engine (`data`, `train`, `backtest`, `sinteticos`, `engine-api`, `demo`) e do portal no mesmo Makefile |
-| infra | `infra/` | 🔧 | `compose.yml` (db, api, caddy; invocar com `--project-directory .`), `compose.local.yml` (porta 8080, sem TLS), `Caddyfile` (`{$DOMAIN}`), `api.Dockerfile` (instala core/api e model/extractor se existirem), `web.Dockerfile` (node build → caddy) |
+| infra | `infra/` | 🔧 | `compose.yml` (db, api, caddy; invocar com `--project-directory .`), `compose.local.yml` (porta 8080, sem TLS), `Caddyfile` (`{$DOMAIN}`), `api.Dockerfile` (uv `sync --frozen` do workspace + `models/`; `.dockerignore` deixa `data/`, `node_modules` e `.venv` fora do contexto), `web.Dockerfile` (node build → caddy) |
 | ci | `.github/`, `scripts/`, `Makefile` | ✅ | verificações de PR e testes por componente |
 
 ## Tabelas (8, Postgres, `create_all`, sem migrações)
