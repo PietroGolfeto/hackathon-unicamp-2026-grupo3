@@ -31,4 +31,4 @@ Submissão 13/09 04:00 · Apresentações 13/09 07:00 · Freeze de código 02:00
 | P5 painel do gestor, deck | (nome) | `src/web/src/pages/gestor`, `docs/`, `SETUP.md` | abertura, limitações, próximos passos |
 
 ## Referências
-Vencedor da edição anterior (mesmo case): https://github.com/DataCaio/hackathon-ufmg-2026-exit · Regras: https://www.hackathon.getenter.ai/regras · Plano completo: `docs/plano-implementacao.md`
+Vencedor da edição anterior (mesmo case): https://github.com/DataCaio/hackathon-ufmg-2026-exit · Regras: https://www.hackathon.getenter.ai/regras

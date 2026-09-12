@@ -7,6 +7,8 @@
 | `Hackaton_Enter_Base_Candidatos.xlsx - Subsídios disponibilizados.csv` | 60.000 | Número do processo**s**, Contrato, Extrato, Comprovante de crédito, Dossiê, Demonstrativo de evolução da dívida, Laudo referenciado |
 | `processos_exemplo/<numero>/autos/*.pdf`, `subsidios/*.pdf` | 2 pastas | petição inicial e documentos do banco (ainda não copiadas para o repo) |
 
+Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação de política fica desabilitada com aviso.
+
 ## Regras de parsing
 - CSV de subsídios tem **uma linha de legenda antes do cabeçalho**: ler com `header=1`.
 - Coluna de junção é `Número do processo` num arquivo e `Número do processos` no outro. `core/colunas.py` normaliza ambos para `numero`.

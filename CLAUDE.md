@@ -4,8 +4,7 @@ Lido por qualquer agente de IA (Claude Code, Cursor, Copilot) e por qualquer pes
 
 ## Antes de qualquer tarefa
 1. Leia `memory-bank/README.md` e depois todos os arquivos de `memory-bank/`. São curtos e são o estado atual do projeto.
-2. Leia `docs/plano-implementacao.md` só se for construir algo que ainda não existe.
-3. Rode `make hooks` uma vez por clone. Instala as verificações locais de commit.
+2. Rode `make hooks` uma vez por clone. Instala as verificações locais de commit.
 
 ## O que estamos construindo
 Política de acordos do Banco UFMG para processos de empréstimo não reconhecido: API + portal do advogado + painel do gestor, com modelo (P1) e extração de documentos (P3) plugados por contratos em `src/core`. Detalhes em `memory-bank/contexto.md`.

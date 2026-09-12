@@ -22,6 +22,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Link mágico `/demo` para a banca | 3 | Lucas | ⬜ | `routers/demo.py` |
 | Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | ⬜ | `src/web/src/pages` |
 | Compose, Caddy, deploy VPS, standby homelab, backup | — | Lucas | ⬜ | `infra/`, `Makefile` |
+| Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 exporta o modelo | ⬜ | `src/model/artifacts/`, `data/exemplos/sinteticos.csv`, seed |
 | Modelo XGBoost + scores OOF do histórico | 1, 2 | P1 | ⬜ | `src/model` |
 | Extração LLM dos PDFs + sinais de alerta | 1, 3 | P3 | ⬜ | `src/extractor` |
 | Análise e minutas em linguagem jurídica | 3 | P3 | ⬜ | `src/extractor` |

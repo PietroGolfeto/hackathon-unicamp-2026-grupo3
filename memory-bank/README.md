@@ -13,7 +13,7 @@ Estado vivo do projeto em arquivos curtos. É o que um agente ou uma pessoa lê 
 ## Regras
 - **In-place, não log.** Se uma feature mudou, edite a linha dela. Não escreva "hoje fizemos X" nem datas.
 - **Linhas curtas.** Uma ideia por linha. Tabela quando for lista paralela.
-- **Estado, não intenção.** `features.md` diz o que está pronto agora. Intenção fica em `docs/plano-implementacao.md`.
+- **Estado, não intenção.** `features.md` diz o que está pronto agora. O que falta são as linhas ⬜ de `features.md`; o desenho alvo está em `arquitetura.md`.
 - **Todo commit que toca `src/` ou `infra/` edita pelo menos um arquivo daqui.** O hook e a CI bloqueiam se não.
 - Arquivo novo aqui só se nenhum existente couber. Adicione-o na ordem de leitura acima.
 

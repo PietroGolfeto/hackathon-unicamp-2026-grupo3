@@ -35,7 +35,8 @@ class ModeloScores(Protocol):
     def score_batch(self, casos: list[CasoFeatures]) -> list[Scores]: ...
     def info(self) -> ModeloInfo: ...
 ```
-P1 também entrega `data/derived/historico_scored.csv` com colunas fixas em snake_case: `numero, uf, sub_assunto, resultado_macro (1/0), resultado_micro, valor_causa, valor_condenacao, contrato, extrato, comprovante_credito, dossie, demonstrativo_divida, laudo_referenciado, p_exito_oof, condenacao_p20_oof, condenacao_p50_oof, condenacao_p80_oof, fold`.
+P1 também entrega `data/derived/historico_scored.csv` (local, não versionado; decisão 19) com colunas fixas em snake_case: `numero, uf, sub_assunto, resultado_macro (1/0), resultado_micro, valor_causa, valor_condenacao, contrato, extrato, comprovante_credito, dossie, demonstrativo_divida, laudo_referenciado, p_exito_oof, condenacao_p20_oof, condenacao_p50_oof, condenacao_p80_oof, fold`.
+P1 exporta ainda o modelo treinado em JSON ou UBJ do XGBoost em `src/model/artifacts/` (versionado), para o clone limpo subir com scores reais sem a base.
 
 ## P3 extração (`core/docs.py`)
 ```python

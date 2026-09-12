@@ -3,7 +3,7 @@
 Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na própria linha quando o estado mudar.
 
 ## Estado atual
-✅ Documentação e regras: `CLAUDE.md`, `memory-bank/`, `docs/plano-implementacao.md`
+✅ Documentação e regras: `CLAUDE.md`, `memory-bank/`
 ✅ CI de PR e hooks locais: `.github/workflows/ci.yml`, `scripts/`, `Makefile` (`make hooks`, `make check`)
 🔧 `src/core`: pacote `core` com parsing dos CSVs e UF por CNJ, 17 testes; contratos e política ainda não
 ⬜ `src/api`, `src/web`, `src/model`, `src/extractor`, `infra/`: ainda não existem
@@ -52,6 +52,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 
 ## Deploy
 VPS com domínio: um Caddy com TLS automático servindo o `dist/` e fazendo proxy de `/api/*` para a API (mesma origem, sem CORS). Volume `caddy_data` persistido. Homelab roda o mesmo compose como standby permanente em `standby.<dominio>` via túnel; `pg_dump` da VPS para o homelab a cada 10 min. Dev e standby usam `infra/compose.local.yml` (porta 8080, sem TLS).
+`data/` não é versionado: `make deploy` sincroniza por rsync para a VPS. Sem os CSVs da Enter a API sobe normalmente e a tela de simular avisa que o histórico não está carregado.
 
 ## Convenções de API
 Prefixo `/api`. Cookie HttpOnly assinado, 12 h. IDs inteiros nas URLs (número CNJ só em busca). Erros `{detail: "texto em português"}`. Datas ISO 8601. Dinheiro em número; formatação BRL só no front.

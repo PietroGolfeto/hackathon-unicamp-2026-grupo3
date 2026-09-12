@@ -20,5 +20,5 @@ Formato: número, decisão, por quê. Decisão revertida: edite a linha dizendo 
 16. **Sem atribuição de IA em commits, PRs, código ou docs.** Ruído; autoria é do time.
 17. **Nomes de domínio em português** (`processo`, `recomendacao`, `decisao`); termos técnicos genéricos em inglês (`router`, `service`, `client`).
 18. **Dependência nova só com uma linha aqui.** Controle do que entra no compose e no tempo de build.
-19. **Versionar `data/exemplos/` e `data/derived/historico_scored.csv`; não versionar os CSVs brutos da Enter.** Clone limpo precisa subir. Dados são sintéticos da organização. **Confirmar com o time na primeira reunião.**
+19. **Nenhum dado da Enter no repo:** nem os CSVs brutos, nem `data/processos_exemplo/`, nem derivados que carreguem as linhas (histórico com scores). Versionar só o que é nosso e pequeno: modelo treinado exportado em JSON/UBJ do XGBoost em `src/model/artifacts/`, resumo agregado do backtest da política ativa, e um CSV de processos sintéticos gerado por nós em `data/exemplos/sinteticos.csv`. Por quê: regra explícita da organização, a banca já tem os dados e o `SETUP.md` diz onde colocar. PDFs dos processos exemplo: perguntar aos organizadores antes de versionar.
 20. **Pacote Python compartilhado chama-se `core` e mora em `src/core/core/`.** Projeto pip em `src/core`, import `from core import ...`.
