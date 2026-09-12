@@ -85,3 +85,17 @@ def test_brief_gigante_e_cortado():
     brief = parsing.montar_brief("x", None, [peticao, doc], [], [])
     assert len(brief) <= parsing.LIMITE_BRIEF + 200
     assert peticao.chars_brief >= parsing.PISO_PETICAO * 0.8
+
+
+def test_movimentos_do_extrato_e_pista_de_uso_dos_valores():
+    extrato = ("Cliente:  MARIA\n\n Data           Histórico                 Documento              Valor (R$)      Saldo (R$)\n\n"
+               " 12/05/2022     CRÉDITO - EMPRÉSTIMO      Contr. 1               +5.000,00       5.000,00\n\n"
+               " 13/05/2022     TED ENVIADA - CTA TITULARIDADE     Bradesco / Ag 1 CC 2      -3.000,00       2.000,00\n\n"
+               " 17/05/2022     SAQUE ATM                 NSU 1                    -485,00         1.515,00\n")
+    f = parsing.fatos_subsidio("extrato", extrato)
+    assert len(f["movimentos"]) == 3 and f["movimentos"][1].startswith("13/05/2022 TED ENVIADA")
+    pet = parsing.parsear("peticao.txt", "autos", "I – DOS FATOS\nA autora jamais utilizou os valores creditados.\nIV – DOS PEDIDOS\n",
+                          paginas=None, leitor="txt")
+    ext = parsing.parsear("extrato.txt", "subsidios", extrato, paginas=None, leitor="txt")
+    pistas = parsing.pistas_cruzadas([pet, ext])
+    assert any(p.startswith("Contradição candidata") and "2 saída(s)" in p for p in pistas)

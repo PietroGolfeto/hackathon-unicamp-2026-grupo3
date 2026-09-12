@@ -61,4 +61,10 @@ Os dois backtests (engine e API) usam resultados reais, mas premissas de custo d
 | Contrato | nº 502348719, R$ 5.000 em 72 × R$ 120, correspondente por telemarketing, assinatura manuscrita (dossiê: 91%), liveness 97,3% | nº 603827451, R$ 8.500 em 84 × R$ 180, app mobile com biometria; laudo admite que o vídeo de liveness não foi localizado |
 | Crédito | conta própria no Banco UFMG; extrato mostra TED p/ conta própria no Bradesco, PIX a familiar e saque em São Luís — a petição diz que "jamais utilizou os valores" | conta na Caixa (ag 3245, cc 00012345-6) que o autor diz não ter |
 | Parcelas | 21 de 72 pagas, saldo R$ 1.037,66 | 8 de 84 pagas, saldo R$ 2.748,38 |
+Rodada real do extractor (prompt 2026-09-12.3, `make extrair`):
+| Modelo | Caso 01 tokens in+out | Caso 02 tokens in+out | Qualidade |
+|---|---|---|---|
+| gpt-4o-mini | 7.932 + 821 | 6.438 + 901 | sinais certos só com a reconciliação por regra; contradições genéricas; citou "[Dossiê]" inexistente no caso 02; variou entre rodadas |
+| gpt-5-mini (padrão) | 8.226 + 2.756 | 6.436 + 3.046 | sinais, fontes por arquivo e contradições certos (caso 02: conta na Caixa que o autor nega; caso 01: petição nega movimentação e o extrato mostra TED, PIX e saque após o crédito); acrescentou CANAL_DIGITAL_SEM_PERFIL no caso 02 |
+Brief em tokens (o200k_base): 12.289 → 5.198 (caso 01) e 10.034 → 3.652 (caso 02), média −60%; instruções fixas 1.146 tokens. Custo ~R$ 0,04 por processo no gpt-5-mini. Segunda rodada = cache hit, zero chamadas.
 Regras de parsing dos PDFs: `pdftotext -layout` separa parágrafos por linha em branco e tabelas rótulo/valor por 2+ espaços; rodapé `Processo nº … - Página N` em toda página; "Saldo devedor … aproximadamente R$" quebra a linha antes do número; a petição segue I – DOS FATOS / II – DO DIREITO / III – DA TUTELA / IV – DOS PEDIDOS / procuração / RG / comprovante de residência.

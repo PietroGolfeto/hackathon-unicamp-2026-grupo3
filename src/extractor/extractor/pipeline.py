@@ -111,7 +111,7 @@ class Extrator:
                           presentes=subs.presentes(), ausentes=subs.ausentes())
 
     def chave_de(self, prep: Preparacao) -> str:
-        return chave_cache(prep.hashes, prompts.VERSAO_PROMPT, self.modelo, hash_esquema())
+        return chave_cache(prep.hashes, f"{prompts.VERSAO_PROMPT}+{parsing.VERSAO_PARSING}", self.modelo, hash_esquema())
 
     def processar(self, processo_dir: Path, numero: str | None = None, forcar: bool = False) -> Resultado:
         prep = self.preparar(processo_dir, numero)
@@ -213,32 +213,41 @@ def _cpf(valor: str | None) -> str | None:
     return valor
 
 
+def _fonte(valor: str | None, prep: Preparacao) -> str | None:
+    """'AUTOS'/'[SUBSIDIOS]' não são arquivos: autos vira o nome da petição; subsídios genérico vira None."""
+    if not valor:
+        return None
+    limpo = valor.strip("[] ").upper()
+    if limpo == "AUTOS":
+        return next((d.arquivo for d in prep.docs if d.pasta == "autos"), None)
+    if limpo == "SUBSIDIOS":
+        return None
+    return valor
+
+
 def mapear(prep: Preparacao, saida: SaidaLLM, modelo: str) -> tuple[DadosExtraidos, Analise]:
     f = prep.fatos_peticao
     d = saida.dados
+    canal = d.contrato.canal if d.contrato.canal != "desconhecido" else (parsing.canal_dos_subsidios(prep.docs) or "desconhecido")
     autor = Pessoa(nome=_ou(d.autor.nome, f.get("autor_nome")), cpf_mascarado=_cpf(_ou(d.autor.cpf_mascarado, f.get("autor_cpf_mascarado"))),
                    idade=_ou(d.autor.idade, f.get("autor_idade")), email=_ou(d.autor.email, f.get("autor_email")),
                    telefone=d.autor.telefone)
     adv = Advogado(nome=_ou(d.advogado_autor.nome, f.get("advogado_nome")), oab=_ou(d.advogado_autor.oab, f.get("advogado_oab")),
                    email=_ou(d.advogado_autor.email, f.get("advogado_email")), telefone=d.advogado_autor.telefone,
                    cpf_mascarado=_cpf(d.advogado_autor.cpf_mascarado), idade=d.advogado_autor.idade)
+    sinais_llm = [SinalAlerta(codigo=s.codigo, descricao=s.descricao, severidade=s.severidade, fonte=_fonte(s.fonte, prep))
+                  for s in d.sinais_alerta]
+    sinais, conta_terceiro = _reconciliar_sinais(prep, sinais_llm, canal, d.contrato.liveness, d.contrato.credito_conta_terceiro)
     contrato = ContratoInfo(
-        canal=d.contrato.canal, assinatura=d.contrato.assinatura,
-        credito_conta_terceiro=d.contrato.credito_conta_terceiro,
+        canal=canal, assinatura=d.contrato.assinatura, credito_conta_terceiro=conta_terceiro,
         valor=_ou(d.contrato.valor, f.get("contrato_valor_alegado")),
         parcelas=_ou(d.contrato.parcelas, f.get("contrato_parcelas_alegadas")),
         data=_data(d.contrato.data, f.get("contrato_data_alegada")),
     )
-    sinais = [SinalAlerta(codigo=s.codigo, descricao=s.descricao, severidade=s.severidade, fonte=s.fonte)
-              for s in d.sinais_alerta]
     for doc in prep.docs:
         if motivo := seguranca.resumo_sinal(doc.achados):
             sinais.append(SinalAlerta(codigo=seguranca.CODIGO_SUSPEITO, descricao=motivo, severidade="alta",
                                       fonte=doc.arquivo))
-    if d.contrato.liveness == "nao_localizado" and d.contrato.canal in ("app", "internet_banking") \
-            and not any(s.codigo == "LIVENESS_AUSENTE_CANAL_DIGITAL" for s in sinais):
-        sinais.append(SinalAlerta(codigo="LIVENESS_AUSENTE_CANAL_DIGITAL", severidade="alta",
-                                  descricao="Contratação digital sem vídeo de liveness localizado", fonte=None))
     dados = DadosExtraidos(
         numero=prep.numero, origem=ORIGEM, modelo=modelo, autor=autor, advogado_autor=adv,
         comarca=_ou(d.comarca, f.get("comarca")), uf=prep.uf or d.uf or f.get("uf"),
@@ -246,11 +255,61 @@ def mapear(prep: Preparacao, saida: SaidaLLM, modelo: str) -> tuple[DadosExtraid
         sinais_alerta=sinais, resumo_fatos=d.resumo_fatos.strip(),
         confianca=min(1.0, max(0.0, float(d.confianca))), gerado_em=_agora(),
     )
-    return dados, _analise_de(prep.numero, saida.analise, modelo)
+    houve_injecao = any(a.codigo == "INJECAO_PROMPT" for a in prep.achados)
+    return dados, _analise_de(prep.numero, saida.analise, modelo, houve_injecao)
 
 
-def _analise_de(numero: str, a: AnaliseLLM, modelo: str) -> Analise:
-    fortes, riscos = list(a.pontos_fortes_banco), list(a.riscos)
+def _reconciliar_sinais(prep: Preparacao, sinais_llm: list[SinalAlerta], canal: str, liveness: str,
+                        conta_llm: bool | None) -> tuple[list[SinalAlerta], bool | None]:
+    """Os sinais que a regra consegue decidir vencem o LLM: entram se faltam, saem se o LLM inventou.
+
+    Vale para IDOSO (idade), BOLETIM_OCORRENCIA e RECLAMACAO_BACEN (petição), SEM_CONTRATO (subsídios),
+    CREDITO_CONTA_TERCEIRO (banco depositário × petição) e LIVENESS_AUSENTE_CANAL_DIGITAL (canal × laudo).
+    CREDITO_CONTA_TERCEIRO força acordo na política: um falso positivo custa dinheiro.
+    """
+    pet = next((d for d in prep.docs if d.tipo == "peticao"), None)
+    f = pet.fatos if pet else {}
+    ind = set(f.get("indicios", []))
+    pet_arq = pet.arquivo if pet else None
+    decididos: dict[str, tuple[bool, str, str | None, str]] = {}
+    if (idade := f.get("autor_idade")) is not None:
+        decididos["IDOSO"] = (idade >= 60, f"Autor com {idade} anos na data da petição", pet_arq, "media")
+    if f.get("boletim_ocorrencia") or "boletim_ocorrencia" in ind:
+        bo = f.get("boletim_ocorrencia")
+        decididos["BOLETIM_OCORRENCIA"] = (True, "Há boletim de ocorrência" + (f" nº {bo}" if bo else ""), pet_arq, "media")
+    if f.get("reclamacao_bacen_rdr") or "reclamacao_bacen" in ind:
+        rdr = f.get("reclamacao_bacen_rdr")
+        decididos["RECLAMACAO_BACEN"] = (True, "Há reclamação no BACEN" + (f" (RDR nº {rdr})" if rdr else ""), pet_arq, "media")
+    decididos["SEM_CONTRATO"] = ("contrato" in prep.ausentes, "Banco não apresentou o contrato", None, "alta")
+    conta: bool | None = None
+    if pet and (dep := parsing.banco_depositario(prep.docs)):
+        banco, arq = dep
+        nega = parsing.nega_conta_deposito(pet, banco)
+        if nega and parsing.BANCO_PROPRIO not in banco.lower():
+            conta = True
+            decididos["CREDITO_CONTA_TERCEIRO"] = (True, f"Crédito caiu em conta ({banco}) que o autor nega ter", arq, "alta")
+        elif parsing.BANCO_PROPRIO in banco.lower() and not nega:
+            conta = False
+            decididos["CREDITO_CONTA_TERCEIRO"] = (False, "", arq, "alta")
+    sem_liveness = liveness == "nao_localizado" or any(
+        "liveness_nao_localizado" in d.fatos.get("indicios", []) for d in prep.docs if d.pasta != "autos")
+    if canal in ("app", "internet_banking"):
+        laudo = next((d.arquivo for d in prep.docs if "liveness_nao_localizado" in d.fatos.get("indicios", [])), None)
+        decididos["LIVENESS_AUSENTE_CANAL_DIGITAL"] = (sem_liveness, "Contratação digital sem vídeo de liveness localizado",
+                                                       laudo, "alta")
+    finais = [s for s in sinais_llm if not (s.codigo in decididos and decididos[s.codigo][0] is False)]
+    presentes = {s.codigo for s in finais}
+    for codigo, (presente, descricao, fonte, severidade) in decididos.items():
+        if presente and codigo not in presentes:
+            finais.append(SinalAlerta(codigo=codigo, descricao=descricao, severidade=severidade, fonte=fonte))
+    if conta is None:
+        conta = True if "CREDITO_CONTA_TERCEIRO" in {s.codigo for s in finais} else conta_llm
+    return finais, conta
+
+
+def _analise_de(numero: str, a: AnaliseLLM, modelo: str, houve_injecao: bool = True) -> Analise:
+    fortes = list(a.pontos_fortes_banco)
+    riscos = [r for r in a.riscos if houve_injecao or not re.search(r"instru[cç][ãa]o\s+embutida", r, re.IGNORECASE)]
     for c in a.contradicoes:  # contradição da petição favorece o banco; inconsistência entre subsídios é risco
         (fortes if re.match(r"\s*peti[cç][ãa]o", c, re.IGNORECASE) else riscos).append(f"Contradição: {c}")
     texto_final = a.texto.strip()

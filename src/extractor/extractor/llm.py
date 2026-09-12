@@ -14,7 +14,7 @@ from typing import Any, Protocol
 from pydantic import BaseModel
 
 log = logging.getLogger(__name__)
-MODELO_PADRAO = "gpt-4o-mini"
+MODELO_PADRAO = "gpt-5-mini"
 
 
 class ErroLLM(RuntimeError):

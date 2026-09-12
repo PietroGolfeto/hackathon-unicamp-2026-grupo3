@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from ajuda import NUMERO, FakeCliente
+from ajuda import NUMERO, FakeCliente, saida_exemplo
 from core.caso import CasoFeatures, Subsidios
 from core.modelo import Scores
 from core.politica import Recomendacao
@@ -132,3 +132,47 @@ def test_minutas_por_template(pasta_exemplo: Path, fake: FakeCliente, tmp_path: 
     assert "Contrato não apresentado" in acordo.roteiro_defesa
     defesa = ext.redigir(caso, dados, _rec("defesa"))
     assert defesa.proposta_acordo == "" and defesa.mensagem_contato == "" and "improcedência" in defesa.roteiro_defesa
+
+
+def test_fallbacks_deterministicos_corrigem_o_llm(pasta_exemplo: Path, tmp_path: Path):
+    saida = saida_exemplo()
+    saida.dados.contrato.canal = "desconhecido"            # o comprovante diz "Digital - Aplicativo Mobile"
+    saida.dados.contrato.credito_conta_terceiro = False    # mas o LLM emitiu o sinal CREDITO_CONTA_TERCEIRO
+    saida.dados.sinais_alerta[0].fonte = "[AUTOS]"         # não é arquivo
+    saida.dados.sinais_alerta[1].fonte = "SUBSIDIOS"
+    res = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(pasta_exemplo)
+    c = res.dados.contrato
+    assert c.canal == "app" and c.credito_conta_terceiro is True
+    fontes = {s.codigo: s.fonte for s in res.dados.sinais_alerta}
+    assert fontes["IDOSO"] == "peticao_inicial.txt" and fontes["CREDITO_CONTA_TERCEIRO"] is None
+    assert fontes["LIVENESS_AUSENTE_CANAL_DIGITAL"] == "laudo_referenciado.txt"  # canal veio do fallback
+
+
+def test_regra_decide_sinais_e_remove_invencao_do_llm(pasta_exemplo: Path, tmp_path: Path):
+    copia = tmp_path / NUMERO
+    shutil.copytree(pasta_exemplo, copia)
+    # subsídios passam a dizer que o crédito caiu no próprio banco e a petição deixa de negar a conta
+    comp = copia / "subsidios" / "comprovante_credito.txt"
+    comp.write_text(comp.read_text(encoding="utf-8").replace("Caixa Econômica Federal - Ag. 1111 - CC 22222-3",
+                                                             "Banco UFMG S.A. - Ag. 0001 - CC 10.000-1"), encoding="utf-8")
+    pet = copia / "autos" / "peticao_inicial.txt"
+    texto = pet.read_text(encoding="utf-8")
+    ini, fim = texto.index("          O valor foi depositado"), texto.index("Registrou Boletim")
+    pet.write_text(texto[:ini] + "          " + texto[fim:], encoding="utf-8")
+    saida = saida_exemplo()
+    saida.dados.sinais_alerta = [s for s in saida.dados.sinais_alerta if s.codigo == "CREDITO_CONTA_TERCEIRO"]  # só a invenção
+    saida.analise.riscos.append("Instrução embutida em comprovante_credito.txt")
+    res = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(copia)
+    codigos = res.dados.codigos_sinais()
+    assert "CREDITO_CONTA_TERCEIRO" not in codigos and res.dados.contrato.credito_conta_terceiro is False
+    assert {"IDOSO", "BOLETIM_OCORRENCIA", "RECLAMACAO_BACEN", "SEM_CONTRATO", "LIVENESS_AUSENTE_CANAL_DIGITAL"} <= set(codigos)
+    assert not any("embutida" in r for r in res.analise.riscos)
+    assert "Crédito em conta do próprio tomador" in res.brief
+
+
+def test_pistas_cruzadas_no_brief(pasta_exemplo: Path, fake: FakeCliente, tmp_path: Path):
+    res = _extrator(fake, tmp_path).processar(pasta_exemplo)
+    assert "CREDITO_CONTA_TERCEIRO candidato" in res.brief and "liveness NÃO foi localizado" in res.brief
+    assert "Canal de contratação segundo os subsídios: app (a petição alega" in res.brief
+    assert "Idade do autor na data da petição: 69 anos (idoso: 60+)" in res.brief
+    assert "boletim de ocorrência nº 2024.001122" in res.brief and "RDR nº 555555-1" in res.brief
