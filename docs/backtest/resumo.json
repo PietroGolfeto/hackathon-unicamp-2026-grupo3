@@ -1,0 +1,321 @@
+{
+ "n_casos": 60000,
+ "base_real": true,
+ "condenacao_total": 192982862.0684,
+ "condenacao_por_caso": 3216.381034,
+ "custo_defender_tudo": 342936656.90799,
+ "custo_acordar_tudo": 246602633.728476,
+ "custo_politica_curva": 236657901.603123,
+ "economia_politica_curva": 106278755.304867,
+ "economia_pct_curva": 0.309908,
+ "share_acordo": 0.361917,
+ "sensibilidade": [
+  {
+   "taxa_aceite": 0.5,
+   "mult_oferta": 0.8,
+   "custo": 270679863.52563,
+   "economia": 72256793.38236,
+   "economia_pct": 0.2107
+  },
+  {
+   "taxa_aceite": 0.5,
+   "mult_oferta": 1.0,
+   "custo": 283351633.75508,
+   "economia": 59585023.15291,
+   "economia_pct": 0.173749
+  },
+  {
+   "taxa_aceite": 0.5,
+   "mult_oferta": 1.2,
+   "custo": 296023403.98453,
+   "economia": 46913252.92346,
+   "economia_pct": 0.136799
+  },
+  {
+   "taxa_aceite": 0.6,
+   "mult_oferta": 0.8,
+   "custo": 254925604.849158,
+   "economia": 88011052.058832,
+   "economia_pct": 0.256639
+  },
+  {
+   "taxa_aceite": 0.6,
+   "mult_oferta": 1.0,
+   "custo": 270131729.124498,
+   "economia": 72804927.783492,
+   "economia_pct": 0.212298
+  },
+  {
+   "taxa_aceite": 0.6,
+   "mult_oferta": 1.2,
+   "custo": 285337853.399838,
+   "economia": 57598803.508152,
+   "economia_pct": 0.167958
+  },
+  {
+   "taxa_aceite": 0.7,
+   "mult_oferta": 0.8,
+   "custo": 239171346.172686,
+   "economia": 103765310.735304,
+   "economia_pct": 0.302579
+  },
+  {
+   "taxa_aceite": 0.7,
+   "mult_oferta": 1.0,
+   "custo": 256911824.493916,
+   "economia": 86024832.414074,
+   "economia_pct": 0.250848
+  },
+  {
+   "taxa_aceite": 0.7,
+   "mult_oferta": 1.2,
+   "custo": 274652302.815146,
+   "economia": 68284354.092844,
+   "economia_pct": 0.199117
+  },
+  {
+   "taxa_aceite": 0.8,
+   "mult_oferta": 0.8,
+   "custo": 223417087.496214,
+   "economia": 119519569.411776,
+   "economia_pct": 0.348518
+  },
+  {
+   "taxa_aceite": 0.8,
+   "mult_oferta": 1.0,
+   "custo": 243691919.863334,
+   "economia": 99244737.044656,
+   "economia_pct": 0.289397
+  },
+  {
+   "taxa_aceite": 0.8,
+   "mult_oferta": 1.2,
+   "custo": 263966752.230454,
+   "economia": 78969904.677536,
+   "economia_pct": 0.230275
+  },
+  {
+   "taxa_aceite": "curva",
+   "mult_oferta": 0.8,
+   "custo": 216121581.29435,
+   "economia": 126815075.61364,
+   "economia_pct": 0.369792
+  },
+  {
+   "taxa_aceite": "curva",
+   "mult_oferta": 1.0,
+   "custo": 236657901.603123,
+   "economia": 106278755.304867,
+   "economia_pct": 0.309908
+  },
+  {
+   "taxa_aceite": "curva",
+   "mult_oferta": 1.2,
+   "custo": 257194221.911895,
+   "economia": 85742434.996095,
+   "economia_pct": 0.250024
+  }
+ ],
+ "por_faixa": [
+  {
+   "faixa": "amarela",
+   "n": 11289,
+   "share": 0.18815,
+   "p_perda_prevista": 0.356918,
+   "perda_real": 0.356719,
+   "condenacao_real": 41340602.0477,
+   "custo_real_defesa": 71617885.457332
+  },
+  {
+   "faixa": "verde",
+   "n": 34286,
+   "share": 0.571433,
+   "p_perda_prevista": 0.053748,
+   "perda_real": 0.054366,
+   "condenacao_real": 19126491.7881,
+   "custo_real_defesa": 68008722.989139
+  },
+  {
+   "faixa": "vermelha",
+   "n": 14425,
+   "share": 0.240417,
+   "p_perda_prevista": 0.859435,
+   "perda_real": 0.857955,
+   "condenacao_real": 132515768.2326,
+   "custo_real_defesa": 203310048.461519
+  }
+ ],
+ "voi": {
+  "contrato": {
+   "casos_sem": 17017,
+   "ganho_total": 110088222.959774,
+   "ganho_por_caso": 6469.308513
+  },
+  "extrato": {
+   "casos_sem": 11105,
+   "ganho_total": 61954801.486148,
+   "ganho_por_caso": 5579.000584
+  },
+  "comprovante": {
+   "casos_sem": 23586,
+   "ganho_total": 46716398.502742,
+   "ganho_por_caso": 1980.683393
+  },
+  "demonstrativo": {
+   "casos_sem": 13785,
+   "ganho_total": 10352506.629984,
+   "ganho_por_caso": 750.997942
+  }
+ },
+ "efeito_docs": {
+  "contrato": {
+   "perda_com": 0.126818,
+   "perda_sem": 0.753129
+  },
+  "extrato": {
+   "perda_com": 0.188056,
+   "perda_sem": 0.816929
+  },
+  "comprovante": {
+   "perda_com": 0.198907,
+   "perda_sem": 0.467396
+  },
+  "dossie": {
+   "perda_com": 0.30453,
+   "perda_sem": 0.304263
+  },
+  "demonstrativo": {
+   "perda_com": 0.277615,
+   "perda_sem": 0.394414
+  },
+  "laudo": {
+   "perda_com": 0.304834,
+   "perda_sem": 0.302906
+  }
+ },
+ "metricas_modelo": {
+  "auc_oof": 0.922546,
+  "brier_oof": 0.093332,
+  "acuracia_oof_0.5": 0.8723,
+  "ece_oof": 0.00261,
+  "n_treino": 60000,
+  "taxa_perda_base": 0.30445
+ },
+ "calibracao": [
+  {
+   "p_min": -0.001,
+   "p_max": 0.1,
+   "n": 29363,
+   "p_prevista": 0.041864,
+   "taxa_real": 0.041379
+  },
+  {
+   "p_min": 0.1,
+   "p_max": 0.2,
+   "n": 7541,
+   "p_prevista": 0.142148,
+   "taxa_real": 0.144941
+  },
+  {
+   "p_min": 0.2,
+   "p_max": 0.3,
+   "n": 2552,
+   "p_prevista": 0.246334,
+   "taxa_real": 0.253527
+  },
+  {
+   "p_min": 0.3,
+   "p_max": 0.4,
+   "n": 849,
+   "p_prevista": 0.350829,
+   "taxa_real": 0.326266
+  },
+  {
+   "p_min": 0.4,
+   "p_max": 0.5,
+   "n": 2628,
+   "p_prevista": 0.455492,
+   "taxa_real": 0.45624
+  },
+  {
+   "p_min": 0.5,
+   "p_max": 0.6,
+   "n": 2662,
+   "p_prevista": 0.548317,
+   "taxa_real": 0.558227
+  },
+  {
+   "p_min": 0.6,
+   "p_max": 0.7,
+   "n": 1637,
+   "p_prevista": 0.648842,
+   "taxa_real": 0.631032
+  },
+  {
+   "p_min": 0.7,
+   "p_max": 0.8,
+   "n": 3242,
+   "p_prevista": 0.75275,
+   "taxa_real": 0.747995
+  },
+  {
+   "p_min": 0.8,
+   "p_max": 0.9,
+   "n": 3028,
+   "p_prevista": 0.847063,
+   "taxa_real": 0.846764
+  },
+  {
+   "p_min": 0.9,
+   "p_max": 1.0,
+   "n": 6498,
+   "p_prevista": 0.972569,
+   "taxa_real": 0.973838
+  }
+ ],
+ "politica_versao": "2026.09.12-v1",
+ "modelo_versao": "logit-60000-20260912",
+ "premissas": {
+  "versao": "2026.09.12-v1",
+  "faixas": {
+   "limiar_verde": 0.15,
+   "limiar_vermelha": 0.6,
+   "voi_min_pct_causa": 0.1,
+   "prazo_instrucao_dias": 5
+  },
+  "custos": {
+   "custo_escritorio_defesa": 1200.0,
+   "custo_escritorio_acordo": 300.0,
+   "honorarios_sucumbencia_pct": 0.15,
+   "custas_pct_valor_causa": 0.02,
+   "taxa_correcao_mensal": 0.01,
+   "prazo_medio_meses": 18,
+   "custo_recuperar_subsidio": 80.0
+  },
+  "oferta": {
+   "aceite_s50": 0.3,
+   "aceite_largura": 0.06,
+   "margem_teto": 0.1,
+   "piso_pct_causa": 0.1,
+   "teto_pct_causa": 0.7,
+   "desconto_abertura": 0.2,
+   "arredondamento": 50.0,
+   "grade_passo": 0.01
+  },
+  "regras_duras": {
+   "sinais_forcam_acordo": [
+    "CREDITO_CONTA_TERCEIRO",
+    "LIVENESS_AUSENTE_CANAL_DIGITAL"
+   ],
+   "inconsistente_vale_ausente": true
+  },
+  "experimento": {
+   "fracao_exploracao": 0.15,
+   "bandas_pct_causa": [
+    0.25,
+    0.3,
+    0.35
+   ]
+  }
+ }
+}
