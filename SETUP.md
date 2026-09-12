@@ -90,7 +90,7 @@ Os testes da API usam um Postgres real em `TEST_DATABASE_URL` (padrão `…local
 
 - `MODEL_IMPL=pacote.modulo:Classe` e `EXTRACTOR_IMPL=…` no `.env`; a classe precisa ser instanciável sem argumentos e seguir `memory-bank/contratos.md`.
 - Alternativa por arquivo: `data/derived/historico_scored.csv` (scores OOF dos 60k), `data/derived/extraidos/<numero>.json` e `data/derived/scores/<numero>.json`. O `ingest` e o `load-historico` preferem o arquivo quando ele existe.
-- Import quebrado não derruba nada: a API loga e usa o stub, e a UI mostra o badge "stub".
+- Import quebrado não derruba nada: o modelo cai no stub (a UI mostra o badge "stub"); a extração fica desligada e o portal não mostra nada inferido dos documentos (autor, sinais, análise, minutas), só presença de subsídio, scores e recomendação.
 
 ## 7. Deploy na VPS
 
