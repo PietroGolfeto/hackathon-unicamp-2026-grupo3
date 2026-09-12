@@ -1,6 +1,6 @@
 # Contratos
 
-**Estado: rascunho.** Congela na hora 2 do evento. Depois disso, mudança exige editar este arquivo no mesmo commit e avisar o grupo. Tudo aqui vive em `src/core` e depende só de pydantic e numpy.
+**Estado: implementado em `src/core/core/{caso,modelo,politica}.py`, com testes.** Congela na hora 2 do evento. Depois disso, mudança exige editar este arquivo no mesmo commit e avisar o grupo. Tudo aqui vive em `src/core` e depende só de pydantic e numpy.
 
 Fronteira **arquivo primeiro**: P1 e P3 são chamados pelo job `ingest`, mas cada um também grava sua saída em `data/derived/`. O ingest prefere o arquivo se existir. Import quebrado não derruba a API.
 
@@ -12,9 +12,10 @@ class Subsidios(BaseModel):
 
 class CasoFeatures(BaseModel):
     numero: str; uf: str; sub_assunto: str | None; valor_causa: float
-    subsidios: Subsidios
-    sinais: dict = {}          # extras de P3 (codigo -> valor), opcional
+    subsidios: Subsidios       # .presentes(), .ausentes(), .n
+    sinais: dict = {}          # extras de P3 (codigo -> valor); valor verdadeiro = sinal ativo
 ```
+`core/caso.py` também tem `CODIGOS_SINAIS` (código → descrição) e `NOMES_SUBSIDIOS` (flag → nome legível).
 
 ## P1 modelo (`core/modelo.py`)
 ```python
@@ -84,8 +85,11 @@ class PoliticaParams(BaseModel):
 class Recomendacao(BaseModel):
     tipo: Literal["acordo", "defesa"]; valor_sugerido: float | None; valor_min: float | None; valor_max: float | None
     custo_esperado_defesa: float; custo_esperado_acordo: float; economia_esperada: float
+    regra: Literal["defesa_forte", "acordo_forte", "custo", "sinal"]; sinais_acionados: list[str] = []
     motivos: list[str]; scores_snapshot: Scores; politica_id: int
 ```
+Validação dos params: `limiar_acordo_forte ≤ limiar_defesa_forte`, `piso ≤ teto`, `arredondamento > 0`.
+Funções: `calcular(p_exito, p20, p50, p80, valor_causa, prm, sinais_forcam=None)` → dict de arrays (`acordo, oferta, valor_min, valor_max, custo_defesa, custo_acordo, economia, regra, oferta_limitada`); `custos_reais(..., perdeu, valor_condenacao, prm)` acrescenta `custo_defesa_real, custo_acordo_real, custo_politica` para o backtest; `aplicar(scores, caso, prm, politica_id) -> Recomendacao` com 3 motivos determinísticos em português.
 Fórmula (uma implementação em numpy, serve escalar e coluna):
 ```
 q             = 1 - p_exito
