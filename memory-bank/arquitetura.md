@@ -8,7 +8,8 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 ✅ `src/core`: pacote `core` com parsing dos CSVs, UF por CNJ, contratos P1/P3 e política em numpy, 32 testes
 ✅ `src/api`: FastAPI completa (auth, processos, recomendação, decisão, resultado, eventos, políticas, dashboards, aprovações, demo, arquivos) + CLI de jobs; 20 testes contra Postgres
 ✅ `src/web`: Vite + React 19 + Mantine 8 + TanStack Query + react-router 7; login, casos, caso, painel, política e aprovações; `npm run build` = tsc estrito + vite
-⬜ `src/model`, `src/extractor`, `infra/`: ainda não existem
+🔧 `infra/`: compose (db, api, caddy), override local sem TLS, Caddyfile, Dockerfiles; deploy na VPS e standby ainda não
+⬜ `src/model`, `src/extractor`: ainda não existem (P1, P3)
 
 ## Visão geral
 ```
@@ -30,7 +31,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 | web | `src/web` | ✅ | SPA (`src/`): `api/client.ts` (tipos = schemas da API), `auth/useSession.ts`, `lib/format.ts` (BRL, %, datas), `components/{Layout,Badges,Stat}.tsx`, `pages/Login.tsx`, `pages/advogado/{Casos,Caso}.tsx` (cabeçalho com sinais → card da recomendação → análise → documentos → decisão com cronômetro → contato, minutas copiáveis e resultado); `pages/gestor/{Painel,Politica,Aprovacoes}.tsx` (números; gráficos são de P5). Dev: proxy `/api` → :8000 |
 | model | `src/model` | ⬜ | P1: treino XGBoost, `RealScorer`, export do histórico com scores OOF |
 | extractor | `src/extractor` | ⬜ | P3: extração LLM dos PDFs, sinais de alerta, análise e minutas em linguagem jurídica |
-| infra | `infra/` | ⬜ | compose (db, api, caddy), Caddyfile, Dockerfiles, compose local sem TLS |
+| infra | `infra/` | 🔧 | `compose.yml` (db, api, caddy; invocar com `--project-directory .`), `compose.local.yml` (porta 8080, sem TLS), `Caddyfile` (`{$DOMAIN}`), `api.Dockerfile` (instala core/api e model/extractor se existirem), `web.Dockerfile` (node build → caddy) |
 | ci | `.github/`, `scripts/`, `Makefile` | ✅ | verificações de PR e testes por componente |
 
 ## Tabelas (8, Postgres, `create_all`, sem migrações)

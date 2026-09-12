@@ -1,0 +1,65 @@
+# Produção (VPS): um Caddy com TLS automático serve o dist/ e faz proxy de /api para a API.
+# Sempre invocar a partir da raiz do repo:  docker compose -f infra/compose.yml --project-directory . ...
+# (o Makefile já faz isso). Variáveis vêm de ./.env (copie de .env.example).
+name: enter
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-enter}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-enter}
+      POSTGRES_DB: ${POSTGRES_DB:-enter}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-enter} -d ${POSTGRES_DB:-enter}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: ./.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-enter}:${POSTGRES_PASSWORD:-enter}@db:5432/${POSTGRES_DB:-enter}
+      DATA_DIR: /data
+      API_URL: http://localhost:8000
+    volumes:
+      - ./data:/data:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=3).status == 200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  caddy:
+    build:
+      context: .
+      dockerfile: infra/web.Dockerfile
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-:8080}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data      # certificados: NÃO recriar (limite do Let's Encrypt)
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
