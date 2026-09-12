@@ -101,3 +101,14 @@ class Recomendacao(BaseModel):
     contribuicoes: list[dict]
     versao_politica: str
     versao_modelo: str
+    # v2 (aditivos): breakeven, sensibilidade, valor esperado da informação por subsídio ausente
+    p_breakeven: float | None = None  # p_perda em que acordar e defender custam o mesmo (dada a escada)
+    decisao_sensivel: bool = False  # IC95 de p cruza o breakeven → revisar
+    ev_instruir: float | None = None  # menor custo esperado entre as opções "instruir" (se houver)
+    evsi_por_doc: dict[str, float] = {}  # valor esperado da informação, líquido de busca e atraso
+    q_por_doc: dict[str, float] = {}  # chance de o banco localizar o subsídio
+    analise_subsidios: dict[str, dict] = {}  # por doc ausente: q, p_com, p_falha, ganho_se_encontrar, evsi, muda_decisao
+    instrucao: dict | None = None  # melhor conjunto a pedir: docs, evsi, ev_instruir, p_todos_encontrados
+    docs_que_fortalecem: list[str] = []  # pedir em paralelo à defesa (ganho se encontrar > custo), sem atrasar
+    p_procedencia_se_perder: float | None = None
+    saldo_no_ev: float = 0.0

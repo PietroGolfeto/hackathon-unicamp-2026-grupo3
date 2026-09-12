@@ -14,7 +14,8 @@ from enteros import config as cfg
 class Faixas(BaseModel):
     limiar_verde: float
     limiar_vermelha: float
-    voi_min_pct_causa: float
+    evsi_min_pct_causa: float
+    q_doc_padrao: float
     prazo_instrucao_dias: int
 
 
@@ -31,6 +32,13 @@ class Custos(BaseModel):
     def fator_tempo(self) -> float:
         return (1 + self.taxa_correcao_mensal) ** self.prazo_medio_meses
 
+    def fator_atraso(self, dias: int) -> float:
+        """Correção acumulada em `dias` de espera (custo de adiar a decisão)."""
+        return (1 + self.taxa_correcao_mensal) ** (dias / 30)
+
+    def com(self, **sobrescritas: float) -> "Custos":
+        return self.model_copy(update=sobrescritas)
+
 
 class Oferta(BaseModel):
     aceite_s50: float
@@ -41,6 +49,7 @@ class Oferta(BaseModel):
     desconto_abertura: float
     arredondamento: float
     grade_passo: float
+    saldo_devedor_no_acordo: bool = True
 
 
 class RegrasDuras(BaseModel):
@@ -68,6 +77,11 @@ class Politica(BaseModel):
     regras_duras: RegrasDuras
     experimento: Experimento
     comparacao: Comparacao
+    cenarios: dict[str, dict[str, float]] = {}
+
+    def custos_cenario(self, nome: str) -> Custos:
+        """Custos do cenário nomeado em `cenarios` (chaves sobrescrevem as de `custos`)."""
+        return self.custos.com(**self.cenarios[nome])
 
 
 @lru_cache(maxsize=4)

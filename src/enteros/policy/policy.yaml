@@ -1,31 +1,40 @@
 # Política de acordos — Banco Unicamp / Grupo 3. Versionada; toda mudança aqui muda a recomendação.
-# Fonte de cada parâmetro em docs/premissas.md (observado na base × premissa declarada).
-versao: "2026.09.12-v1"
+# Fonte de cada parâmetro em docs/premissas.md (observado na base × premissa declarada × escolha de política).
+versao: "2026.09.12-v2"
 
 faixas:
-  limiar_verde: 0.15          # p_perda abaixo → defesa clara
+  limiar_verde: 0.15          # p_perda abaixo → defesa clara (comunicação; a decisão é o menor custo esperado)
   limiar_vermelha: 0.60       # p_perda acima → acordo, sem comparar EV
-  voi_min_pct_causa: 0.10     # ganho esperado mínimo (em % do valor da causa) para valer "instruir" antes de acordar
-  prazo_instrucao_dias: 5
+  evsi_min_pct_causa: 0.02    # valor esperado da informação mínimo (em % do valor da causa) para "instruir" antes de acordar
+  q_doc_padrao: 0.6           # chance de localizar um subsídio quando o padrão dos outros docs não existe na base
+  prazo_instrucao_dias: 5     # prazo dado ao banco para localizar o subsídio; o atraso custa correção sobre o EV de litigar
 
 custos:
-  custo_escritorio_defesa: 1200.0      # honorários do escritório externo por processo defendido até sentença (premissa)
-  custo_escritorio_acordo: 300.0       # esforço de negociar + formalizar (premissa)
-  honorarios_sucumbencia_pct: 0.15     # sobre a condenação quando o banco perde (CPC art. 85: 10–20%)
-  custas_pct_valor_causa: 0.02         # custas quando perde, em % do valor da causa (premissa)
-  taxa_correcao_mensal: 0.01           # juros + correção sobre a condenação até o pagamento (premissa)
+  custo_escritorio_defesa: 1200.0      # honorários do escritório externo por processo defendido até sentença (premissa H2)
+  custo_escritorio_acordo: 300.0       # esforço de negociar + formalizar (premissa H3)
+  honorarios_sucumbencia_pct: 0.15     # sobre a condenação quando o banco perde (CPC art. 85 §2: 10–20%; JEC só em recurso)
+  custas_pct_valor_causa: 0.02         # custas/preparo quando perde, em % do valor da causa (premissa H5)
+  taxa_correcao_mensal: 0.01           # juros + correção sobre a condenação até o pagamento (premissa H6)
   prazo_medio_meses: 18                # da distribuição ao pagamento (premissa; a base não tem datas)
-  custo_recuperar_subsidio: 80.0       # custo do back-office localizar um documento (premissa)
+  custo_recuperar_subsidio: 80.0       # custo do back-office localizar um documento (premissa H7)
+
+# cenários alternativos de custo para a sensibilidade do backtest (sobrescrevem chaves de `custos`)
+cenarios:
+  jec:                                 # Juizado Especial (Lei 9.099 art. 55): sem custas nem sucumbência em 1º grau; mais rápido
+    honorarios_sucumbencia_pct: 0.0
+    custas_pct_valor_causa: 0.0
+    prazo_medio_meses: 9
 
 oferta:
-  aceite_s50: 0.30            # fração do valor da causa em que 50% dos autores aceitam (âncora: mediana dos 280 acordos = 0,29)
-  aceite_largura: 0.06        # largura da curva logística de aceite (premissa)
-  margem_teto: 0.10           # teto = EV_defesa × (1 − margem): nunca pagar quase o custo de litigar
+  aceite_s50: 0.30            # fração do valor da causa em que 50% dos autores aceitam (âncora: mediana dos 280 acordos = 0,29; só aceites)
+  aceite_largura: 0.06        # largura da curva logística de aceite (premissa H1)
+  margem_teto: 0.10           # teto = EV_defesa × (1 − margem) − saldo baixado: nunca pagar quase o custo de litigar
   piso_pct_causa: 0.10        # oferta nunca abaixo disso (nem abaixo da devolução simples das parcelas)
   teto_pct_causa: 0.70        # oferta nunca acima disso
   desconto_abertura: 0.20     # abertura = alvo × (1 − desconto)
   arredondamento: 50.0
   grade_passo: 0.01           # passo (em % do VC) da busca do alvo
+  saldo_devedor_no_acordo: true  # saldo baixado entra como custo do acordo (e p·saldo no EV de litigar) quando a IA informa
 
 regras_duras:
   # sinais da IA documental que forçam acordo (rebaixam a força probatória independentemente do modelo)
