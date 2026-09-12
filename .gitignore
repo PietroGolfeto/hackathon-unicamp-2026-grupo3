@@ -43,3 +43,7 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Caches de ferramentas
+.pytest_cache/
+.ruff_cache/
