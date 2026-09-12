@@ -7,6 +7,8 @@
 data/*.csv
 data/subsidios/
 data/processos_exemplo/
+data/derived/
+data/policy_artifacts/
 
 # Dependências de pacotes
 node_modules/

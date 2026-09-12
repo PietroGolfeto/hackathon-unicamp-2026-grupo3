@@ -5,10 +5,14 @@ set -euo pipefail
 erros=0
 rastreados="$(git ls-files)"
 
+# Em data/ só entram data/README.md e data/exemplos/ (dados sintéticos nossos).
+# Dentro de data/exemplos/, CSV só se chamar sinteticos*.csv. Nenhum dado da Enter (decisão 19).
 proibidos="$(
   {
     printf '%s\n' "$rastreados" | grep -E '(^|/)\.env(\.[^/]+)?$' | grep -vE '\.env\.example$' || true
-    printf '%s\n' "$rastreados" | grep -E '^data/[^/]+\.csv$|^data/(processos_exemplo|subsidios|policy_artifacts)/|\.(joblib|pkl|pickle|pt|bin|gguf|safetensors)$|(^|/)node_modules/' || true
+    printf '%s\n' "$rastreados" | grep -E '^data/' | grep -vE '^data/README\.md$|^data/exemplos/' || true
+    printf '%s\n' "$rastreados" | grep -E '^data/exemplos/.*\.csv$' | grep -vE '^data/exemplos/sinteticos[^/]*\.csv$' || true
+    printf '%s\n' "$rastreados" | grep -E '\.(joblib|pkl|pickle|pt|bin|gguf|safetensors)$|(^|/)node_modules/' || true
   } | grep . || true
 )"
 
