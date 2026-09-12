@@ -34,11 +34,12 @@ Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação d
 | Nº de subsídios | 0→0% · 1→3% · 2→13% · 3→34% · 4→64% · 5→87% · 6→96% | monotônico; stub por lookup funciona |
 | Soma das condenações | R$ 193M em 60k = R$ 3.216 por processo | ordem de grandeza do slide financeiro |
 
-## Backtest com scores stub (lookup in-sample) e params default
+## Backtest da API (`POST /politicas/simular`) com params default
 | Cenário | Acordo | Política | Defender tudo | Acordar tudo |
 |---|---|---|---|---|
-| defaults, com Extinção | 49,7% | R$ 313M | R$ 392M | R$ 283M |
-| defaults, sem Extinção | 55,3% | R$ 270M | R$ 351M | R$ 246M |
+| scores do engine (adapter), com Extinção | 42,9% | R$ 318M | R$ 392M | R$ 281M |
+| scores stub (lookup), com Extinção | 49,7% | R$ 313M | R$ 392M | R$ 283M |
+| scores stub, sem Extinção | 55,3% | R$ 270M | R$ 351M | R$ 246M |
 Leitura: com custas R$ 1.500 + 10% de honorários, defender custa ≥ R$ 3k por processo, enquanto uma oferta no piso (10% da causa) com 65% de aceite custa menos; por isso "acordar tudo" vence a política sob essa hipótese. Calibração de P1 na H5: piso/fator de oferta e taxa de aceite realistas (meta 25–40% de acordo), ou custo de defesa menor. `load-historico` roda em 0,2 s; `simular` em ~15 ms.
 
 ## Backtest do engine (P1, `make backtest`, premissas em `docs/premissas.md`)

@@ -10,20 +10,21 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 ✅ `src/web`: Vite + React 19 + Mantine 8 + TanStack Query + react-router 7; login, casos, caso, painel, política e aprovações; `npm run build` = tsc estrito + vite
 🔧 `infra/` + `Makefile`: `make up` sobe db/api/caddy em :8080 (testado), `make jobs-docker` roda os jobs no container, `make deploy`/`make backup` para a VPS; VPS e standby ainda não subiram
 ✅ `src/enteros` (P1, fase 1): loader da planilha, tabela de segmentos + logística calibrada (AUC 0,923 OOF), razão de condenação por UF×sub-assunto, engine de valor esperado com escada de negociação, backtest com resultados reais (`docs/backtest/`), API própria (:8001) e 16 testes em `tests/`
-⬜ integração engine → portal (adapter `ModeloScores`); `src/extractor` (P3) ainda não existe
+✅ integração engine → portal: `src/api/app/modelo_enteros.py` (adapter `ModeloScores`, padrão de `MODEL_IMPL`); histórico dos 60k pontuado pela logística do engine
+⬜ `src/extractor` (P3) ainda não existe
 
 ## Visão geral
 ```
 advogado (celular/desktop) ─┐
 gestor do banco ────────────┤─ HTTPS ─ Caddy ─┬─ /api/*  ─ FastAPI ─ Postgres
                             │                  └─ /*      ─ SPA React (estático)
-P1 engine (src/enteros) ─ modelos em models/*.json + policy.yaml ─▶ scores por processo (adapter) ─▶ API
+P1 engine (src/enteros) ─ modelos em models/*.json + policy.yaml ─▶ adapter app/modelo_enteros.py ─▶ scores por processo e dos 60k ─▶ API
                          └─ make backtest ─▶ docs/backtest/ (números do deck)
 P3 extração  ─ dados dos PDFs, sinais, análise, minutas ─▶ job ingest ─────────────────▶ Postgres
 ```
 
 ## Duas políticas na fase 1, uma base
-**Engine (P1)** é a política de referência: `policy.yaml` + modelos em JSON → faixa, decisão, escada e o backtest que dá o número financeiro do deck (economia de 31% vs defender tudo, acordo em 36% dos casos). **API do portal** é a camada operacional: grava a recomendação que o advogado viu, mede aderência e efetividade e deixa o gestor simular parâmetros ao vivo sobre os 60k. A convergência prevista é a API consumir o modelo do engine via adapter e P1 calibrar os `PoliticaParams` a partir do `policy.yaml` (mapa em `contratos.md`).
+**Engine (P1)** é a política de referência: `policy.yaml` + modelos em JSON → faixa, decisão, escada e o backtest que dá o número financeiro do deck (economia de 31% vs defender tudo, acordo em 36% dos casos). **API do portal** é a camada operacional: grava a recomendação que o advogado viu, mede aderência e efetividade e deixa o gestor simular parâmetros ao vivo sobre os 60k. A API já consome o modelo do engine via adapter (`app/modelo_enteros.py`): P(êxito), quantis de condenação e contribuições vêm de `models/*.json`. Falta P1 calibrar os `PoliticaParams` a partir do `policy.yaml` (mapa em `contratos.md`) para os dois backtests contarem a mesma história.
 
 ## Princípio central: scores ≠ política
 Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contribuições), calculados uma vez por processo e gravados. Política é uma função pura barata em numpy sobre scores + parâmetros versionados. Isso permite: gestor simular parâmetros sobre 60 mil casos em < 100 ms, recomendação gravada no momento em que o advogado abre o caso, e P1 entregar só scores.

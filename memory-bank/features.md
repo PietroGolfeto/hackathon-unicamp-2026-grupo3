@@ -23,10 +23,10 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Front básico: login, casos, caso, casca do painel, política, aprovações | 3, 4, 5 | Lucas | ✅ | `pages/{Login,advogado/*,gestor/*}.tsx`; painel faz poll de 5 s; política simula com debounce de 300 ms e publica com diff; P4/P5 polem a partir daqui |
 | Compose, Caddy, deploy VPS, standby homelab, backup | — | Lucas | 🔧 | `make up` + `make jobs-docker` testados localmente via Caddy em :8080; `make deploy`/`make backup` escritos (VPS_HOST/VPS_DIR no .env) mas VPS e standby ainda não subiram |
 | Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 | ✅ | modelos em `models/*.json`, `docs/backtest/resumo.json`, `data/exemplos/sinteticos.csv` (engine) e `sinteticos_processos.csv` (portal) |
-| Modelo de perda (logística calibrada + tabela de segmentos) e razão de condenação | 1, 2 | P1 | ✅ | `src/enteros/policy/{model,ratio}.py` → `models/*.json`; AUC 0,923 OOF. Scores OOF para o portal (`data/derived/historico_scored.csv`) pendentes |
+| Modelo de perda (logística calibrada + tabela de segmentos) e razão de condenação | 1, 2 | P1 | ✅ | `src/enteros/policy/{model,ratio}.py` → `models/*.json`; AUC 0,923 OOF. Scores para o portal via adapter (in-sample da logística); OOF opcional por `data/derived/historico_scored.csv` |
 | Engine de valor esperado, faixas, escada de negociação e backtest do engine | 1, 2, 5 | P1 | ✅ | `src/enteros/policy/{engine,negotiation}.py`, `policy.yaml`, `src/enteros/backtest/`, `docs/backtest/`, `make backtest` |
 | API própria do engine (`POST /recomendacao`) | 3 | P1 | ✅ | `src/enteros/api/main.py`, `make engine-api` (:8001) |
-| Integração engine → portal (adapter `ModeloScores`) | 1, 2 | Lucas | ⬜ | `src/api/app/` via `MODEL_IMPL` |
+| Integração engine → portal (adapter `ModeloScores`) | 1, 2 | Lucas | ✅ | `src/api/app/modelo_enteros.py` (padrão de `MODEL_IMPL`); `load-historico` pontua os 60k com a logística do engine quando não há `historico_scored.csv`; 4 testes |
 | Extração LLM dos PDFs + sinais de alerta | 1, 3 | P3 | ⬜ | `src/extractor` |
 | Análise e minutas em linguagem jurídica | 3 | P3 | ⬜ | `src/extractor` |
 | Portal do advogado polido + vídeo | 3 | P4 | ⬜ | `pages/advogado`, `docs/video.*` |

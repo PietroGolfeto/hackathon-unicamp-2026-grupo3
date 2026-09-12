@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     demo_token: str = "demo"
     domain: str = ":8080"  # site do Caddy; ":8080" = local sem TLS
     data_dir: Path = Path("data")
-    model_impl: str = "model.predict:Modelo"
+    model_impl: str = "app.modelo_enteros:ModeloEnteros"
     extractor_impl: str = "extractor.pipeline:Extrator"
     openai_api_key: str = ""
     sessao_horas: int = 12

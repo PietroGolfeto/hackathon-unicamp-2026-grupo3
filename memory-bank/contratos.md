@@ -109,7 +109,7 @@ Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extra
 ## O que P1 entregou na fase 1 (`src/enteros`, pacote `enteros`)
 Contratos próprios em `enteros/schemas.py`: `CaseFeatures` (uf, sub_assunto, valor_causa, `docs` com status `presente|ausente|inconsistente`, opcionais da IA documental) → `Recomendacao` (decisão `defesa|acordo|instruir`, faixa, `p_perda` e intervalo, condenação p20/p50/p80, `ev_defesa`, `ev_acordo`, escada abertura/alvo/teto, decomposição, VOI, motivos, regras, contribuições). Parâmetros em `enteros/policy/policy.yaml`.
 
-Mapa para o contrato do portal (`core.modelo.Scores`), usado pelo adapter em `src/api`:
+Mapa para o contrato do portal (`core.modelo.Scores`), implementado pelo adapter `src/api/app/modelo_enteros.py` (`ModeloEnteros`, padrão de `MODEL_IMPL`):
 | `core` | `enteros` |
 |---|---|
 | `p_exito_defesa` | `1 − p_perda` (média entre tabela de segmentos e logística) |

@@ -70,7 +70,26 @@ def anexar_scores(df: pd.DataFrame, scored: Path) -> pd.DataFrame:
         df["scores_origem"] = "modelo"
         log.info("scores OOF de P1 anexados de %s", scored)
         return df
-    return stub_scores(df)
+    return scores_do_engine(df)
+
+
+def scores_do_engine(df: pd.DataFrame) -> pd.DataFrame:
+    """Logística do engine (30 coeficientes; in-sample ≈ OOF, métricas honestas em ModeloInfo). Falha → stub."""
+    try:
+        from app.modelo_enteros import ModeloEnteros
+
+        modelo = ModeloEnteros()
+    except Exception as exc:  # noqa: BLE001 - sem enteros/models cai no stub
+        log.warning("engine indisponível para o histórico (%s); usando stub", exc)
+        return stub_scores(df)
+    df = df.copy()
+    df["p_exito_oof"] = modelo.p_exito_lote(df).clip(0.001, 0.999)
+    for q, valores in modelo.quantis_lote(df).items():
+        df[f"condenacao_{q}_oof"] = valores
+    df["fold"] = None
+    df["scores_origem"] = "modelo"
+    log.info("scores do histórico pelo engine %s", modelo.versao)
+    return df
 
 
 def stub_scores(df: pd.DataFrame) -> pd.DataFrame:
