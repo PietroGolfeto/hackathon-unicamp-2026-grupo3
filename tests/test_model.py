@@ -94,3 +94,15 @@ def test_ratio_sem_acordos_monotono_e_por_uf(engine):
     assert r.para("MA", cfg.SUB_GENERICO)["media"] < r.para("AP", cfg.SUB_GOLPE)["media"]
     assert r.para("AM", cfg.SUB_GOLPE)["media"] > 0.75 > r.para("MA", cfg.SUB_GOLPE)["media"]
     assert set(("media", "p20", "p50", "p80", "n")) <= set(r.para("", "nan"))  # fallback do adapter
+
+
+def test_comparacao_de_modelos_roda_na_base_sintetica():
+    from enteros.policy.comparar import comparar, para_markdown
+
+    base = enriquecer(_ler_csv(cfg.ARQ_SINTETICOS))
+    res = comparar(base)
+    nomes = [linha["modelo"] for linha in res["linhas"]]
+    assert any("v2, escolhida" in n for n in nomes) and any(n.startswith("Engine v1") for n in nomes)
+    assert all(0 < linha["auc_oof"] <= 1 and linha["custo_oof"] > 0 for linha in res["linhas"])
+    assert res["custo_oraculo"] <= min(linha["custo_oof"] for linha in res["linhas"])
+    assert "| modelo |" in para_markdown(res)

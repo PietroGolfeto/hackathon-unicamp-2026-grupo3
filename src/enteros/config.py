@@ -13,6 +13,8 @@ DIR_EXEMPLOS = DIR_DATA / "exemplos"
 DIR_MODELS = RAIZ / "models"
 DIR_DOCS = RAIZ / "docs"
 DIR_BACKTEST = DIR_DOCS / "backtest"
+DIR_MODELO_DOCS = DIR_DOCS / "modelo"
+DIR_DERIVED = DIR_DATA / "derived"
 
 ARQ_RAW_XLSX = Path(os.environ.get("ENTEROS_RAW_XLSX", DIR_RAW / "Hackaton_Enter_Base_Candidatos.xlsx"))
 ARQ_SINTETICOS = DIR_EXEMPLOS / "sinteticos.csv"
@@ -22,6 +24,8 @@ ARQ_MODELO_PERDA = DIR_MODELS / "modelo_perda.json"
 ARQ_SEGMENTOS = DIR_MODELS / "segmentos.json"
 ARQ_RATIO = DIR_MODELS / "ratio_condenacao.json"
 ARQ_RESUMO_BACKTEST = DIR_BACKTEST / "resumo.json"
+ARQ_COMPARACAO = DIR_MODELO_DOCS / "comparacao.json"
+ARQ_SCORED = DIR_DERIVED / "historico_scored.csv"  # scores OOF para o portal (não versionado)
 
 # Abas da planilha original
 ABA_RESULTADOS = "Resultados dos processos"

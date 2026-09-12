@@ -113,6 +113,12 @@ train: ## ajusta tabela de segmentos, logística calibrada e quantis de condena�
 backtest: ## replay da política nos 60k com sensibilidade; gera docs/backtest/resumo.md e gráficos
 	$(PY) -m enteros.backtest.report --raw $(RAW)
 
+compare-models: ## compara variantes de modelo de P(perda) pelo custo de decisão OOF; gera docs/modelo/comparacao.{md,json}
+	$(PY) -m enteros.policy.comparar --raw $(RAW)
+
+scored: ## scores OOF dos 60k para o portal em data/derived/historico_scored.csv (não versionado)
+	$(PY) -m enteros.backtest.scored --raw $(RAW)
+
 sinteticos: ## gera data/exemplos/sinteticos.csv (dados nossos, sem linhas da Enter) a partir dos modelos
 	$(PY) -m enteros.sinteticos --raw $(RAW)
 
@@ -134,4 +140,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker data train backtest sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker data train backtest compare-models scored sinteticos engine-api demo deploy backup
