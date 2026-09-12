@@ -16,11 +16,11 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Decisão com aderência, justificativa e aprovação | 4 | Lucas | ✅ | `POST /processos/{id}/decisoes`; regras em `services/recomendacao.avaliar_decisao`; minutas e contato adverso só com P3 plugado |
 | Resultado da negociação | 5 | Lucas | ✅ | `POST /decisoes/{id}/resultado` (colunas em `decisoes`) |
 | Eventos de auditoria | 4 | Lucas | ✅ | `POST /eventos` + eventos automáticos abriu_caso, viu_recomendacao, abriu_documento |
-| Dashboard de aderência (números) | 4 | Lucas | ✅ | `GET /dashboard/aderencia` → `services/metricas.py` (por escritório, advogado, semana, justificativas, % sem ver recomendação) |
-| Dashboard de efetividade (números) | 5 | Lucas | ✅ | `GET /dashboard/efetividade` (aceite real vs hipótese, desconto, economia realizada, backtest da política ativa, ModeloInfo) |
+| Dashboard de aderência + parecer IA | 4 | Lucas | ✅ | `GET /dashboard/aderencia` (por escritório, advogado, semana e desvios); `POST /dashboard/desvios/{id}/parecer` gera uma análise consultiva OpenAI sob demanda e persiste por decisão |
+| Dashboard de efetividade | 5 | Lucas | ✅ | `GET /dashboard/efetividade` separa aceite/cobertura/economia operacional do potencial versionado do engine (`docs/backtest/resumo.json`) |
 | Políticas: simular, publicar, versões | 1, 5 | Lucas | ✅ | `routers/politicas.py`, `services/backtest.py`; `ativar` grava `resumo_backtest`; `/api/internal/reload-historico` |
 | Link mágico `/demo` para a banca | 3 | Lucas | ✅ | `GET /api/demo?t=` reserva caso livre da Banca Demo por 15 min, rate limit 20/min |
-| Front básico: sessão automática (sem tela de login, troca Advogado/Gestor no header), casos, caso, casca do painel, política, aprovações, tema visual da Enter | 3, 4, 5 | Lucas | ✅ | `auth/useSession.ts` (`RequireAuth` entra sozinho na conta demo certa; `useTrocarPapel` troca sem novo login), `pages/{advogado/*,gestor/*}.tsx`; painel faz poll de 5 s; política simula com debounce de 300 ms e publica com diff; identidade visual em `theme.css` + `main.tsx` (decisão 29); P4/P5 polem a partir daqui |
+| Front: sessão automática, casos, painel executivo, política, aprovações, tema Enter | 3, 4, 5 | Lucas | 🔧 | `pages/gestor/Painel.tsx`: estrutura base com gráficos, fila de desvios, parecer IA e potencial do engine separado da operação; corte visual da banca ainda não fechado; Política/Aprovações por contexto |
 | Compose, Caddy, deploy VPS, standby homelab, backup | — | Lucas | 🔧 | `make up` + `make jobs-docker` testados localmente via Caddy em :8080; `make deploy`/`make backup` escritos (VPS_HOST/VPS_DIR no .env) mas VPS e standby ainda não subiram |
 | Clone limpo sobe sem dados da Enter: modelo exportado, resumo do backtest, processos sintéticos nossos | — | Lucas; P1 | ✅ | modelos em `models/*.json`, `docs/backtest/resumo.json`, `data/exemplos/sinteticos.csv` (engine) e `sinteticos_processos.csv` (portal) |
 | Modelo de perda (logística calibrada + tabela de segmentos) e razão de condenação | 1, 2 | P1 | ✅ | `src/enteros/policy/{model,ratio}.py` → `models/*.json`; AUC 0,923 OOF. Scores para o portal via adapter (in-sample da logística); OOF opcional por `data/derived/historico_scored.csv` |
@@ -30,5 +30,5 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Extração LLM dos PDFs + sinais de alerta | 1, 3 | P3 | ⬜ | `src/extractor` |
 | Análise e minutas em linguagem jurídica | 3 | P3 | ⬜ | `src/extractor` |
 | Portal do advogado polido + vídeo | 3 | P4 | ⬜ | `pages/advogado`, `docs/video.*` |
-| Gráficos do painel e tela de política | 4, 5 | P5 | ⬜ | `pages/gestor` |
+| Gráficos do painel e tela de política | 4, 5 | Lucas | 🔧 | `@mantine/charts` no Painel; Política ainda é a simulação versionada anterior |
 | Slides, README e SETUP finais | — | P5 | ⬜ | `docs/`, `SETUP.md`, `README.md` |

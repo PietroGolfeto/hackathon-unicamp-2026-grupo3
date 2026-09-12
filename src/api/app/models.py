@@ -178,4 +178,15 @@ class Evento(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class ParecerJustificativa(Base):
+    __tablename__ = "pareceres_justificativa"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    decisao_id: Mapped[int] = mapped_column(
+        ForeignKey("decisoes.id"), unique=True, index=True
+    )
+    conteudo: Mapped[dict[str, Any]] = mapped_column(Json)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 RESULTADOS_NEGOCIACAO = ("aceito", "recusado", "contraproposta_aceita", "sem_resposta", "seguiu_defesa")

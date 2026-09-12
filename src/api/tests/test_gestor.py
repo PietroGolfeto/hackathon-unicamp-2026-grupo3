@@ -1,6 +1,7 @@
 """Políticas (simular/ativar), dashboards, aprovações e o link de demo."""
 
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -103,11 +104,57 @@ def test_dashboards(gestor: TestClient, exemplos):
     assert a["por_semana"] and a["por_advogado"]
     e = gestor.get("/api/dashboard/efetividade").json()
     assert e["n_acordos"] >= 2 and e["n_com_resultado"] >= 1
+    assert e["n_sem_resultado"] == e["n_acordos"] - e["n_com_resultado"]
+    assert e["cobertura_resultados"] == e["n_com_resultado"] / e["n_acordos"]
     assert e["taxa_aceite_real"] == 1.0 and e["taxa_aceite_esperada"] == 0.65
     assert e["por_resultado"]["contraproposta_aceita"] == 1
+    assert e["backtest_potencial"]["defender_tudo"] > e["backtest_potencial"]["politica"]
+    assert e["backtest_potencial"]["n_casos"] == 60000
     assert e["politica"]["versao"] == 2 and e["modelo"]["versao"].startswith("stub")
     filtrado = gestor.get("/api/dashboard/aderencia", params={"escritorio_id": 999}).json()
     assert filtrado["total"] == 0 and filtrado["pct_aderente"] is None
+
+
+def test_parecer_ia_e_gerado_uma_vez_e_persistido(
+    gestor: TestClient, adv: TestClient, exemplos: dict[str, int], monkeypatch
+):
+    """O parecer consultivo usa o provedor uma vez e depois retorna o cache persistido."""
+    from app.services import parecer_ia
+
+    chamadas = 0
+
+    def responder(_contexto: dict[str, Any]) -> dict[str, Any]:
+        """Retorne um parecer fixo e conte chamadas ao provedor."""
+        nonlocal chamadas
+        chamadas += 1
+        return {
+            "classificacao": "fundamentada",
+            "resumo": "A justificativa cita uma evidência concreta do caso.",
+            "pontos": ["Evidência específica"],
+            "confianca": 0.91,
+        }
+
+    monkeypatch.setattr(parecer_ia, "_chamar_openai", responder)
+    processo_id = exemplos["0654321-09.2024.8.04.0001"]
+    recomendacao = adv.get(f"/api/processos/{processo_id}/recomendacao").json()
+    tipo_divergente = "acordo" if recomendacao["tipo"] == "defesa" else "defesa"
+    decisao = adv.post(
+        f"/api/processos/{processo_id}/decisoes",
+        json={
+            "tipo": tipo_divergente,
+            "valor_proposto": 1500 if tipo_divergente == "acordo" else None,
+            "justificativa": "O extrato indica crédito em conta de terceiro.",
+        },
+    ).json()["decisao"]
+    url = f"/api/dashboard/desvios/{decisao['id']}/parecer"
+    primeiro = gestor.post(url)
+    segundo = gestor.post(url)
+
+    assert primeiro.status_code == 200
+    assert segundo.json() == primeiro.json()
+    assert chamadas == 1
+    desvios = gestor.get("/api/dashboard/aderencia").json()["justificativas"]
+    assert next(j for j in desvios if j["decisao_id"] == decisao["id"])["parecer_ia"]
 
 
 def test_seed_demo_cria_so_processos_pendentes(app_pronto, gestor: TestClient):

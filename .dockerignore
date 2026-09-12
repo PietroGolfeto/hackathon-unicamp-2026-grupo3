@@ -4,7 +4,9 @@
 src/web/dist
 data
 backups
-docs
+docs/**
+!docs/backtest/
+!docs/backtest/resumo.json
 **/__pycache__
 **/.pytest_cache
 **/.ruff_cache
