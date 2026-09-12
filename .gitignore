@@ -11,6 +11,7 @@ data/subsidios/
 data/processos_exemplo/
 data/derived/
 data/policy_artifacts/
+data/sinteticos/
 
 # Dependências de pacotes
 node_modules/

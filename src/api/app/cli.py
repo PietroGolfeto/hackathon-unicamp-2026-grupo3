@@ -60,7 +60,7 @@ def cmd_seed_demo(csv: Path | None) -> None:
     modelo = _modelo()
     with SessionLocal() as db:
         seed.rodar(db)
-        resumo = seed_demo.rodar(db, caminho, modelo)
+        resumo = seed_demo.rodar(db, caminho, modelo, settings.data_dir)
     print(f"seed-demo: {resumo}")
 
 
