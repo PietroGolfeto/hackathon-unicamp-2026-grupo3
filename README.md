@@ -193,7 +193,7 @@ aderência com **taxonomia de desvio**; (8) oferta **decomposta** + escada + men
 | D4 | **Auditoria de conteúdo por IA** (trilha em andamento): titularidade da conta de depósito, TED × valor liberado, liveness, dossiê favorável, contradições da petição. Documento inconsistente é **rebaixado** a ausente pelo engine | Uso de IA · Execução |
 | D5 | **Valor da informação**: faixa amarela "instruir antes de acordar"; para o banco, recuperar contratos ausentes evitaria **R$ 110M** de custo esperado; extratos, **R$ 62M**; dossiê/laudo: zero | Leitura do problema |
 | D6 | **Monitoramento que aprende** (trilha em andamento): taxonomia de desvio, justificativa por código, scorecard com controle estatístico, funil de negociação, curva de aceite por **bandas de oferta randomizadas** (15% de exploração) → bandit ajusta o alvo | Execução · Uso de IA |
-| D7 | **Onde o advogado trabalha**: API `POST /recomendacao` que o EnterOS chamaria + tela "Parecer" (trilha em andamento) | Usabilidade · Viabilidade |
+| D7 | **Onde o advogado trabalha**: API `POST /recomendacao` que o EnterOS chamaria + portal completo (`src/web` sobre `src/api`): lista de casos, caso com recomendação, PDFs, decisão com justificativa, minutas, resultado; link mágico para a banca | Usabilidade · Viabilidade |
 | D8 | **Evals e guardrails**: LLM nunca decide dinheiro; saídas validadas por schema; golden set com os 2 casos + sintéticos (trilha em andamento) | Uso de IA |
 
 ---
@@ -212,7 +212,7 @@ aderência com **taxonomia de desvio**; (8) oferta **decomposta** + escada + men
 | 8 | **Custos de defesa como parâmetros com fonte** (`policy.yaml`, `docs/premissas.md`) | A base não tem honorários, custas nem datas; o jurídico ajusta e o backtest mostra a sensibilidade |
 | 9 | **Sinais da IA entram por regra dura, não pelo modelo** | O histórico não tem esses rótulos; vender "conta de terceiro" como feature treinada seria desonesto (Súmula 479 STJ justifica a regra) |
 | 10 | **Nenhum dado da Enter no repositório** | Regra da organização; versionamos só modelos em JSON, resumo do backtest e um CSV sintético gerado pelos modelos |
-| 11 | **Sem Docker/Postgres/pgvector nesta fase**; SQLite quando houver persistência | Risco de demo sem ganho; tudo roda com `make demo` |
+| 11 | **Engine roda sem banco (`make demo`)**; persistência, portal do advogado e painel do gestor vivem na API FastAPI + Postgres + React (`src/api`, `src/web`, `infra/`, um Caddy) | O engine continua reproduzível com um comando; o portal é onde advogado e gestor trabalham e onde a recomendação vista fica gravada |
 | 12 | **React + Vite + Tailwind para a tela** (time tem frontend); Streamlit descartado | Foi o que 4 grupos usaram; usabilidade é critério |
 | 13 | **Constantes centralizadas** (`config.py`, `policy.yaml`); nomes de domínio em português | Nada hardcoded; política versionada é requisito de aderência |
 | 14 | **Limitações declaradas no deck** | G10 perdeu credibilidade prometendo o que não entregou |
@@ -236,11 +236,18 @@ flowchart LR
     EV --> ESC[Escada abertura/alvo/teto<br/>+ decomposição + VOI]
     ESC --> REC[Recomendacao<br/>faixa · decisão · motivos · contribuições]
   end
-  REC -->|POST /recomendacao| UI[Tela Parecer do advogado<br/>trilha C]
+  REC -->|POST /recomendacao :8001| EXT[Integrações externas<br/>EnterOS]
   REC --> BT[Backtest 60k<br/>docs/backtest]
-  UI -->|decisão · desvio · resultado| MON[Painel do banco<br/>aderência · efetividade · experimento<br/>trilha D]
+  M -->|adapter ModeloScores| API
+  subgraph PORTAL["Portal e API (src/api + src/web + infra, esta entrega)"]
+    API[FastAPI /api :8000<br/>recomendação gravada · decisão · aderência · políticas versionadas] --> DB[(Postgres)]
+    API --> UI[Portal do advogado<br/>casos · caso · PDFs · decisão · minutas · resultado]
+    API --> MON[Painel do gestor<br/>aderência · efetividade · simulação nos 60k · aprovações]
+  end
   BT --> MON
 ```
+
+**Como as duas camadas se encaixam.** O engine é a política de referência e a fonte dos números deste README; o portal é a camada operacional: grava a recomendação exata que o advogado viu (aderência é medida contra ela), exige justificativa no desvio, manda acordos fora da banda para aprovação, registra o resultado da negociação e deixa o gestor simular parâmetros da política sobre os 60 mil casos em ~15 ms. A API do portal consome o modelo do engine (`models/*.json`) por um adapter (`MODEL_IMPL=app.modelo_enteros:ModeloEnteros`) e aplica a política operacional versionada no banco (`core/politica.py`); o mapa entre os parâmetros das duas políticas está em [`memory-bank/contratos.md`](memory-bank/contratos.md). Estado vivo do sistema, tabelas e fluxos: [`memory-bank/arquitetura.md`](memory-bank/arquitetura.md).
 
 **Contratos** (`src/enteros/schemas.py`): `CaseFeatures` (UF, sub-assunto, valor da causa, status de cada subsídio
 `presente|ausente|inconsistente`, e opcionais da IA: titularidade da conta, liveness, parcelas pagas, saldo, dano moral
@@ -259,8 +266,8 @@ cache por hash → **≈ R$ 0,05–0,15 por caso, < R$ 1 mil/mês** para 5 mil c
 |---|---|---|---|
 | A · Dados/Política | loader, modelos calibrados, engine EV, escada, VOI, `policy.yaml`, backtest, API, testes | `src/enteros/{data,policy,backtest,api}` | ✅ esta entrega |
 | B · IA documental | extratores por documento, cruzador de fatos/contradições, contato do adverso, minutas, golden set + `make eval` | `src/enteros/ia/` | 🔧 |
-| C · UX advogado | tela Parecer (semáforo, escada, checklist com recibo de leitura, minuta, formulário de resultado), PDF 1 página | `src/enteros/interface/` | 🔧 |
-| D · Banco/Monitor | decisões em SQLite, aderência (taxonomia, scorecard), efetividade (funil, curva de aceite, drift), VOI, simulador + bandit | `src/enteros/monitor/` | 🔧 |
+| C · UX advogado | portal: login, casos, caso (recomendação, PDFs em nova aba com recibo de leitura, decisão com cronômetro, minutas copiáveis, resultado), link mágico `/api/demo` | `src/web/src/pages/advogado`, `src/api` | ✅ básico · 🔧 polimento |
+| D · Banco/Monitor | decisões em Postgres, aderência (desvio de tipo/valor, justificativas, por escritório/advogado/semana), efetividade (aceite real × hipótese, economia realizada), simulação de parâmetros nos 60k, aprovações | `src/api/app/services/{metricas,backtest}.py`, `src/web/src/pages/gestor` | ✅ números · 🔧 gráficos e experimento |
 | E · Entrega | deck 15 min, vídeo 2 min, README/SETUP finais | `docs/` | 🔧 |
 
 Cronograma (12→13/09): H0–2 scaffold + dados + engine · H2–8 trilhas em paralelo · H8–11 integrar os 2 casos ponta a
@@ -274,9 +281,9 @@ ponta · H11–13 números do backtest no deck · H13–14 vídeo · H14–15 bu
 |---|---|---|---|
 | 1 | Regra de decisão acordo × defesa | `policy/engine.py` (EV + faixas + regras duras), `policy.yaml` | ✅ |
 | 2 | Sugestão de valor | `policy/negotiation.py` (escada abertura/alvo/teto, decomposição) | ✅ |
-| 3 | Acesso à recomendação | `api/main.py` (`POST /recomendacao`); tela do advogado | ✅ API · 🔧 tela |
-| 4 | Monitoramento de aderência | contratos prontos (`regras_acionadas`, versões); registro de decisões e scorecard | 🔧 |
-| 5 | Monitoramento de efetividade | `backtest/` (economia vs. baselines, sensibilidade, calibração); funil real + experimento | ✅ backtest · 🔧 painel |
+| 3 | Acesso à recomendação | `enteros/api/main.py` (`POST /recomendacao`); portal `src/web` (`/casos/:id`, resumo copiável, link mágico `/api/demo` para a banca) | ✅ |
+| 4 | Monitoramento de aderência | portal: decisão gravada contra a recomendação vista, justificativa obrigatória no desvio, aprovação de acordos fora da banda, `GET /api/dashboard/aderencia` | ✅ |
+| 5 | Monitoramento de efetividade | `backtest/` (economia vs. baselines, sensibilidade, calibração); portal: resultado da negociação, aceite real × hipótese, economia realizada, `GET /api/dashboard/efetividade` | ✅ · 🔧 experimento de bandas |
 
 ---
 
@@ -295,8 +302,9 @@ modelo de duração com datas reais; expansão a cartão e outras modalidades.
 ---
 
 ## Como rodar
-Ver [`SETUP.md`](SETUP.md). Resumo: `make setup && make demo` (roda sobre `data/exemplos/sinteticos.csv` se a planilha
-da Enter não estiver em `data/raw/`). API: `make api` → `http://localhost:8000/docs`.
+Ver [`SETUP.md`](SETUP.md). Resumo: `make install && make demo` roda o engine (sobre `data/exemplos/sinteticos.csv` se a
+planilha da Enter não estiver em `data/raw/`); `make engine-api` → `http://localhost:8001/docs`. Portal completo com
+Postgres: `make up && make jobs-docker` → `http://localhost:8080` (usuários e senha em `SETUP.md`).
 
 ## Enunciado original do desafio
 O texto do organizador (contexto, requisitos, critérios, prazos e instruções de submissão) está em
