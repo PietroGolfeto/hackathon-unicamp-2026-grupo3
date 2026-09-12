@@ -110,6 +110,11 @@ extrair: ## roda o extractor numa pasta de processo: make extrair PASTA=data/exe
 	@test -n "$(PASTA)" || (echo "uso: make extrair PASTA=<pasta do processo> [ARGS=...]"; exit 1)
 	$(PY) -m extractor $(PASTA) $(ARGS)
 
+bench-extractor: ## benchmark da compressão de tokens (sem LLM) → docs/extractor/benchmark.md; tiktoken via uv quando houver
+	@mkdir -p docs/extractor
+	$(if $(UV),$(UVENV) uv run --no-sync --with tiktoken python,$(PY)) -m extractor.benchmark docs/Caso_*/ \
+	  src/extractor/tests/dados/*/ --stress --cache-dir data/cache/extractor --md docs/extractor/benchmark.md
+
 exemplos-docs: ## copia docs/Caso_*/ (PDFs da Enter, não versionados) para data/exemplos/<numero>/{autos,subsidios}
 	@for d in docs/Caso_*/; do \
 	  n=$$(basename "$$d" | sed -E 's/^Caso_[0-9]+_//; s/([0-9]{7})-([0-9]{2})-([0-9]{4})-([0-9])-([0-9]{2})-([0-9]{4})/\1-\2.\3.\4.\5.\6/'); \
@@ -150,4 +155,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker extrair exemplos-docs data train backtest sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo reset-demo reset jobs-docker extrair bench-extractor exemplos-docs data train backtest sinteticos engine-api demo deploy backup
