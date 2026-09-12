@@ -12,9 +12,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY src/core/pyproject.toml src/core/
 COPY src/api/pyproject.toml src/api/
+COPY src/extractor/pyproject.toml src/extractor/
 RUN uv sync --frozen --no-dev --no-install-workspace
 
-# 2) código do workspace (enteros na raiz, core, api) e os modelos do engine
+# 2) código do workspace (enteros na raiz, core, api, extractor) e os modelos do engine
 COPY src/ ./src/
 COPY models/ ./models/
 COPY docs/backtest/resumo.json ./docs/backtest/resumo.json

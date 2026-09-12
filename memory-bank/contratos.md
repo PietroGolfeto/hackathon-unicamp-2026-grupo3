@@ -48,7 +48,9 @@ class ContratoInfo(BaseModel):
     assinatura: Literal["fisica", "digital", "biometria", "ausente", "desconhecida"] = "desconhecida"
     credito_conta_terceiro: bool | None; valor: float | None; parcelas: int | None; data: date | None
 class SinalAlerta(BaseModel): codigo: str; descricao: str; severidade: Literal["baixa", "media", "alta"]; fonte: str | None
-# códigos previstos: IDOSO, CREDITO_CONTA_TERCEIRO, BOLETIM_OCORRENCIA, RECLAMACAO_BACEN, SEM_CONTRATO, ASSINATURA_DIVERGENTE, CANAL_DIGITAL_SEM_PERFIL
+# códigos previstos: IDOSO, CREDITO_CONTA_TERCEIRO, BOLETIM_OCORRENCIA, RECLAMACAO_BACEN, SEM_CONTRATO, ASSINATURA_DIVERGENTE,
+#   CANAL_DIGITAL_SEM_PERFIL, LIVENESS_AUSENTE_CANAL_DIGITAL (canal digital sem vídeo de liveness), DOCUMENTO_SUSPEITO (emitido pelo
+#   extractor, não pelo LLM: PDF com script/ação/anexo ou texto com instrução embutida; o trecho sai do brief e o arquivo vai em `fonte`)
 
 class DadosExtraidos(BaseModel):
     numero: str; origem: Literal["llm", "stub"]; modelo: str | None
@@ -106,6 +108,8 @@ Backtest usa **resultados reais**: `custo_defesa_real = custas + hon·causa + co
 ## Seleção de implementação
 Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. A classe precisa ser instanciável **sem argumentos** (carrega seus artefatos sozinha). Import ou construção falha, log alto: o modelo cai em `StubModelo` (campo `origem` mostra "stub" na UI); o extrator vira `None` e nada é extraído, analisado ou redigido (decisão 27). `app/plugins.py` faz isso no start e em `POST /api/internal/reload-historico`.
 
+Extractor real (padrão): `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. Env: `OPENAI_API_KEY`, `OPENAI_MODEL` (padrão `gpt-5-mini`), `EXTRACTOR_CACHE_DIR` (padrão `DATA_DIR/cache/extractor`). Sem chave, `Extrator()` constrói e serve só do cache; `extrair` sem cache levanta `ErroConfiguracao` (o ingest para avisando). `extrair` e `analisar` vêm da mesma chamada ao LLM; `redigir` é template. Campos que o LLM devolve além do contrato (`dano_moral_pedido`, `valor_parcela`, `parcelas_pagas`, `saldo_devedor`, `liveness`, `banco_deposito`, `canal_alegado_pelo_autor`, `contradicoes`) ficam no cache (`saida_llm`) e no `texto` da análise; entram no contrato quando P1/P4 precisarem (mudança aditiva). `SinalAlerta.codigo` pode ser `OUTRO` com a descrição.
+
 ## O que P1 entregou na fase 1 (`src/enteros`, pacote `enteros`)
 Contratos próprios em `enteros/schemas.py`: `CaseFeatures` (uf, sub_assunto, valor_causa, `docs` com status `presente|ausente|inconsistente`, opcionais da IA documental) → `Recomendacao` (decisão `defesa|acordo|instruir`, faixa, `p_perda` e intervalo, condenação p20/p50/p80, `ev_defesa`, `ev_acordo`, escada abertura/alvo/teto, decomposição, VOI, motivos, regras, contribuições). Parâmetros em `enteros/policy/policy.yaml`.
 
@@ -142,5 +146,5 @@ Mapa completo:
 | `taxa_aceite_esperada` 0,65 fixa | curva logística (`aceite_s50` 30% da causa, largura 0,06) | API mede o aceite real e substitui |
 | `fator_oferta` 0,80 × prejuízo esperado | alvo = argmin do custo esperado na grade | |
 | `piso/teto_oferta_pct_causa` 10% / 60% | 10% / 70%; teto também ≤ 90% do EV de defesa | |
-| `sinais_forcam_acordo` [CREDITO_CONTA_TERCEIRO] | + LIVENESS_AUSENTE_CANAL_DIGITAL | adicionar o segundo código em `core/caso.py` quando P3 extrair liveness |
+| `sinais_forcam_acordo` [CREDITO_CONTA_TERCEIRO] | + LIVENESS_AUSENTE_CANAL_DIGITAL | o segundo código já existe em `core/caso.py`; o extractor o emite quando o laudo diz que o liveness não foi localizado em contratação digital |
 

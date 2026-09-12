@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enter-extractor"
+version = "0.1.0"
+description = "P3: leitura segura dos PDFs do processo, brief compacto e resumo do caso via OpenAI, com cache local"
+requires-python = ">=3.12"
+# enter-core vem do workspace (src/core).
+dependencies = [
+  "pydantic>=2.7",
+  "pypdf>=6.0",
+  "openai>=1.60",
+  "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "ruff>=0.5"]
+
+[tool.setuptools]
+packages = ["extractor"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

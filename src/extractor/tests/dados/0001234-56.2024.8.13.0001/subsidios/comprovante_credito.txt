@@ -1,0 +1,40 @@
+BANCO UFMG S.A.                                                                            COMPROVANTE DE CRÉDITO (BACEN)
+CNPJ 11.222.333/0001-44 | Av. Paulista, 1.500 - São Paulo/SP
+
+                          COMPROVANTE DE OPERAÇÃO DE CRÉDITO
+
+    Emitido em cumprimento à Resolução CMN nº 4.882/2020 e à Circular BACEN nº 3.978/2020.
+
+    2. IDENTIFICAÇÃO DO TOMADOR DO CRÉDITO
+
+      Nome completo                           ANA LÚCIA FERREIRA MOTA
+
+      CPF                                     321.654.987-00
+
+      Data de nascimento                      10/01/1955
+
+    3. CARACTERÍSTICAS DA OPERAÇÃO
+
+      Nº do contrato                                  700112233
+
+      Data da contratação                             03/03/2023
+
+      Valor da operação (líquido)                     R$ 4.000,00
+
+      Número de parcelas                              60
+
+      Valor da parcela                                R$ 110,00
+
+      Canal de contratação                            Digital - Aplicativo Mobile (self-service)
+
+      Instituição depositária                         Caixa Econômica Federal - Ag. 1111 - CC 22222-3
+
+      Data da liberação do crédito                    04/03/2023
+
+    4. DECLARAÇÃO
+
+    O BANCO UFMG S.A. DECLARA que a operação de crédito de nº 700112233 foi formalizada e o valor
+    líquido liberado em favor do tomador em 04/03/2023, em conta de sua titularidade junto à Caixa
+    Econômica Federal.
+
+                       Documento gerado eletronicamente - Banco UFMG S.A. | Documento fictício para teste.
