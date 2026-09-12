@@ -8,7 +8,7 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 ✅ `src/core`: pacote `core` com parsing dos CSVs, UF por CNJ, contratos P1/P3 e política em numpy, 32 testes
 ✅ `src/api`: FastAPI completa (auth, processos, recomendação, decisão, resultado, eventos, políticas, dashboards, aprovações, demo, arquivos) + CLI de jobs; 20 testes contra Postgres
 ✅ `src/web`: Vite + React 19 + Mantine 8 + TanStack Query + react-router 7; login, casos, caso, painel, política e aprovações; `npm run build` = tsc estrito + vite
-🔧 `infra/`: compose (db, api, caddy), override local sem TLS, Caddyfile, Dockerfiles; deploy na VPS e standby ainda não
+🔧 `infra/` + `Makefile`: `make up` sobe db/api/caddy em :8080 (testado), `make jobs-docker` roda os jobs no container, `make deploy`/`make backup` para a VPS; VPS e standby ainda não subiram
 ⬜ `src/model`, `src/extractor`: ainda não existem (P1, P3)
 
 ## Visão geral
@@ -56,7 +56,7 @@ Scores são a saída cara do modelo (P(êxito), condenação p20/p50/p80, contri
 
 ## Deploy
 VPS com domínio: um Caddy com TLS automático servindo o `dist/` e fazendo proxy de `/api/*` para a API (mesma origem, sem CORS). Volume `caddy_data` persistido. Homelab roda o mesmo compose como standby permanente em `standby.<dominio>` via túnel; `pg_dump` da VPS para o homelab a cada 10 min. Dev e standby usam `infra/compose.local.yml` (porta 8080, sem TLS).
-`data/` não é versionado: `make deploy` sincroniza por rsync para a VPS. Sem os CSVs da Enter a API sobe normalmente e a tela de simular avisa que o histórico não está carregado.
+`data/` não é versionado: `make deploy` sincroniza por rsync para a VPS e faz `git pull` + `compose up --build`; `make backup` traz um `pg_dump`. Localmente: `make up` (compose com override sem TLS), `make dev-api`/`make dev-web` fora do Docker, jobs via `make seed|historico|ingest|seed-demo|reset-demo|reset` (rodam contra o `DATABASE_URL` do `.env`). Sem os CSVs da Enter a API sobe normalmente e a tela de simular avisa que o histórico não está carregado.
 
 ## Convenções de API
 Prefixo `/api` (`/api/health`, `/api/docs`). Cookie HttpOnly assinado, 12 h. IDs inteiros nas URLs (número CNJ só em busca). Erros `{detail: "texto em português"}`. Datas ISO 8601. Dinheiro em número; formatação BRL só no front.
