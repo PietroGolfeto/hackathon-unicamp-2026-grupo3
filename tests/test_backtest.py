@@ -36,3 +36,21 @@ def test_custo_politica_defesa_igual_custo_real(engine):
     custo = custo_politica(df, engine)
     defesa = df["decisao"] == cfg.DECISAO_DEFESA
     assert (custo[defesa] == df.loc[defesa, "custo_real_defesa"]).all()
+
+
+def test_baselines_ordenados_e_banda(engine):
+    df = pontuar_base(carregar_base(), engine)
+    res = resumo(df, engine)
+    custos = {b["nome"].split(" ")[0]: b["custo"] for b in res["baselines"]["linhas"]}
+    oraculo = next(b for b in res["baselines"]["linhas"] if b["nome"].startswith("Oráculo"))
+    politica = next(b for b in res["baselines"]["linhas"] if "curva de aceite" in b["nome"])
+    defender = next(b for b in res["baselines"]["linhas"] if b["nome"].startswith("Defender"))
+    assert oraculo["custo"] <= politica["custo"] <= defender["custo"]
+    assert 0 < politica["captura_do_ganho_maximo"] <= 1
+    assert res["p_out_of_fold"] is True and (df["fold"] >= 0).sum() > 0
+    assert 0 < res["breakeven"]["medio"] < 1
+    assert set(df["decisao"]) <= {cfg.DECISAO_ACORDO, cfg.DECISAO_DEFESA}  # replay continua binário
+    assert df["instruir"].dtype == bool and not df.loc[df["decisao"] == cfg.DECISAO_DEFESA, "instruir"].any()
+    assert {"jec"} <= {c["cenario"].split(" ")[1].lower() for c in res["sensibilidade_custos"] if c["cenario"].startswith("Cenário")}
+    assert len(res["por_uf"]) >= 1 and custos
+

@@ -47,11 +47,20 @@ Leitura: com custas R$ 1.500 + 10% de honorários, defender custa ≥ R$ 3k por 
 ## Backtest do engine (P1, `make backtest`, premissas em `docs/premissas.md`)
 | Medida | Valor |
 |---|---|
-| Modelo de perda (logística, OOF 5 folds) | AUC 0,923 · Brier 0,093 · ECE 0,003 · taxa de perda 30,4% |
+| Modelo de perda (logística, OOF 5 folds, sem os 280 acordos) | AUC 0,923 · log-loss 0,308 · Brier 0,093 · ECE 0,003 · taxa de perda 30,1% |
 | Defender tudo (condenação + honorários 15% + custas 2% + correção 1% a.m. × 18 meses + escritório R$ 1.200) | R$ 342,9M |
-| Acordar tudo no alvo (curva de aceite) | R$ 246,6M |
-| Política do engine (acordo em 36% dos casos) | R$ 236,7M, economia R$ 106M (31%) |
-| Faixas | verde 57% dos casos / 20% do custo · amarela 19% · vermelha 24% dos casos / 59% do custo |
+| Acordar tudo a 30% do VC, aceite 65% | R$ 313,3M (−8,6%) |
+| Heurística "sem contrato → acordo" | R$ 260,7M (−24,0%) |
+| Limiar fixo p_perda > 0,60 (3 grupos da UFMG) | R$ 257,9M (−24,8%; captura 56% do ganho máximo) |
+| Política do engine (p OOF, escada + curva de aceite; acordo em 36% dos casos) | **R$ 236,8M, economia R$ 106M (31,0%; captura 70% do ganho máximo)** |
+| Oráculo (resultado conhecido, mesma escada) | R$ 191,1M (−44,3%) — teto teórico |
+| Banda do headline | 31,1% ± 0,4 p.p. entre folds; bootstrap IC95 30,6–31,4% |
+| Sensibilidade ao aceite | 50% → 17% · 65% → 23% · 80% → 29% · curva → 31% |
+| Sensibilidade à âncora s50 | 0,25 → 34,8% · 0,30 → 31,0% · 0,40 → 23,9% · 0,50 → 17,6% |
+| Sensibilidade a custos | escritório ×0,5/×1,5, sucumbência 10/20%, tempo 10/22 meses: 28–32%; **JEC** (sem custas/sucumbência, 9 meses): 22,9% |
+| Breakeven p\* (no alvo da escada) | médio 0,47 (p5 0,24 · p95 0,84); com oferta fixa de 30% do VC e aceite 65% ≈ 0,26; 2,2% dos casos sensíveis (IC cruza p\*) |
+| Instruir (pedir contrato/extrato antes de acordar) | 33,6% dos casos (93% dos acordos) sob q_d cheio; 23,9% com q_d × 0,5; EVSI total R$ 50M (hipótese) |
+| Por UF | economia de 21,7% (MA) a 42,9% (AP); % acordo 26% (MA) → 60% (AP) |
 Os dois backtests (engine e API) usam resultados reais, mas premissas de custo diferentes; por isso os totais não batem. Ver decisão 25.
 
 ## Processos exemplo (do vencedor anterior; confirmar que são os mesmos)

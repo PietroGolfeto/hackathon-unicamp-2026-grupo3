@@ -60,3 +60,24 @@ def decompor(caso: CaseFeatures, alvo: float) -> Decomposicao:
     dev = devolucao_simples(caso)
     return Decomposicao(devolucao_parcelas=round(dev, 2), saldo_baixado=round(float(caso.saldo_devedor or 0.0), 2),
                         dano_moral=round(max(alvo - dev, 0.0), 2))
+
+
+def escada_lote(ev_defesa: np.ndarray, valor_causa: np.ndarray, oferta: Oferta, custos: Custos,
+                saldo: np.ndarray | float = 0.0, s50: float | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """Versão vetorizada do alvo da escada para o backtest: (alvo, p_aceite_alvo) por linha.
+    `s50` sobrescreve a âncora da curva de aceite (sensibilidade)."""
+    o = oferta if s50 is None else oferta.model_copy(update={"aceite_s50": s50})
+    grade = np.arange(o.piso_pct_causa, o.teto_pct_causa + 1e-9, o.grade_passo)
+    pa = p_aceite(grade, o)  # (G,)
+    vc = np.asarray(valor_causa, dtype=float)[:, None]
+    ofertas = grade[None, :] * vc  # (N, G)
+    ev = np.asarray(ev_defesa, dtype=float)[:, None]
+    sal = np.asarray(saldo, dtype=float).reshape(-1, 1) if np.ndim(saldo) else float(saldo)
+    teto = np.minimum(ev * (1 - o.margem_teto) - sal, o.teto_pct_causa * vc)
+    piso = o.piso_pct_causa * vc
+    custo = cst.ev_acordo(ofertas, pa[None, :], ev, custos, sal)
+    custo = np.where((ofertas <= teto + 1e-9) & (ofertas >= piso - 1e-9), custo, np.inf)
+    idx = np.argmin(custo, axis=1)
+    linhas = np.arange(len(idx))
+    alvo = np.where(np.isfinite(custo[linhas, idx]), ofertas[linhas, idx], piso[:, 0])
+    return alvo, np.asarray(p_aceite(alvo / vc[:, 0], o), dtype=float)
