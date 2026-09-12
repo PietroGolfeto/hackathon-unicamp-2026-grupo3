@@ -89,35 +89,47 @@ def _grafico_voi(res: dict, out: Path) -> None:
     plt.close(fig)
 
 
-def escrever_md(res: dict, out: Path) -> None:
+MARCADOR_INICIO = "<!-- backtest:inicio -->"
+MARCADOR_FIM = "<!-- backtest:fim -->"
+
+
+def linhas_resumo(res: dict, h: str = "#", imagens_prefixo: str = "") -> list[str]:
+    """Linhas Markdown do resumo. `h` é o prefixo do título de topo ("#" no resumo.md, "###" dentro do README)."""
     m = res["metricas_modelo"]
+    img = (lambda nome: f"![{nome}]({imagens_prefixo}{nome}.png)") if imagens_prefixo is not None else (lambda nome: "")
     linhas = [
-        f"# Backtest da política `{res['politica_versao']}` (modelo `{res['modelo_versao']}`)",
+        f"{h} Backtest da política `{res['politica_versao']}` (modelo `{res['modelo_versao']}`)",
         "",
         f"Base: **{res['n_casos']:,} processos** ({'base completa da Enter' if res['base_real'] else 'CSV sintético — números ilustrativos'}).",
         "Custos reais de defender usam o resultado que de fato ocorreu (condenação, êxito, extinção); ver premissas em `docs/premissas.md`.",
         "",
-        "## Modelo de probabilidade de perda (out-of-fold, 5 folds)",
+        f"{h}# Modelo de probabilidade de perda (out-of-fold, 5 folds)",
         f"- AUC **{m['auc_oof']:.3f}** · Brier {m['brier_oof']:.3f} · acurácia@0,5 {m['acuracia_oof_0.5']:.1%} · ECE **{m['ece_oof']:.3f}** · taxa de perda {m['taxa_perda_base']:.1%}",
         "",
         "| p prevista | n | prevista média | observada |", "|---|---|---|---|",
         *[f"| {c['p_min']:.1f}–{c['p_max']:.1f} | {c['n']:,} | {c['p_prevista']:.3f} | {c['taxa_real']:.3f} |" for c in res["calibracao"]],
         "",
-        "## Financeiro",
+        img("calibracao"),
+        "",
+        f"{h}# Financeiro",
         f"- Condenações históricas: **{brl(res['condenacao_total'])}** ({brl(res['condenacao_por_caso'])} por caso; ~{brl(res['condenacao_por_caso']*5000)}/mês em 5 mil casos)",
         f"- Custo real de **defender tudo** (condenação + honorários + custas + tempo + escritório): **{brl(res['custo_defender_tudo'])}**",
         f"- Custo de **acordar tudo** no alvo (curva de aceite): {brl(res['custo_acordar_tudo'])}",
         f"- Custo sob a **política** (curva de aceite): **{brl(res['custo_politica_curva'])}** → economia **{brl(res['economia_politica_curva'])} ({res['economia_pct_curva']:.1%})**, acordo em {res['share_acordo']:.1%} dos casos",
         "",
-        "### Sensibilidade (economia vs. defender tudo)",
+        f"{h}## Sensibilidade (economia vs. defender tudo)",
         "| taxa de aceite | oferta × | custo | economia | % |", "|---|---|---|---|---|",
         *[f"| {s['taxa_aceite']} | {s['mult_oferta']} | {brl(s['custo'])} | {brl(s['economia'])} | {s['economia_pct']:.1%} |" for s in res["sensibilidade"]],
         "",
-        "### Faixas",
+        img("sensibilidade"),
+        "",
+        f"{h}## Faixas",
         "| faixa | casos | % casos | p perda prevista | perda real | condenação real | custo real defesa |", "|---|---|---|---|---|---|---|",
         *[f"| {f['faixa']} | {f['n']:,} | {f['share']:.1%} | {f['p_perda_prevista']:.1%} | {f['perda_real']:.1%} | {brl(f['condenacao_real'])} | {brl(f['custo_real_defesa'])} |" for f in res["por_faixa"]],
         "",
-        "## Subsídios",
+        img("faixas"),
+        "",
+        f"{h}# Subsídios",
         "| documento | perda quando presente | perda quando ausente | Δ p.p. |", "|---|---|---|---|",
         *[f"| {cfg.NOME_DOC[d]} | {e['perda_com']:.1%} | {e['perda_sem']:.1%} | {(e['perda_sem']-e['perda_com'])*100:+.1f} |" for d, e in res["efeito_docs"].items()],
         "",
@@ -125,9 +137,29 @@ def escrever_md(res: dict, out: Path) -> None:
         "| documento | casos sem | ganho total | por caso |", "|---|---|---|---|",
         *[f"| {cfg.NOME_DOC[d]} | {v['casos_sem']:,} | {brl(v['ganho_total'])} | {brl(v['ganho_por_caso'])} |" for d, v in res["voi"].items()],
         "",
-        "Gráficos: `calibracao.png`, `sensibilidade.png`, `faixas.png`, `subsidios.png`.",
+        img("subsidios"),
     ]
-    (out / "resumo.md").write_text("\n".join(linhas) + "\n", encoding="utf-8")
+    return [l for l in linhas if l is not None]
+
+
+def escrever_md(res: dict, out: Path) -> None:
+    (out / "resumo.md").write_text("\n".join(linhas_resumo(res, "#", "")) + "\n", encoding="utf-8")
+
+
+def atualizar_readme(res: dict, readme: Path, out: Path) -> bool:
+    """Substitui o bloco entre os marcadores no README pelas tabelas geradas. Devolve True se atualizou."""
+    if not readme.exists():
+        return False
+    texto = readme.read_text(encoding="utf-8")
+    if MARCADOR_INICIO not in texto or MARCADOR_FIM not in texto:
+        return False
+    prefixo = out.relative_to(readme.parent).as_posix() + "/"
+    bloco = "\n".join([MARCADOR_INICIO, "_Bloco gerado por `make backtest`; não edite à mão._", "",
+                       *linhas_resumo(res, "###", prefixo), MARCADOR_FIM])
+    ini = texto.index(MARCADOR_INICIO)
+    fim = texto.index(MARCADOR_FIM) + len(MARCADOR_FIM)
+    readme.write_text(texto[:ini] + bloco + texto[fim:], encoding="utf-8")
+    return True
 
 
 def main() -> None:
@@ -143,6 +175,8 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "resumo.json").write_text(json_dumps(res, default=float), encoding="utf-8")
     escrever_md(res, args.out)
+    if atualizar_readme(res, cfg.RAIZ / "README.md", args.out):
+        log.info("README atualizado com as tabelas do backtest")
     _grafico_reliability(res, args.out)
     _grafico_sensibilidade(res, args.out)
     _grafico_faixas(res, args.out)

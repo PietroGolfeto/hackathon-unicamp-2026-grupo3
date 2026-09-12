@@ -19,6 +19,8 @@ Custos reais de defender usam o resultado que de fato ocorreu (condenação, êx
 | 0.8–0.9 | 3,028 | 0.847 | 0.847 |
 | 0.9–1.0 | 6,498 | 0.973 | 0.974 |
 
+![calibracao](calibracao.png)
+
 ## Financeiro
 - Condenações históricas: **R$ 193.0M** (R$ 3,216 por caso; ~R$ 16.1M/mês em 5 mil casos)
 - Custo real de **defender tudo** (condenação + honorários + custas + tempo + escritório): **R$ 342.9M**
@@ -44,12 +46,16 @@ Custos reais de defender usam o resultado que de fato ocorreu (condenação, êx
 | curva | 1.0 | R$ 236.7M | R$ 106.3M | 31.0% |
 | curva | 1.2 | R$ 257.2M | R$ 85.7M | 25.0% |
 
+![sensibilidade](sensibilidade.png)
+
 ### Faixas
 | faixa | casos | % casos | p perda prevista | perda real | condenação real | custo real defesa |
 |---|---|---|---|---|---|---|
 | amarela | 11,289 | 18.8% | 35.7% | 35.7% | R$ 41.3M | R$ 71.6M |
 | verde | 34,286 | 57.1% | 5.4% | 5.4% | R$ 19.1M | R$ 68.0M |
 | vermelha | 14,425 | 24.0% | 85.9% | 85.8% | R$ 132.5M | R$ 203.3M |
+
+![faixas](faixas.png)
 
 ## Subsídios
 | documento | perda quando presente | perda quando ausente | Δ p.p. |
@@ -69,4 +75,4 @@ Valor da informação — custo esperado de litigar evitável se o subsídio aus
 | Comprovante de crédito (BACEN) | 23,586 | R$ 46.7M | R$ 1,981 |
 | Demonstrativo de evolução da dívida | 13,785 | R$ 10.4M | R$ 751 |
 
-Gráficos: `calibracao.png`, `sensibilidade.png`, `faixas.png`, `subsidios.png`.
+![subsidios](subsidios.png)
