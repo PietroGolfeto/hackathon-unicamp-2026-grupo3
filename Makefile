@@ -113,6 +113,9 @@ extrair: ## roda o extractor numa pasta de processo: make extrair PASTA=data/exe
 	@test -n "$(PASTA)" || (echo "uso: make extrair PASTA=<pasta do processo> [ARGS=...]"; exit 1)
 	$(PY) -m extractor $(PASTA) $(ARGS)
 
+exemplo-injecao: ## recria data/processos_exemplo/processo_prompt-injection: petição do processo_01 com injeções ocultas [ARGS=--forcar]
+	$(PY) -m extractor.injecao $(ARGS)
+
 bench-extractor: ## benchmark da compressão de tokens (sem LLM) → docs/extractor/benchmark.md; tiktoken via uv quando houver
 	@mkdir -p docs/extractor
 	$(if $(UV),$(UVENV) uv run --no-sync --with tiktoken python,$(PY)) -m extractor.benchmark docs/Caso_*/ \
@@ -173,4 +176,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test test-llm install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair bench-extractor exemplos-docs mocks-advogado data train backtest compare-models scored analises sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test test-llm install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair exemplo-injecao bench-extractor exemplos-docs mocks-advogado data train backtest compare-models scored analises sinteticos engine-api demo deploy backup
