@@ -67,7 +67,7 @@ Recarregue `/gestor` e o painel passa a ter tudo o que ele existe para mostrar:
 | Pulso operacional | 78% de aderência em 120 decisões, 94 aderentes e 26 desvios |
 | Aderência por semana | 6 pontos no gráfico de tendência (81%, 81%, 60%, 85%, 84%, 78%) |
 | Aderência por escritório | Escritório A 96%, B 79% e **C 54%** — encontrar o escritório fora da política é o caso de uso do painel |
-| Fila de desvios | 26 divergências justificadas, 16 de tipo e 10 de valor; as 20 mais recentes na fila, 9 já com o parecer consultivo da IA |
+| Fila de desvios | 26 divergências justificadas, 16 de tipo e 10 de valor; as 20 mais recentes na fila, com a justificativa que o advogado registrou |
 | Efetividade | desfecho registrado em ~50 acordos; o resto sem resposta, que é o que aciona o aviso de cobertura parcial |
 | Aprovações | 24 acordos fora da banda esperando o gestor |
 
@@ -115,9 +115,8 @@ PDFs, zero chamadas. A chave vai no `.env`, que a API e os jobs leem:
 OPENAI_API_KEY=sk-...
 ```
 
-Sem chave e sem cache, a ingestão para com aviso em vez de inventar leitura de documento: a API sobe, a lista de casos
-fica vazia e o parecer consultivo do painel do gestor fica indisponível. O resto — engine, backtest, histórico e
-painel — não depende da OpenAI.
+Sem chave e sem cache, a ingestão para com aviso em vez de inventar leitura de documento: a API sobe e a lista de casos
+fica vazia. O resto — engine, backtest, histórico e painel — não depende da OpenAI.
 
 ### Dados
 
