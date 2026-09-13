@@ -35,15 +35,16 @@ make install             # .venv único (engine, core, api, extractor) + npm ins
 
 ```bash
 make up            # Postgres + API + SPA atrás de um Caddy em http://localhost:8080
-make jobs-docker   # cria as tabelas, semeia usuários e política, carrega o histórico e ingere os processos exemplo
+make jobs-docker   # cria as tabelas, semeia a política, carrega o histórico e ingere os processos exemplo
 ```
 
-Abra `http://localhost:8080` e entre com a senha `senha123`:
+Abra `http://localhost:8080`. O portal já abre no lado do advogado; o seletor no canto superior direito troca para
+o gestor a qualquer momento.
 
-| E-mail | Papel | O que vê |
-|---|---|---|
-| `adv1@escritorio-a` | advogado | lista de casos e, em cada caso, a recomendação, os PDFs lidos pela IA, a decisão e o resultado da negociação |
-| `gestor@banco-ufmg` | gestor | painel de aderência e efetividade, fila de desvios, aprovação de acordo fora da banda e simulação da política |
+| Lado | O que vê |
+|---|---|
+| Advogado | lista de casos e, em cada caso, a recomendação, os PDFs lidos pela IA, a decisão e o resultado da negociação |
+| Gestor | painel de aderência e efetividade, fila de desvios, aprovação de acordo fora da banda e simulação da política |
 
 `make seed-demo` acrescenta 340 processos sintéticos (todos pendentes) para dar volume ao painel; `make down` derruba tudo.
 

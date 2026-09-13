@@ -67,7 +67,7 @@ Implementáveis nesta ordem; cada um é uma fatia testável.
 
 **Contrato.** A navegação do gestor apresenta apenas o Painel. Política, Aprovações e a lista de casos permanecem acessíveis por rota direta e por links contextuais dentro do Painel: o bloco de potencial leva à Política; o badge de pendências leva às Aprovações; cada desvio leva ao caso.
 
-**Done when.** Um gestor autenticado vê uma única entrada de navegação; as rotas antigas continuam abrindo quando acessadas diretamente; nenhum link fica órfão.
+**Done when.** No lado do gestor a navegação tem uma única entrada; as rotas antigas continuam abrindo quando acessadas diretamente; nenhum link fica órfão.
 
 ### 2. Seção de aderência
 

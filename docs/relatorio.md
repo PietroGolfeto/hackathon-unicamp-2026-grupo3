@@ -493,7 +493,7 @@ headline vem com banda e sensibilidade, e a curva se aprende em produção com b
 | D4 | **Auditoria de conteúdo por IA** (trilha em andamento): titularidade da conta de depósito, TED × valor liberado, liveness, dossiê favorável, contradições da petição. Documento inconsistente é **rebaixado** a ausente pelo engine | Uso de IA · Execução |
 | D5 | **Valor da informação com probabilidade total**: "instruir antes de acordar" em 34% dos casos (EVSI R$ 50M sob q_d cheio); se todos os contratos ausentes fossem localizados, o custo esperado de litigar cairia **R$ 111M**; extratos, **R$ 63M**; dossiê/laudo: zero → rever o gasto com perícia terceirizada | Leitura do problema |
 | D6 | **Monitoramento que aprende** (trilha em andamento): taxonomia de desvio, justificativa por código, scorecard com controle estatístico, funil de negociação, curva de aceite por **bandas de oferta randomizadas** (15% de exploração) → bandit ajusta o alvo | Execução · Uso de IA |
-| D7 | **Onde o advogado trabalha**: API `POST /recomendacao` que o EnterOS chamaria + portal completo (`src/web` sobre `src/api`): lista de casos, caso com recomendação, PDFs, decisão com justificativa, resultado; link mágico para a banca. Sem a trilha B, nada é inferido dos documentos: só presença de subsídio, scores e recomendação | Usabilidade · Viabilidade |
+| D7 | **Onde o advogado trabalha**: API `POST /recomendacao` que o EnterOS chamaria + portal completo (`src/web` sobre `src/api`): lista de casos, caso com recomendação, PDFs, decisão com justificativa, resultado. Sem a trilha B, nada é inferido dos documentos: só presença de subsídio, scores e recomendação | Usabilidade · Viabilidade |
 | D8 | **Evals e guardrails**: LLM nunca decide dinheiro; saídas validadas por schema; golden set com os 2 casos + sintéticos (trilha em andamento) | Uso de IA |
 
 ---
@@ -575,7 +575,7 @@ cache por hash → **≈ R$ 0,05–0,15 por caso, < R$ 1 mil/mês** para 5 mil c
 |---|---|---|---|
 | A · Dados/Política | loader, logística v2 (UF encolhida, IC de Laplace, q_doc), severidade por UF×sub, engine em três ações (breakeven, EVSI), escada, `policy.yaml` v2, backtest com baselines/banda/sensibilidades, `make compare-models`, `make scored`, API, 35 testes | `src/enteros/{data,policy,backtest,api}` | ✅ esta entrega |
 | B · IA documental | extratores por documento, cruzador de fatos/contradições, contato do adverso, minutas, golden set + `make eval` | `src/enteros/ia/` | 🔧 |
-| C · UX advogado | portal: login, casos, caso (recomendação, PDFs em nova aba com recibo de leitura, decisão com cronômetro, resultado; minutas e contato do adverso só quando a trilha B entregar), link mágico `/api/demo` | `src/web/src/pages/advogado`, `src/api` | ✅ básico · 🔧 polimento |
+| C · UX advogado | portal: casos, caso (recomendação, PDFs em nova aba com recibo de leitura, decisão com cronômetro, resultado; minutas e contato do adverso só quando a trilha B entregar) | `src/web/src/pages/advogado`, `src/api` | ✅ básico · 🔧 polimento |
 | D · Banco/Monitor | decisões em Postgres, aderência (desvio de tipo/valor, justificativas, por escritório/advogado/semana), efetividade (aceite real × hipótese, economia realizada), simulação de parâmetros nos 60k, aprovações | `src/api/app/services/{metricas,backtest}.py`, `src/web/src/pages/gestor` | ✅ números · 🔧 gráficos e experimento |
 | E · Entrega | deck 15 min, vídeo 2 min, README/SETUP finais | `docs/` | 🔧 |
 
@@ -590,7 +590,7 @@ ponta · H11–13 números do backtest no deck · H13–14 vídeo · H14–15 bu
 |---|---|---|---|
 | 1 | Regra de decisão acordo × defesa (× instruir) | `policy/engine.py` (três ações por EV, breakeven por caso, EVSI com probabilidade total, faixas e regras duras), `policy.yaml` v2 | ✅ |
 | 2 | Sugestão de valor | `policy/negotiation.py` (escada abertura/alvo/teto, decomposição) | ✅ |
-| 3 | Acesso à recomendação | `enteros/api/main.py` (`POST /recomendacao`); portal `src/web` (`/casos/:id`, resumo copiável, link mágico `/api/demo` para a banca) | ✅ |
+| 3 | Acesso à recomendação | `enteros/api/main.py` (`POST /recomendacao`); portal `src/web` (`/casos/:id`, resumo copiável) | ✅ |
 | 4 | Monitoramento de aderência | portal: decisão gravada contra a recomendação vista, justificativa obrigatória no desvio, aprovação de acordos fora da banda, `GET /api/dashboard/aderencia` | ✅ |
 | 5 | Monitoramento de efetividade | `backtest/` (economia vs. baselines, sensibilidade, calibração); portal: resultado da negociação, aceite real × hipótese, economia realizada, `GET /api/dashboard/efetividade` | ✅ · 🔧 experimento de bandas |
 
@@ -619,7 +619,7 @@ Ver [`SETUP.md`](../SETUP.md). Resumo: `make install && make demo` roda o engine
 planilha da Enter não estiver em `data/raw/`); `make compare-models` gera `docs/modelo/comparacao.md`; `make scored` gera
 os scores OOF para o portal em `data/derived/`; `make analises` gera as tabelas e figuras da demo em `docs/analises/`;
 `make engine-api` → `http://localhost:8001/docs`. Portal completo com
-Postgres: `make up && make jobs-docker` → `http://localhost:8080` (usuários e senha em `SETUP.md`).
+Postgres: `make up && make jobs-docker` → `http://localhost:8080`.
 
 ## Enunciado original do desafio
 O texto do organizador (contexto, requisitos, critérios e prazos) está na segunda metade do

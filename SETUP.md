@@ -15,7 +15,7 @@ Arquitetura e estado atual em `memory-bank/arquitetura.md`; contratos entre as p
 ## 1. Configurar
 
 ```bash
-cp .env.example .env          # ajuste SECRET_KEY e DEMO_TOKEN se for expor
+cp .env.example .env          # ponha a OPENAI_API_KEY; ajuste DOMAIN se for expor
 make hooks                    # verificações locais de commit (uma vez por clone)
 make install                  # .venv único (engine, core e api) + npm install do web
 ```
@@ -60,14 +60,7 @@ make up            # db + api + caddy, sem TLS
 make jobs-docker   # cria tabelas, seed, carrega os CSVs e ingere os 3 processos exemplo
 ```
 
-Usuários (senha `senha123`):
-
-| E-mail | Papel |
-|---|---|
-| `adv1@escritorio-a` (também `adv2@…`, `adv1@escritorio-b`, …) | advogado |
-| `gestor@banco-ufmg` | gestor |
-
-Link mágico para a banca: `http://localhost:8080/api/demo?t=<DEMO_TOKEN>` loga um advogado da "Banca Demo" e abre um caso reservado só para aquele celular.
+O portal abre no lado do advogado; o seletor no canto superior direito troca para o gestor a qualquer momento.
 
 ## 4. Portal sem Docker na API/front
 
@@ -80,7 +73,7 @@ make dev-web       # http://localhost:5173 (proxy de /api para :8000)
 
 Jobs individuais: `make seed`, `make historico`, `make ingest`, `make seed-demo`, `make reset-demo` (apaga só decisões, eventos e recomendações; use antes de cada ensaio).
 
-Para ver o painel do gestor cheio durante o desenvolvimento: `make mock-painel` cria decisões, justificativas e resultados **sorteados** (decisão 44). Só roda contra banco local e não toca no pool da Banca Demo. **Rode `make reset-demo` antes de qualquer ensaio ou demonstração**, senão a banca vê número inventado como se fosse medido.
+Para ver o painel do gestor cheio durante o desenvolvimento: `make mock-painel` cria decisões, justificativas e resultados **sorteados** (decisão 44). Só roda contra banco local. **Rode `make reset-demo` antes de qualquer ensaio ou demonstração**, senão a banca vê número inventado como se fosse medido.
 
 ## 5. Testes e verificações
 
@@ -113,8 +106,6 @@ Na VPS, o primeiro start precisa de `docker compose -f infra/compose.yml --proje
 |---|---|
 | `DATABASE_URL` | Postgres da API (fora do compose) |
 | `POSTGRES_USER/PASSWORD/DB` | banco criado pelo compose |
-| `SECRET_KEY` | assina o cookie de sessão (12 h) |
-| `DEMO_TOKEN` | token do link `/api/demo?t=` |
 | `DOMAIN` | `:8080` (sem TLS) ou o domínio real |
 | `DATA_DIR` | onde estão os CSVs e `exemplos/` (`/data` dentro do compose) |
 | `ENTEROS_RAW_XLSX` | planilha bruta para o engine (`make data/train/backtest`) |
