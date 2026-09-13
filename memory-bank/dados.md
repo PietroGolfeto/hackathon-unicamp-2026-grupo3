@@ -5,9 +5,9 @@
 |---|---|---|
 | `Hackaton_Enter_Base_Candidatos.xlsx - Resultados dos processos.csv` | 60.000 | Número do processo, UF, Assunto, Sub-assunto, Resultado macro, Resultado micro, Valor da causa, Valor da condenação/indenização |
 | `Hackaton_Enter_Base_Candidatos.xlsx - Subsídios disponibilizados.csv` | 60.000 | Número do processo**s**, Contrato, Extrato, Comprovante de crédito, Dossiê, Demonstrativo de evolução da dívida, Laudo referenciado |
-| `exemplos/<numero>/autos/*.pdf`, `exemplos/<numero>/subsidios/*.pdf` | 2 pastas | petição inicial e documentos do banco; pasta com o nome do número CNJ, ignorada pelo git; `python -m app.cli ingest` lê |
+| `exemplos/<numero>/autos/*.pdf`, `exemplos/<numero>/subsidios/*.pdf` | 2 pastas | petição inicial e documentos do banco; pasta com o nome do número CNJ, versionada (decisão 19); `python -m app.cli ingest` lê |
 
-Nada disso é versionado (decisão 19). Sem os CSVs a API sobe e a simulação de política fica desabilitada com aviso. O engine (`src/enteros`) lê a **planilha** `data/raw/Hackaton_Enter_Base_Candidatos.xlsx` (mesmos dados, duas abas) e, sem ela, `data/exemplos/sinteticos.csv`.
+Os CSVs brutos e a planilha não são versionados (decisão 19); os PDFs de `data/exemplos/<numero>/` e `data/mock-para-tela-advogado/` são. Sem os CSVs a API sobe e a simulação de política fica desabilitada com aviso. O engine (`src/enteros`) lê a **planilha** `data/raw/Hackaton_Enter_Base_Candidatos.xlsx` (mesmos dados, duas abas) e, sem ela, `data/exemplos/sinteticos.csv`.
 
 ## Regras de parsing
 - CSV de subsídios tem **uma linha de legenda antes do cabeçalho**: ler com `header=1`.
