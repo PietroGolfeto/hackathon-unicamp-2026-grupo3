@@ -20,6 +20,7 @@ export function LinhaCaso({ p, gestor, temAutor, onSelecionar }: {
           <Badge size="xs" variant="default">{p.uf}</Badge>
           {p.sub_assunto && <Badge size="xs" variant="default">{p.sub_assunto}</Badge>}
           {p.origem === "exemplo" && <Badge size="xs" color="tinta" variant="light">autos reais</Badge>}
+          {p.origem === "gerado" && <Badge size="xs" color="tinta" variant="outline">autos gerados</Badge>}
           <OrigemBadge origem={p.scores_origem} rotulo="score stub" />
         </Group>
       </Table.Td>

@@ -1,6 +1,7 @@
 """Ingest das pastas data/exemplos/<numero>/{autos,subsidios}: upsert em processos por número.
 
-Determinístico sem P3: flags dos subsídios pelos nomes dos arquivos e UF pelo número CNJ. Prefere
+Determinístico sem P3: flags dos subsídios pelos nomes dos arquivos e UF pelo número CNJ. Pasta com
+`.gerado` (escrita por `extractor.gerador`) entra com `origem="gerado"`; sem ela, `origem="exemplo"`. Prefere
 arquivos de P1/P3 em data/derived/ (extraidos/<numero>.json, scores/<numero>.json); senão chama o
 extrator, se plugado, e o modelo carregados. Sem extrator, `dados_extraidos` e `analise` ficam
 nulos: nada é inferido do conteúdo dos documentos. Nunca toca decisoes/recomendacoes.
@@ -28,6 +29,7 @@ from app.models import Processo
 
 log = logging.getLogger(__name__)
 VALOR_CAUSA_PADRAO = 15000.0  # mediana da base (dados.md) quando ninguém extraiu o valor dos autos
+MARCA_GERADO = ".gerado"  # escrito por extractor.gerador: os autos são fictícios, não da organização
 
 
 def listar_documentos(pasta: Path, data_dir: Path) -> list[dict[str, str]]:
@@ -102,10 +104,12 @@ def _gravar(
               or modelo.score(caso))
     analise = extrator.analisar(caso, dados, scores) if extrator is not None and dados else None
 
+    origem = "gerado" if (pasta / MARCA_GERADO).exists() else "exemplo"
     processo = db.scalar(select(Processo).where(Processo.numero == numero))
     if processo is None:
-        processo = Processo(numero=numero, escritorio_id=escritorio_id, origem="exemplo")
+        processo = Processo(numero=numero, escritorio_id=escritorio_id, origem=origem)
         db.add(processo)
+    processo.origem = origem
     processo.uf = uf
     processo.sub_assunto = caso.sub_assunto
     processo.valor_causa = valor_causa

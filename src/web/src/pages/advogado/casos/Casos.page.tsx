@@ -19,7 +19,6 @@ export default function Casos() {
     <Stack gap="lg">
       <Group justify="space-between" align="end" wrap="wrap" gap="md">
         <div>
-          <Text size="xs" fw={600} tt="uppercase" lts=".1em" c="laranja.8">Empréstimo não reconhecido</Text>
           <Title order={1} className="serif" fw={500}>Casos</Title>
           <Text c="dimmed" size="sm" mt={4}>
             {[gestor ? "Todos os escritórios" : null, processos ? `${num(processos.length)} processos · ${num(pendentes)} pendentes` : null]

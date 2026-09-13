@@ -57,7 +57,7 @@ class Processo(Base):
     sub_assunto: Mapped[str | None] = mapped_column(String(40))
     valor_causa: Mapped[float] = mapped_column(Float)
     escritorio_id: Mapped[int] = mapped_column(ForeignKey("escritorios.id"), index=True)
-    origem: Mapped[str] = mapped_column(String(20))  # exemplo | sintetico
+    origem: Mapped[str] = mapped_column(String(20))  # exemplo | gerado | sintetico
     subsidios: Mapped[dict[str, Any]] = mapped_column(Json, default=dict)
     documentos: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list)
     dados_extraidos: Mapped[dict[str, Any] | None] = mapped_column(Json)
