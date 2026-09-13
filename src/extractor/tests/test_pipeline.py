@@ -148,6 +148,14 @@ def test_fallbacks_deterministicos_corrigem_o_llm(pasta_exemplo: Path, tmp_path:
     assert fontes["LIVENESS_AUSENTE_CANAL_DIGITAL"] == "laudo_referenciado.txt"  # canal veio do fallback
 
 
+def test_comentarios_por_documento_descartam_arquivo_fora_do_brief(pasta_exemplo: Path, tmp_path: Path):
+    res = Extrator(cliente=FakeCliente(saida_exemplo()), cache=Cache(tmp_path / "cache")).processar(pasta_exemplo)
+    comentarios = {c.arquivo: c for c in res.dados.comentarios_documentos}
+    assert set(comentarios) == {"peticao_inicial.txt", "comprovante_credito.txt"}  # nao_existe.txt sai
+    assert comentarios["comprovante_credito.txt"].relevancia == "alta"
+    assert "4000,00" in comentarios["comprovante_credito.txt"].comentario
+
+
 def test_regra_decide_sinais_e_remove_invencao_do_llm(pasta_exemplo: Path, tmp_path: Path):
     copia = tmp_path / NUMERO
     shutil.copytree(pasta_exemplo, copia)

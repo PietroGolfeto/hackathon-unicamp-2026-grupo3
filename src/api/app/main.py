@@ -11,7 +11,16 @@ from fastapi.responses import JSONResponse
 
 from app import plugins
 from app.db import Base, SessionLocal, engine
-from app.routers import aprovacoes, auth, dashboard, demo, files, politicas, processos
+from app.routers import (
+    aprovacoes,
+    auth,
+    dashboard,
+    demo,
+    files,
+    politicas,
+    preparacao,
+    processos,
+)
 from app.services import seed
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -53,6 +62,7 @@ def health(request: Request) -> dict[str, object]:
 
 api.include_router(auth.router)
 api.include_router(processos.router)
+api.include_router(preparacao.router)
 api.include_router(files.router)
 api.include_router(politicas.router)
 api.include_router(dashboard.router)

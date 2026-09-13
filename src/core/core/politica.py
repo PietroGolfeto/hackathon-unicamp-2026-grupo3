@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, model_validator
 from core.caso import CODIGOS_SINAIS, CasoFeatures
 from core.modelo import Scores
 
-Regra = Literal["defesa_forte", "acordo_forte", "custo", "sinal"]
+Regra = Literal["defesa_forte", "acordo_forte", "custo", "sinal", "instruir"]
 
 
 class PoliticaParams(BaseModel):
@@ -46,7 +46,9 @@ class PoliticaParams(BaseModel):
 
 
 class Recomendacao(BaseModel):
-    tipo: Literal["acordo", "defesa"]
+    """`instruir` = pedir os subsídios ausentes antes de propor o acordo já dimensionado aqui."""
+
+    tipo: Literal["acordo", "defesa", "instruir"]
     valor_sugerido: float | None = None
     valor_min: float | None = None
     valor_max: float | None = None
@@ -55,6 +57,7 @@ class Recomendacao(BaseModel):
     economia_esperada: float  # custo_defesa - custo_acordo; positivo favorece acordo
     regra: Regra
     sinais_acionados: list[str] = Field(default_factory=list)
+    docs_a_solicitar: list[str] = Field(default_factory=list)  # só quando tipo == "instruir"
     motivos: list[str]
     scores_snapshot: Scores
     politica_id: int
@@ -174,16 +177,20 @@ def aplicar(scores: Scores, caso: CasoFeatures, prm: PoliticaParams, politica_id
     )
     acordo = bool(r["acordo"])
     oferta = float(r["oferta"])
+    # O modelo aponta subsídios ausentes cuja busca compensa o adiamento: pedir antes de acordar.
+    # Sinal que força acordo vence — nesse caso não há o que esperar.
+    instruir = acordo and scores.instruir_recomendado and not acionados
     rec = Recomendacao(
-        tipo="acordo" if acordo else "defesa",
+        tipo="instruir" if instruir else ("acordo" if acordo else "defesa"),
         valor_sugerido=oferta if acordo else None,
         valor_min=float(r["valor_min"]) if acordo else None,
         valor_max=float(r["valor_max"]) if acordo else None,
         custo_esperado_defesa=float(r["custo_defesa"]),
         custo_esperado_acordo=float(r["custo_acordo"]),
         economia_esperada=float(r["economia"]),
-        regra=str(r["regra"]),  # type: ignore[arg-type]
+        regra="instruir" if instruir else str(r["regra"]),  # type: ignore[arg-type]
         sinais_acionados=acionados,
+        docs_a_solicitar=list(scores.docs_a_solicitar) if instruir else [],
         motivos=[],
         scores_snapshot=scores,
         politica_id=politica_id,
@@ -205,6 +212,8 @@ def motivos(
     rec: Recomendacao, scores: Scores, caso: CasoFeatures, prm: PoliticaParams, limitada: str
 ) -> list[str]:
     """Três frases determinísticas: regra acionada, subsídios, oferta ou custos."""
+    from core.caso import NOMES_SUBSIDIOS
+
     p = scores.p_exito_defesa
     frases: list[str] = []
 
@@ -213,6 +222,13 @@ def motivos(
         frases.append(
             f"Sinal nos autos ({', '.join(descricoes)}) força acordo pela política, "
             f"independentemente da probabilidade de êxito ({pct(p)})."
+        )
+    elif rec.regra == "instruir":
+        nomes = [NOMES_SUBSIDIOS.get(d, d).lower() for d in rec.docs_a_solicitar]
+        frases.append(
+            f"Probabilidade de êxito na defesa de {pct(p)}: o caso caminha para acordo, mas vale "
+            f"pedir ao banco {', '.join(nomes)} antes de propor — são os subsídios que mais mudam "
+            f"a estimativa."
         )
     elif rec.regra == "defesa_forte":
         frases.append(
@@ -237,8 +253,6 @@ def motivos(
             f"({brl(rec.custo_esperado_acordo)})."
         )
 
-    from core.caso import NOMES_SUBSIDIOS
-
     presentes = [NOMES_SUBSIDIOS[k].lower() for k in caso.subsidios.presentes()]
     ausentes = [NOMES_SUBSIDIOS[k].lower() for k in caso.subsidios.ausentes()]
     if not presentes:
@@ -253,7 +267,7 @@ def motivos(
             f"Ausentes: {', '.join(ausentes)}."
         )
 
-    if rec.tipo == "acordo" and rec.valor_sugerido is not None:
+    if rec.tipo in ("acordo", "instruir") and rec.valor_sugerido is not None:
         prejuizo = (1 - p) * scores.condenacao_p50
         limite = {
             "piso": f", elevada ao piso de {pct(prm.piso_oferta_pct_causa)} do valor da causa",

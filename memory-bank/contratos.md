@@ -27,6 +27,10 @@ class Scores(BaseModel):
     condenacao_p20: float; condenacao_p50: float; condenacao_p80: float   # condicionais a perder
     contribuicoes: list[Contribuicao] = []                  # top 5, com sinal
     gerado_em: datetime
+    # aditivos: valor esperado da informação, vindo do engine; StubModelo deixa False/vazio
+    instruir_recomendado: bool = False                      # compensa pedir subsídio antes de acordar
+    docs_a_solicitar: list[str] = []                        # chaves de NOMES_SUBSIDIOS
+    evsi_por_doc: dict[str, float] = {}
 
 class CalibracaoBin(BaseModel): p_min: float; p_max: float; n: int; p_prevista_media: float; taxa_exito_real: float
 class ModeloInfo(BaseModel): versao: str; treinado_em: datetime; n_treino: int; metricas: dict[str, float]; calibracao: list[CalibracaoBin] = []; importancias: dict[str, float] = {}
@@ -57,6 +61,11 @@ class DadosExtraidos(BaseModel):
     autor: Pessoa; advogado_autor: Advogado; comarca: str | None; uf: str | None
     valor_causa: float | None; pedidos: list[str] = []; contrato: ContratoInfo = ContratoInfo()
     sinais_alerta: list[SinalAlerta] = []; resumo_fatos: str = ""; confianca: float = 0.0; gerado_em: datetime
+    comentarios_documentos: list[ComentarioDocumento] = []  # aditivo: um item por documento lido
+
+class ComentarioDocumento(BaseModel):   # o que cada arquivo prova, ou deixa de provar, para o banco
+    arquivo: str                        # nome como aparece em processos.documentos; o extractor descarta o que não bate
+    relevancia: Literal["baixa", "media", "alta"]; comentario: str
 
 class Analise(BaseModel):     # independe da decisão; nunca fica obsoleta
     numero: str; origem: str; pontos_fortes_banco: list[str]; pontos_fracos_banco: list[str]
@@ -86,11 +95,14 @@ class PoliticaParams(BaseModel):
     incluir_extincao_no_backtest: bool = True
 
 class Recomendacao(BaseModel):
-    tipo: Literal["acordo", "defesa"]; valor_sugerido: float | None; valor_min: float | None; valor_max: float | None
+    tipo: Literal["acordo", "defesa", "instruir"]; valor_sugerido: float | None; valor_min: float | None; valor_max: float | None
     custo_esperado_defesa: float; custo_esperado_acordo: float; economia_esperada: float
-    regra: Literal["defesa_forte", "acordo_forte", "custo", "sinal"]; sinais_acionados: list[str] = []
+    regra: Literal["defesa_forte", "acordo_forte", "custo", "sinal", "instruir"]; sinais_acionados: list[str] = []
+    docs_a_solicitar: list[str] = []    # só quando tipo == "instruir"
     motivos: list[str]; scores_snapshot: Scores; politica_id: int
 ```
+`instruir` é um acordo já dimensionado que espera os subsídios de `docs_a_solicitar`: `valor_sugerido`, `valor_min` e `valor_max` vêm preenchidos como no acordo, então quem precisa saber se há oferta testa `valor_sugerido is not None`, nunca o rótulo do tipo. Só acontece quando a decisão seria acordo e nenhum sinal o força — sinal vence, porque aí não há o que esperar. `DecisaoIn.tipo` continua `acordo | defesa`: a aderência de um `instruir` é medida contra o acordo que ele adia.
+`DocumentoOut` da API ganha `comentario` e `relevancia`, cruzados por nome de arquivo com `dados_extraidos.comentarios_documentos`; ficam nulos sem P3 (decisão 27).
 Validação dos params: `limiar_acordo_forte ≤ limiar_defesa_forte`, `piso ≤ teto`, `arredondamento > 0`.
 Funções: `calcular(p_exito, p20, p50, p80, valor_causa, prm, sinais_forcam=None)` → dict de arrays (`acordo, oferta, valor_min, valor_max, custo_defesa, custo_acordo, economia, regra, oferta_limitada`); `custos_reais(..., perdeu, valor_condenacao, prm)` acrescenta `custo_defesa_real, custo_acordo_real, custo_politica` para o backtest; `aplicar(scores, caso, prm, politica_id) -> Recomendacao` com 3 motivos determinísticos em português.
 Fórmula (uma implementação em numpy, serve escalar e coluna):

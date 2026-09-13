@@ -92,7 +92,7 @@ historico: ## carrega os 2 CSVs da Enter de data/ e avisa a API
 ingest: ## lê data/exemplos/<numero>/ (autos e subsídios) para processos
 	$(CLI) ingest
 
-seed-demo: ## processos sintéticos (data/exemplos/sinteticos_processos.csv), todos pendentes
+seed-demo: ## processos sintéticos avulsos, para dar volume ao painel do gestor; fora do reset
 	$(CLI) seed-demo
 
 mock-painel: ## SÓ DESENVOLVIMENTO: decisões sorteadas para ver o painel do gestor cheio
@@ -101,7 +101,7 @@ mock-painel: ## SÓ DESENVOLVIMENTO: decisões sorteadas para ver o painel do ge
 reset-demo: ## apaga decisões, eventos e recomendações; mantém processos e políticas
 	$(CLI) reset-demo
 
-reset: ## recria o banco LOCAL e roda seed, histórico, ingest e seed-demo. Nunca na VPS
+reset: ## recria o banco LOCAL e roda seed, histórico e ingest. Nunca na VPS
 	$(CLI) reset
 
 jobs-docker: ## mesmo que `make reset` mas dentro do container api (após make up)
@@ -117,6 +117,9 @@ bench-extractor: ## benchmark da compressão de tokens (sem LLM) → docs/extrac
 	@mkdir -p docs/extractor
 	$(if $(UV),$(UVENV) uv run --no-sync --with tiktoken python,$(PY)) -m extractor.benchmark docs/Caso_*/ \
 	  src/extractor/tests/dados/*/ --stress --cache-dir data/cache/extractor --md docs/extractor/benchmark.md
+
+mocks-advogado: ## data/mock-para-tela-advogado/Caso_NN/ -> data/exemplos/<numero>/{autos,subsidios} (+ caso derivado)
+	./scripts/mocks_advogado.sh
 
 exemplos-docs: ## copia docs/Caso_*/ (PDFs da Enter, não versionados) para data/exemplos/<numero>/{autos,subsidios}
 	@for d in docs/Caso_*/; do \
@@ -167,4 +170,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair bench-extractor exemplos-docs data train backtest compare-models scored analises sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair bench-extractor exemplos-docs mocks-advogado data train backtest compare-models scored analises sinteticos engine-api demo deploy backup

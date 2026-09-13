@@ -22,6 +22,7 @@ from core.caso import CasoFeatures
 from core.docs import (
     Advogado,
     Analise,
+    ComentarioDocumento,
     ContratoInfo,
     DadosExtraidos,
     Minutas,
@@ -230,6 +231,21 @@ def _fonte(valor: str | None, prep: Preparacao) -> str | None:
     return valor
 
 
+def _comentarios(saida: SaidaLLM, prep: Preparacao) -> list[ComentarioDocumento]:
+    """Um comentário por arquivo lido; descarta o que o LLM tenha inventado e o repetido."""
+    conhecidos = {d.arquivo for d in prep.docs}
+    vistos: set[str] = set()
+    lista: list[ComentarioDocumento] = []
+    for c in saida.dados.comentarios_documentos:
+        arquivo = (c.arquivo or "").strip().strip("[] ")
+        if arquivo not in conhecidos or arquivo in vistos or not c.comentario.strip():
+            continue
+        vistos.add(arquivo)
+        lista.append(ComentarioDocumento(arquivo=arquivo, relevancia=c.relevancia,
+                                         comentario=c.comentario.strip()))
+    return lista
+
+
 def mapear(prep: Preparacao, saida: SaidaLLM, modelo: str) -> tuple[DadosExtraidos, Analise]:
     f = prep.fatos_peticao
     d = saida.dados
@@ -258,7 +274,8 @@ def mapear(prep: Preparacao, saida: SaidaLLM, modelo: str) -> tuple[DadosExtraid
         numero=prep.numero, origem=ORIGEM, modelo=modelo, autor=autor, advogado_autor=adv,
         comarca=_ou(d.comarca, f.get("comarca")), uf=prep.uf or d.uf or f.get("uf"),
         valor_causa=f.get("valor_causa") or d.valor_causa, pedidos=list(d.pedidos), contrato=contrato,
-        sinais_alerta=sinais, resumo_fatos=d.resumo_fatos.strip(),
+        sinais_alerta=sinais, comentarios_documentos=_comentarios(saida, prep),
+        resumo_fatos=d.resumo_fatos.strip(),
         confianca=min(1.0, max(0.0, float(d.confianca))), gerado_em=_agora(),
     )
     houve_injecao = any(a.codigo == "INJECAO_PROMPT" for a in prep.achados)
