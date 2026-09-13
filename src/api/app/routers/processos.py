@@ -55,6 +55,12 @@ def _sinais(p: Processo) -> list[dict]:
     return list((p.dados_extraidos or {}).get("sinais_alerta") or [])
 
 
+def _comentarios(p: Processo) -> dict[str, dict]:
+    """Comentário da IA por nome de arquivo; vazio quando não houve extração (decisão 27)."""
+    lista = (p.dados_extraidos or {}).get("comentarios_documentos") or []
+    return {c["arquivo"]: c for c in lista if c.get("arquivo")}
+
+
 def _resumo(p: Processo, rec: Recomendacao | None, dec: Decisao | None) -> ProcessoResumo:
     return ProcessoResumo(
         id=p.id, numero=p.numero, uf=p.uf, sub_assunto=p.sub_assunto, valor_causa=p.valor_causa,
@@ -98,6 +104,18 @@ def listar(
     return [_resumo(p, recs.get(p.id), decs.get(p.id)) for p in processos]
 
 
+def _documentos(p: Processo) -> list[DocumentoOut]:
+    comentarios = _comentarios(p)
+    return [
+        DocumentoOut(
+            tipo=d["tipo"], arquivo=d["arquivo"], url=f"/api/files/{p.id}/{d['arquivo']}",
+            comentario=(c := comentarios.get(d["arquivo"], {})).get("comentario"),
+            relevancia=c.get("relevancia"),
+        )
+        for d in p.documentos or []
+    ]
+
+
 @router.get("/processos/{processo_id}", response_model=ProcessoDetalhe)
 def detalhe(processo_id: int, usuario: UsuarioLogado, db: Db) -> ProcessoDetalhe:
     p = obter_processo(db, processo_id, usuario)
@@ -107,8 +125,7 @@ def detalhe(processo_id: int, usuario: UsuarioLogado, db: Db) -> ProcessoDetalhe
         id=p.id, numero=p.numero, uf=p.uf, sub_assunto=p.sub_assunto, valor_causa=p.valor_causa,
         status=p.status, origem=p.origem, escritorio_id=p.escritorio_id,
         escritorio=p.escritorio.nome, subsidios={k: bool(v) for k, v in (p.subsidios or {}).items()},
-        documentos=[DocumentoOut(tipo=d["tipo"], arquivo=d["arquivo"],
-                                 url=f"/api/files/{p.id}/{d['arquivo']}") for d in p.documentos or []],
+        documentos=_documentos(p),
         dados_extraidos=p.dados_extraidos, analise=p.analise, sinais=_sinais(p), scores=p.scores,
         decisao_atual=DecisaoOut.model_validate(dec) if dec else None,
         reservado_ate=p.reservado_ate, created_at=p.created_at,
@@ -212,7 +229,7 @@ def resumo_txt(processo_id: int, request: Request, usuario: UsuarioLogado, db: D
         + (f" · Sinais: {sinais}" if sinais else ""),
         f"RECOMENDAÇÃO: {rec.tipo.upper()}"
         + (f" — oferta {brl(rec.valor_sugerido or 0)} (banda {brl(rec.valor_min or 0)} a "
-           f"{brl(rec.valor_max or 0)})" if rec.tipo == "acordo" else ""),
+           f"{brl(rec.valor_max or 0)})" if rec.valor_sugerido is not None else ""),
         *[f"- {m}" for m in rec.motivos or []],
         f"Política v{politica.versao} · P(êxito) {rec.scores_snapshot.get('p_exito_defesa', 0):.0%}",
         f"{request.url.scheme}://{request.url.netloc}/casos/{p.id}",

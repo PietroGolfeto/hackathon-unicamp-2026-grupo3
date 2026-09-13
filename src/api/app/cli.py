@@ -82,7 +82,6 @@ def cmd_reset(sem_historico: bool) -> None:
     else:
         log.warning("sem CSVs da Enter em %s: histórico vazio, simulação desabilitada", settings.data_dir)
     cmd_ingest("Escritório A")
-    cmd_seed_demo(None)
     avisar_api()
 
 

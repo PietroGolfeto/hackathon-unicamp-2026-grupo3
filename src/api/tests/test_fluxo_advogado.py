@@ -98,3 +98,23 @@ def test_eventos_e_resumo_txt(adv: TestClient, exemplos):
     assert r.status_code == 204
     txt = adv.get(f"/api/processos/{pid}/resumo.txt")
     assert txt.status_code == 200 and "RECOMENDAÇÃO: ACORDO" in txt.text and MANAUS in txt.text
+
+
+def test_aderencia_de_instruir_e_medida_contra_o_acordo_que_ele_adia():
+    """O advogado só escolhe acordo ou defesa: acordar na banda de um `instruir` é aderente."""
+    from core.politica import PoliticaParams
+
+    from app.schemas import DecisaoIn
+    from app.services.recomendacao import avaliar_decisao
+
+    class RecFake:
+        tipo, valor_min, valor_max = "instruir", 6400.0, 8600.0
+
+    prm = PoliticaParams()
+    aderente, desvio, _ = avaliar_decisao(
+        RecFake(), DecisaoIn(tipo="acordo", valor_proposto=7500), prm, 20000)
+    assert aderente and desvio == "nenhum"
+
+    diverge, desvio, _ = avaliar_decisao(
+        RecFake(), DecisaoIn(tipo="defesa", justificativa="autos fortes, prefiro litigar"), prm, 20000)
+    assert not diverge and desvio == "tipo"
