@@ -47,6 +47,14 @@ class SinalAlerta(BaseModel):
     fonte: str | None = None  # arquivo ou trecho de onde saiu
 
 
+class ComentarioDocumento(BaseModel):
+    """O que um documento específico prova, ou deixa de provar, para o banco."""
+
+    arquivo: str  # nome do arquivo como está em processos.documentos
+    relevancia: Severidade
+    comentario: str
+
+
 class DadosExtraidos(BaseModel):
     numero: str
     origem: Literal["llm", "stub"]
@@ -59,6 +67,7 @@ class DadosExtraidos(BaseModel):
     pedidos: list[str] = Field(default_factory=list)
     contrato: ContratoInfo = Field(default_factory=ContratoInfo)
     sinais_alerta: list[SinalAlerta] = Field(default_factory=list)
+    comentarios_documentos: list[ComentarioDocumento] = Field(default_factory=list)
     resumo_fatos: str = ""
     confianca: float = Field(default=0.0, ge=0, le=1)
     gerado_em: datetime

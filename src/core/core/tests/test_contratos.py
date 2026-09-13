@@ -40,3 +40,12 @@ def test_caso_scores_analise_minutas_serializam():
     m = Minutas(numero="x", origem="stub")
     for obj in (caso, s, a, m):
         assert type(obj).model_validate_json(obj.model_dump_json()) == obj
+
+
+def test_dados_extraidos_sem_comentarios_de_documento_valida():
+    """Extração gravada antes do campo aditivo precisa continuar carregando."""
+    d = DadosExtraidos(numero="x", origem="stub", gerado_em=datetime(2026, 9, 12, tzinfo=UTC))
+    assert d.comentarios_documentos == []
+    antigo = d.model_dump(mode="json")
+    antigo.pop("comentarios_documentos")
+    assert DadosExtraidos.model_validate(antigo).comentarios_documentos == []
