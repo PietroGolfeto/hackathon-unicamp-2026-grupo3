@@ -113,7 +113,7 @@ MARCADOR_FIM = "<!-- backtest:fim -->"
 
 
 def linhas_resumo(res: dict, h: str = "#", imagens_prefixo: str = "") -> list[str]:
-    """Linhas Markdown do resumo. `h` é o prefixo do título de topo ("#" no resumo.md, "###" dentro do README)."""
+    """Linhas Markdown do resumo. `h` é o prefixo do título de topo ("#" no resumo.md, "###" em docs/relatorio.md)."""
     m = res["metricas_modelo"]
     img = (lambda nome: f"![{nome}]({imagens_prefixo}{nome}.png)") if imagens_prefixo is not None else (lambda nome: "")
     linhas = [
@@ -207,19 +207,19 @@ def escrever_md(res: dict, out: Path) -> None:
     (out / "resumo.md").write_text("\n".join(linhas_resumo(res, "#", "")) + "\n", encoding="utf-8")
 
 
-def atualizar_readme(res: dict, readme: Path, out: Path) -> bool:
-    """Substitui o bloco entre os marcadores no README pelas tabelas geradas. Devolve True se atualizou."""
-    if not readme.exists():
+def atualizar_relatorio(res: dict, relatorio: Path, out: Path) -> bool:
+    """Substitui o bloco entre os marcadores do relatório pelas tabelas geradas. Devolve True se atualizou."""
+    if not relatorio.exists():
         return False
-    texto = readme.read_text(encoding="utf-8")
+    texto = relatorio.read_text(encoding="utf-8")
     if MARCADOR_INICIO not in texto or MARCADOR_FIM not in texto:
         return False
-    prefixo = out.relative_to(readme.parent).as_posix() + "/"
+    prefixo = out.relative_to(relatorio.parent).as_posix() + "/"
     bloco = "\n".join([MARCADOR_INICIO, "_Bloco gerado por `make backtest`; não edite à mão._", "",
                        *linhas_resumo(res, "###", prefixo), MARCADOR_FIM])
     ini = texto.index(MARCADOR_INICIO)
     fim = texto.index(MARCADOR_FIM) + len(MARCADOR_FIM)
-    readme.write_text(texto[:ini] + bloco + texto[fim:], encoding="utf-8")
+    relatorio.write_text(texto[:ini] + bloco + texto[fim:], encoding="utf-8")
     return True
 
 
@@ -236,8 +236,8 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "resumo.json").write_text(json_dumps(res, default=float), encoding="utf-8")
     escrever_md(res, args.out)
-    if atualizar_readme(res, cfg.RAIZ / "README.md", args.out):
-        log.info("README atualizado com as tabelas do backtest")
+    if atualizar_relatorio(res, cfg.RAIZ / "docs" / "relatorio.md", args.out):
+        log.info("docs/relatorio.md atualizado com as tabelas do backtest")
     _grafico_reliability(res, args.out)
     _grafico_sensibilidade(res, args.out)
     _grafico_faixas(res, args.out)

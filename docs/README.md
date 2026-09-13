@@ -2,6 +2,12 @@
 
 Coloque aqui os artefatos de entrega da sua equipe.
 
+## Documentação do grupo
+
+- [Relatório técnico](relatorio.md) — política em linguagem jurídica, números do backtest, achados dos dados, decisões, limitações e próximos passos.
+- [Política em linguagem jurídica](politica.md) · [Premissas de custo](premissas.md) · [Backtest](backtest/resumo.md) · [Comparação de modelos](modelo/comparacao.md) · [Análises para a demo](analises/resumo.md) · [Benchmark do extractor](extractor/benchmark.md)
+- [Enunciado do desafio](../README.md) — texto do organizador, na segunda metade do `README.md`.
+
 ## Especificações
 
 - [Painel do gestor](painel_gestor_spec.md) — aderência, efetividade e parecer consultivo da IA.

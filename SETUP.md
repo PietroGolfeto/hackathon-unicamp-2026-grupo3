@@ -130,7 +130,7 @@ src/core         contratos, política operacional em numpy, parsing (pacote `cor
 src/api          FastAPI + SQLAlchemy 2 + CLI de jobs (pacote `app`)
 src/web          React 19 + Vite + Mantine (portal do advogado e painel do gestor)
 infra/           compose, Caddyfile, Dockerfiles
-docs/            politica.md, premissas.md, desafio.md, backtest/ (gerado)
+docs/            relatorio.md (relatório técnico do grupo), politica.md, premissas.md, backtest/ (gerado)
 data/exemplos    CSVs sintéticos nossos; pastas dos exemplos reais (ignoradas)
 memory-bank/     estado vivo do projeto: leia antes de mexer
 ```
