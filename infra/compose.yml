@@ -33,7 +33,7 @@ services:
       API_URL: http://localhost:8000
     volumes:
       - ./data:/data:ro
-      - ./data/cache:/data/cache        # único ponto gravável: cache do extractor (LLM)
+      - ./data/cache:/data/cache        # único ponto gravável: cache do extractor (LLM) e PDF de exemplo dos sintéticos
     depends_on:
       db:
         condition: service_healthy

@@ -7,9 +7,10 @@ nem resultados: o painel do gestor só mostra o que advogados registraram de fat
 link /demo reserva para a banca.
 
 Documento único de demonstração: como o caso é sintético (sem autos reais), todo processo aponta
-para o mesmo PDF de exemplo em `data/sinteticos/exemplo.pdf` (baixado sob demanda, não versionado,
-como o resto de `data/`), só para a tela de documentos não ficar vazia. `popular_documentos_sinteticos`
-faz o backfill em processos já existentes.
+para o mesmo PDF de exemplo em `data/cache/sinteticos/exemplo.pdf` (baixado sob demanda; `data/cache/`
+é o único ponto gravável do container e já é ignorado pelo git), só para a tela de documentos não ficar
+vazia. Sem rede ou sem permissão de escrita o job avisa e segue: o link do documento dá 404, nada mais.
+`popular_documentos_sinteticos` faz o backfill em processos já existentes.
 """
 
 from __future__ import annotations
@@ -32,9 +33,9 @@ from app.services.seed import ESCRITORIO_DEMO
 log = logging.getLogger(__name__)
 
 # PDF genérico (não jurídico), só para a tela de documentos não ficar vazia em processo sintético;
-# baixado uma vez para data/sinteticos/ (não versionado, como o resto de `data/`).
+# baixado uma vez para data/cache/sinteticos/ (o compose monta data/ só leitura e data/cache/ gravável).
 URL_DOCUMENTO_SINTETICO = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-CAMINHO_DOCUMENTO_SINTETICO = "sinteticos/exemplo.pdf"
+CAMINHO_DOCUMENTO_SINTETICO = "cache/sinteticos/exemplo.pdf"
 DOCUMENTO_SINTETICO = [
     {"tipo": "autos", "arquivo": "peticao_inicial_exemplo.pdf", "caminho": CAMINHO_DOCUMENTO_SINTETICO},
 ]
@@ -63,8 +64,8 @@ def _garantir_pdf_exemplo(data_dir: Path) -> None:
     destino = data_dir / CAMINHO_DOCUMENTO_SINTETICO
     if destino.exists():
         return
-    destino.parent.mkdir(parents=True, exist_ok=True)
     try:
+        destino.parent.mkdir(parents=True, exist_ok=True)
         urllib.request.urlretrieve(URL_DOCUMENTO_SINTETICO, destino)
     except (urllib.error.URLError, OSError) as exc:
         log.warning("não baixou o PDF de exemplo (%s): documentos sintéticos ficarão indisponíveis", exc)

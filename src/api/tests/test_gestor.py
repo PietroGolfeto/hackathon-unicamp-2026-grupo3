@@ -1,10 +1,13 @@
 """Políticas (simular/ativar), dashboards, aprovações e o link de demo."""
 
+import logging
+import os
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
+import pytest
 from core.politica import PoliticaParams
 from fastapi.testclient import TestClient
 
@@ -190,8 +193,28 @@ def test_seed_demo_cria_so_processos_pendentes(app_pronto, gestor: TestClient):
         assert r3 == {"processos_criados": 0, "documentos_populados": 1}
         db.refresh(sint[0])
         assert sint[0].documentos == seed_demo.DOCUMENTO_SINTETICO
+        pid = sint[0].id
     depois = gestor.get("/api/dashboard/aderencia").json()
     assert depois["total"] == antes["total"]
+    # o PDF de exemplo é servido de data/cache/sinteticos/ (fixture em tests/dados/cache/)
+    pdf = gestor.get(f"/api/files/{pid}/peticao_inicial_exemplo.pdf")
+    assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf"
+
+
+def test_pdf_exemplo_sem_permissao_de_escrita_so_avisa(tmp_path: Path, caplog):
+    """No container `data/` é só leitura: o job avisa e segue em vez de derrubar o reset."""
+    from app.services import seed_demo
+
+    if os.geteuid() == 0:
+        pytest.skip("root ignora permissões de diretório")
+    tmp_path.chmod(0o500)
+    try:
+        with caplog.at_level(logging.WARNING, logger="app.services.seed_demo"):
+            seed_demo._garantir_pdf_exemplo(tmp_path)
+    finally:
+        tmp_path.chmod(0o700)
+    assert not (tmp_path / seed_demo.CAMINHO_DOCUMENTO_SINTETICO).exists()
+    assert "não baixou o PDF de exemplo" in caplog.text
 
 
 def test_mock_painel_enche_o_painel_sem_tocar_na_banca(app_pronto, gestor: TestClient):
