@@ -9,6 +9,7 @@ from extractor.llm import Resposta
 from extractor.schema import (
     AdvogadoLLM,
     AnaliseLLM,
+    ComentarioDocLLM,
     ContratoLLM,
     DadosLLM,
     PessoaLLM,
@@ -34,6 +35,14 @@ def saida_exemplo() -> SaidaLLM:
                 SinalLLM(codigo="IDOSO", descricao="Autora com 69 anos", severidade="media", fonte="peticao_inicial.txt"),
                 SinalLLM(codigo="CREDITO_CONTA_TERCEIRO", descricao="Crédito em conta da Caixa que a autora nega ter",
                          severidade="alta", fonte="comprovante_credito.txt"),
+            ],
+            comentarios_documentos=[
+                ComentarioDocLLM(arquivo="peticao_inicial.txt", relevancia="alta",
+                                 comentario="Autora nega a contratação por app e pede a inexistência do débito."),
+                ComentarioDocLLM(arquivo="comprovante_credito.txt", relevancia="alta",
+                                 comentario="Mostra crédito de 4000,00 em conta da Caixa que a autora nega ter."),
+                ComentarioDocLLM(arquivo="nao_existe.txt", relevancia="baixa",
+                                 comentario="Arquivo que não está no brief; deve ser descartado no mapeamento."),
             ],
             resumo_fatos="Autora idosa nega contratação por app; crédito caiu em conta da Caixa que ela diz não ter.",
             confianca=0.6,

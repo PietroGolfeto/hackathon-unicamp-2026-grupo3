@@ -88,7 +88,7 @@ def roteiro_defesa(caso: CasoFeatures, dados: DadosExtraidos, rec: Recomendacao)
 def mensagem_contato(caso: CasoFeatures, dados: DadosExtraidos, rec: Recomendacao) -> str:
     adv = dados.advogado_autor
     saudacao = f"Dr(a). {adv.nome.split()[-1]}" if adv.nome else "Dr(a)."
-    if rec.tipo != "acordo":
+    if rec.valor_sugerido is None:
         return ""
     return (
         f"{saudacao}, bom dia. Represento o Banco UFMG no processo {caso.numero} ({_autor(dados)}). "
@@ -101,7 +101,7 @@ def mensagem_contato(caso: CasoFeatures, dados: DadosExtraidos, rec: Recomendaca
 def redigir(caso: CasoFeatures, dados: DadosExtraidos, rec: Recomendacao) -> Minutas:
     return Minutas(
         numero=caso.numero, politica_id=rec.politica_id, origem=ORIGEM,
-        proposta_acordo=proposta_acordo(caso, dados, rec) if rec.tipo == "acordo" else "",
+        proposta_acordo=proposta_acordo(caso, dados, rec) if rec.valor_sugerido is not None else "",
         roteiro_defesa=roteiro_defesa(caso, dados, rec),
         mensagem_contato=mensagem_contato(caso, dados, rec),
     )

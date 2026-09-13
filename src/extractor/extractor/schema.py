@@ -63,6 +63,12 @@ class SinalLLM(_Estrito):
     fonte: str | None
 
 
+class ComentarioDocLLM(_Estrito):
+    arquivo: str
+    relevancia: Severidade
+    comentario: str
+
+
 class DadosLLM(_Estrito):
     comarca: str | None
     uf: str | None
@@ -73,6 +79,7 @@ class DadosLLM(_Estrito):
     advogado_autor: AdvogadoLLM
     contrato: ContratoLLM
     sinais_alerta: list[SinalLLM]
+    comentarios_documentos: list[ComentarioDocLLM]
     resumo_fatos: str
     confianca: float
 
