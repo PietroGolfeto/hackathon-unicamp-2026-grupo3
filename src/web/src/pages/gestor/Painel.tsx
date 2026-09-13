@@ -3,12 +3,11 @@ import {
   Skeleton, Stack, Table, Text, ThemeIcon, Title, Tooltip,
 } from "@mantine/core";
 import { AreaChart, DonutChart } from "@mantine/charts";
-import { notifications } from "@mantine/notifications";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router";
 
-import { api, type Justificativa, type ParecerIA } from "../../api/client";
+import { api, type Justificativa } from "../../api/client";
 import { StatusBadge, TipoBadge } from "../../components/Badges";
 import { IcoBaixo, IcoCheck } from "../../components/Icones";
 import { useContagem, useMontado } from "../../lib/animacao";
@@ -210,19 +209,13 @@ function Secao({ numero, titulo, subtitulo, children }: {
 function FilaDesvios({ justificativas }: { justificativas: Justificativa[] }) {
   const [expandido, setExpandido] = useState(false);
   const LIMITE = 3;
-  const qc = useQueryClient();
-  const parecer = useMutation({
-    mutationFn: (id: number) => api.gerarParecer(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["aderencia"] }),
-    onError: (erro) => notifications.show({ message: (erro as Error).message, color: "vermelho" }),
-  });
   const visiveis = expandido ? justificativas : justificativas.slice(0, LIMITE);
   const restantes = justificativas.length - LIMITE;
   return (
     <Card>
       <Group justify="space-between" align="start">
         <CabecalhoCard titulo="Monitoramento de aderência"
-          detalhe="Decisões que divergiram da recomendação · a decisão é objetiva; a IA ajuda a triar a justificativa" />
+          detalhe="Decisões que divergiram da recomendação e a justificativa que o advogado registrou" />
         {justificativas.length > 0 && (
           <Badge color="laranja" variant="light" size="lg">{num(justificativas.length)} desvio(s)</Badge>
         )}
@@ -230,7 +223,7 @@ function FilaDesvios({ justificativas }: { justificativas: Justificativa[] }) {
       <Table.ScrollContainer minWidth={920} mt="md">
         <Table verticalSpacing="sm" highlightOnHover>
           <Table.Thead><Table.Tr>
-            <Th>Processo</Th><Th>Advogado</Th><Th>Recomendado</Th><Th>Decidiu</Th><Th>Justificativa</Th><Th>Análise assistida</Th><Th>Situação</Th>
+            <Th>Processo</Th><Th>Advogado</Th><Th>Recomendado</Th><Th>Decidiu</Th><Th>Justificativa</Th><Th>Situação</Th>
           </Table.Tr></Table.Thead>
           <Table.Tbody>
             {visiveis.map((j) => (
@@ -242,17 +235,11 @@ function FilaDesvios({ justificativas }: { justificativas: Justificativa[] }) {
                 <Table.Td><Text size="sm">{j.advogado}</Text><Text size="xs" c="dimmed">{j.escritorio}</Text></Table.Td>
                 <Table.Td><Decisao tipo={j.rec_tipo} valor={j.valor_sugerido} /></Table.Td>
                 <Table.Td><Decisao tipo={j.tipo} valor={j.valor_proposto} /></Table.Td>
-                <Table.Td><Text size="xs" maw={250} lineClamp={3}>{j.justificativa}</Text></Table.Td>
-                <Table.Td>
-                  {j.parecer_ia
-                    ? <Parecer parecer={j.parecer_ia} />
-                    : <Button size="compact-xs" variant="light" color="tinta" loading={parecer.isPending && parecer.variables === j.decisao_id}
-                        onClick={() => parecer.mutate(j.decisao_id)}>Analisar com IA</Button>}
-                </Table.Td>
+                <Table.Td><Text size="xs" maw={340} lineClamp={3}>{j.justificativa}</Text></Table.Td>
                 <Table.Td><StatusBadge status={j.status} size="sm" /></Table.Td>
               </Table.Tr>
             ))}
-            {!justificativas.length && <Table.Tr><Table.Td colSpan={7}><Vazio texto="Nenhum desvio registrado." /></Table.Td></Table.Tr>}
+            {!justificativas.length && <Table.Tr><Table.Td colSpan={6}><Vazio texto="Nenhum desvio registrado." /></Table.Td></Table.Tr>}
           </Table.Tbody>
         </Table>
       </Table.ScrollContainer>
@@ -265,18 +252,6 @@ function FilaDesvios({ justificativas }: { justificativas: Justificativa[] }) {
         </Group>
       )}
     </Card>
-  );
-}
-
-function Parecer({ parecer }: { parecer: ParecerIA }) {
-  const cores = { fundamentada: "verde", generica: "laranja", contradiz_evidencias: "vermelho" };
-  const nomes = { fundamentada: "Fundamentada", generica: "Genérica", contradiz_evidencias: "Contradiz evidências" };
-  return (
-    <Stack gap={3} maw={220}>
-      <Badge size="xs" variant="light" color={cores[parecer.classificacao]}>{nomes[parecer.classificacao]}</Badge>
-      <Text size="xs" lineClamp={3}>{parecer.resumo}</Text>
-      <Text size="10px" c="dimmed">IA · confiança {pct(parecer.confianca)}</Text>
-    </Stack>
   );
 }
 
