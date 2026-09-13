@@ -18,6 +18,12 @@ reconhecido. Duas camadas sobre a mesma base de 60 mil sentenças:
 | [`docs/`](docs/) | backtest, análises, premissas de custo e benchmarks da extração |
 | [`memory-bank/`](memory-bank/) | estado vivo do projeto: leia antes de mexer no código |
 
+## View:
+
+https://github.com/user-attachments/assets/26125e34-ad5c-45aa-afec-503595c96d42
+
+https://github.com/user-attachments/assets/bb2b7e18-8f23-4974-bc92-60d5c76014ac
+
 ## Como rodar
 
 Pré-requisitos: [`uv`](https://docs.astral.sh/uv/) (traz o Python 3.12), `make`, Node 20 e Docker com Compose v2.
