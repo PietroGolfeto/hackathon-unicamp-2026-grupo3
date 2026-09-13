@@ -21,7 +21,7 @@ export function CardAnalise({ p }: ProcessoProps) {
       </List>
       {contradicoes.length > 0 && (
         <>
-          <Text size="xs" fw={500} c="verde.7" tt="uppercase" lts=".06em" mt="md">Contradições da petição</Text>
+          <Text size="xs" fw={500} c="laranja.8" tt="uppercase" lts=".06em" mt="md">Contradições da petição</Text>
           <List size="sm" mt={4} spacing={4}>
             {contradicoes.map((x, i) => <List.Item key={i}>{x}</List.Item>)}
           </List>
