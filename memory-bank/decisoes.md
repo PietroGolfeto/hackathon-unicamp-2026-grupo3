@@ -16,7 +16,7 @@ Formato: número, decisão, por quê. Decisão revertida: edite a linha dizendo 
 12. **VPS primário; homelab é standby permanente em subdomínio próprio via túnel.** Internet residencial e troca de DNS às 07:00 são riscos que não valem a pena.
 13. **Link mágico `/demo?t=` para a banca.** Ninguém digita senha no celular; cada jurado recebe um caso distinto.
 14. **Fora de escopo:** cadastro/recuperação de senha, websockets (poll de 5 s), fila, upload, RAG, fine-tuning, Kubernetes, segundo frontend.
-15. **Commits pequenos com TL;DR; memory-bank atualizado in-place em todo commit de código; CI bloqueia.** Cinco pessoas com IA precisam de um único estado compartilhado.
+15. **Commits pequenos com TL;DR; memory-bank atualizado in-place em todo commit de código; CI bloqueia.** Cinco pessoas com IA precisam de um único estado compartilhado. Refinamento: o hook cobra o memory-bank em cada commit; a CI cobra no conjunto do PR (branch de integração com merges de várias pessoas não tem como reescrever commit antigo) e não conta artefatos gerados por script (`models/*.json`, JSON de `docs/`) no limite de 800 linhas.
 16. **Sem atribuição de IA em commits, PRs, código ou docs.** Ruído; autoria é do time.
 17. **Nomes de domínio em português** (`processo`, `recomendacao`, `decisao`); termos técnicos genéricos em inglês (`router`, `service`, `client`).
 18. **Dependência nova só com uma linha aqui.** Controle do que entra no compose e no tempo de build.

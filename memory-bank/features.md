@@ -5,7 +5,7 @@ Estado: ✅ pronta · 🔧 em andamento · ⬜ planejada. Edite a linha; não ad
 | Feature | Req | Dono | Estado | Onde |
 |---|---|---|---|---|
 | Regras de colaboração e memory-bank | — | Lucas | ✅ | `CLAUDE.md`, `memory-bank/` |
-| CI de PR: commits, memory-bank, segredos, testes por componente | — | Lucas | ✅ | `.github/workflows/ci.yml` (core: pytest; api, engine e extractor: `uv sync --frozen` + ruff + pytest, api com Postgres de serviço, extractor com poppler-utils; web: tsc + build; compose: config); testes da API criam `enter_test` se faltar |
+| CI de PR: commits, memory-bank, segredos, testes por componente | — | Lucas | ✅ | `.github/workflows/ci.yml` (core: pytest; api, engine e extractor: `uv sync --frozen` + ruff + pytest, api com Postgres de serviço, extractor com poppler-utils; web: tsc + build; compose: config); higiene: mensagem e tamanho por commit (artefatos gerados não contam), memory-bank pelo conjunto do PR, segredos; testes da API criam `enter_test` se faltar |
 | Parsing dos CSVs da Enter e UF por número CNJ | — | Lucas | ✅ | `src/core/core/colunas.py`, `src/core/core/cnj.py` |
 | Contratos P1/P3 e stub do modelo | — | Lucas | ✅ | contratos em `src/core/core/{caso,modelo,docs}.py`; `StubModelo` (lookup no histórico) em `src/api/app/stubs.py`; seleção por env em `plugins.py`; sem P3 não há stub de extração: `carregar_extrator` devolve None e o portal mostra só flags, scores e recomendação (decisão 27) |
 | Política de custo esperado e backtest | 1, 2, 5 | Lucas; P1 calibra | ✅ | núcleo em `src/core/core/politica.py` (11 testes); backtest com resultados reais em `src/api/app/services/backtest.py` (~15 ms nos 60k) |

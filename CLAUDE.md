@@ -29,7 +29,7 @@ Não edite pasta de outro sem combinar. Mudança cruzada vai em PR pequeno com o
 ## Regras de colaboração
 
 ### 1. Commit pequeno e inteligível
-Um commit resolve uma coisa. Limite: 20 arquivos e 800 linhas (lockfiles, CSV, PDF e imagens não contam). Se precisar passar disso com justificativa, termine o assunto com `[grande]`. A CI bloqueia o resto.
+Um commit resolve uma coisa. Limite: 20 arquivos e 800 linhas (lockfiles, CSV, PDF, imagens e artefatos gerados por script, como `models/*.json` e os JSON de `docs/`, não contam). Se precisar passar disso com justificativa, termine o assunto com `[grande]`. A CI bloqueia o resto.
 
 ### 2. Mensagem com TL;DR
 Primeira linha: `<area>: <o que muda, em uma frase>`, até 72 caracteres, em português.
@@ -44,7 +44,7 @@ Aderência é medida contra ela mesmo se a política mudar depois.
 ```
 
 ### 3. Todo commit de código atualiza o memory-bank, in-place
-Tocou `src/` ou `infra/`? No mesmo commit, edite pelo menos `memory-bank/arquitetura.md` ou `memory-bank/features.md`. Edite a linha da feature; não adicione histórico nem datas. `memory-bank/README.md` diz qual arquivo editar para cada tipo de mudança. Hook e CI bloqueiam commit de código sem isso.
+Tocou `src/` ou `infra/`? No mesmo commit, edite pelo menos `memory-bank/arquitetura.md` ou `memory-bank/features.md`. Edite a linha da feature; não adicione histórico nem datas. `memory-bank/README.md` diz qual arquivo editar para cada tipo de mudança. O hook bloqueia o commit; a CI bloqueia o PR (ou o push) cujo conjunto de mudanças toca código sem tocar o memory-bank.
 
 ### 4. Nunca versionar
 `.env` (só `.env.example`), os CSVs da Enter em `data/`, `data/processos_exemplo/`, artefatos de modelo (`*.joblib`, `*.pkl`), `node_modules`, chaves. `scripts/check_secrets.sh` bloqueia.
