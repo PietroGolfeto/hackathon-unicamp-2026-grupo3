@@ -11,7 +11,7 @@ Estado: ✅ existe · 🔧 em andamento · ⬜ planejado. Troque o marcador na p
 🔧 `infra/` + `Makefile`: `make up` sobe db/api/caddy em :8080 (testado), `make jobs-docker` roda os jobs no container, `make deploy`/`make backup` para a VPS; VPS e standby ainda não subiram
 ✅ `src/enteros` (P1, fase 1): loader da planilha, tabela de segmentos + logística calibrada (AUC 0,923 OOF), razão de condenação por UF×sub-assunto, engine de valor esperado com escada de negociação, backtest com resultados reais (`docs/backtest/`), API própria (:8001) e 16 testes em `tests/`
 ✅ integração engine → portal: `src/api/app/modelo_enteros.py` (adapter `ModeloScores`, padrão de `MODEL_IMPL`); histórico dos 60k pontuado pela logística do engine
-✅ `src/extractor`: pacote `extractor` (P3, base por Lucas): PDFs/TXT → validação de segurança → brief determinístico (≈1/3 do texto) → uma chamada OpenAI com saída estruturada → `DadosExtraidos` + `Analise`; cache em disco por conteúdo; minutas por template; CLI `make extrair`; benchmark `make bench-extractor`; 41 testes com dublê do LLM
+✅ `src/extractor`: pacote `extractor` (P3, base por Lucas): PDFs/TXT → validação de segurança → brief determinístico (≈1/3 do texto) → uma chamada OpenAI com saída estruturada → `DadosExtraidos` + `Analise`; cache em disco por conteúdo; minutas por template; CLI `make extrair`; benchmark `make bench-extractor`; 41 testes com dublê do LLM e 2 com a OpenAI real só sob `--llm` (`make test-llm`)
 
 ## Visão geral
 ```
