@@ -26,6 +26,7 @@ from app.schemas import (
     RecomendacaoResumo,
     ResultadoIn,
 )
+from app.services import preparacao as prep
 from app.services import recomendacao as svc
 
 router = APIRouter(tags=["processos"])
@@ -61,7 +62,8 @@ def _comentarios(p: Processo) -> dict[str, dict]:
     return {c["arquivo"]: c for c in lista if c.get("arquivo")}
 
 
-def _resumo(p: Processo, rec: Recomendacao | None, dec: Decisao | None) -> ProcessoResumo:
+def _resumo(p: Processo, rec: Recomendacao | None, dec: Decisao | None,
+            com_extrator: bool) -> ProcessoResumo:
     return ProcessoResumo(
         id=p.id, numero=p.numero, uf=p.uf, sub_assunto=p.sub_assunto, valor_causa=p.valor_causa,
         autor=_autor(p), status=p.status, origem=p.origem, escritorio_id=p.escritorio_id,
@@ -72,12 +74,13 @@ def _resumo(p: Processo, rec: Recomendacao | None, dec: Decisao | None) -> Proce
         recomendacao=RecomendacaoResumo.model_validate(rec) if rec else None,
         decisao_tipo=dec.tipo if dec else None, decisao_status=dec.status if dec else None,
         reservado_ate=p.reservado_ate,
+        extracao_pendente=prep.extracao_pendente(p, com_extrator),
     )
 
 
 @router.get("/processos", response_model=list[ProcessoResumo])
 def listar(
-    usuario: UsuarioLogado, db: Db,
+    request: Request, usuario: UsuarioLogado, db: Db,
     busca: Annotated[str | None, Query(max_length=40)] = None,
     escritorio_id: int | None = None,
     situacao: Annotated[str | None, Query(alias="status")] = None,
@@ -101,7 +104,8 @@ def listar(
     decs: dict[int, Decisao] = {}
     for d in db.scalars(select(Decisao).where(Decisao.processo_id.in_(ids)).order_by(Decisao.id)):
         decs[d.processo_id] = d
-    return [_resumo(p, recs.get(p.id), decs.get(p.id)) for p in processos]
+    com_extrator = request.app.state.extrator is not None
+    return [_resumo(p, recs.get(p.id), decs.get(p.id), com_extrator) for p in processos]
 
 
 def _documentos(p: Processo) -> list[DocumentoOut]:
@@ -117,9 +121,13 @@ def _documentos(p: Processo) -> list[DocumentoOut]:
 
 
 @router.get("/processos/{processo_id}", response_model=ProcessoDetalhe)
-def detalhe(processo_id: int, usuario: UsuarioLogado, db: Db) -> ProcessoDetalhe:
+def detalhe(processo_id: int, request: Request, usuario: UsuarioLogado, db: Db) -> ProcessoDetalhe:
     p = obter_processo(db, processo_id, usuario)
     svc.registrar_evento(db, usuario.id, p.id, "abriu_caso")
+    pendente = prep.extracao_pendente(p, request.app.state.extrator is not None)
+    if pendente:
+        # o caso aberto é o que o advogado está esperando: sai na frente dos outros da fila
+        prep.priorizar(p.numero)
     dec = decisao_atual(db, p.id)
     return ProcessoDetalhe(
         id=p.id, numero=p.numero, uf=p.uf, sub_assunto=p.sub_assunto, valor_causa=p.valor_causa,
@@ -128,7 +136,7 @@ def detalhe(processo_id: int, usuario: UsuarioLogado, db: Db) -> ProcessoDetalhe
         documentos=_documentos(p),
         dados_extraidos=p.dados_extraidos, analise=p.analise, sinais=_sinais(p), scores=p.scores,
         decisao_atual=DecisaoOut.model_validate(dec) if dec else None,
-        reservado_ate=p.reservado_ate, created_at=p.created_at,
+        reservado_ate=p.reservado_ate, extracao_pendente=pendente, created_at=p.created_at,
     )
 
 

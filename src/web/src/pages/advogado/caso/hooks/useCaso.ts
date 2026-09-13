@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useParams } from "react-router";
 
 import { api, type DecisaoRegistrada } from "../../../../api/client";
+import { usePreparacao } from "../../../../hooks/usePreparacao";
 import type { DocumentosAbertos } from "../caso.types";
 
 /** Processo, recomendação e o estado da sessão de análise (documentos abertos, cronômetro, decisão). */
@@ -11,8 +12,17 @@ export function useCaso() {
   const { id } = useParams();
   const pid = Number(id);
   const qc = useQueryClient();
-  const processo = useQuery({ queryKey: ["processo", pid], queryFn: () => api.processo(pid), enabled: !!pid });
-  const recomendacao = useQuery({ queryKey: ["recomendacao", pid], queryFn: () => api.recomendacao(pid), enabled: !!pid });
+  const { base } = usePreparacao();
+  const processo = useQuery({
+    queryKey: ["processo", pid], queryFn: () => api.processo(pid), enabled: !!pid && base,
+  });
+  // enquanto a leitura dos autos não chega, a recomendação sairia de um valor de causa padrão e
+  // ficaria gravada errada (UNIQUE processo+política): melhor não pedir ainda
+  const extracaoPendente = processo.data?.extracao_pendente ?? false;
+  const recomendacao = useQuery({
+    queryKey: ["recomendacao", pid], queryFn: () => api.recomendacao(pid),
+    enabled: !!pid && !!processo.data && !extracaoPendente,
+  });
   const [registrada, setRegistrada] = useState<DecisaoRegistrada | null>(null);
   const [novaDecisao, setNovaDecisao] = useState(false);
   const [abertos, setAbertos] = useState<DocumentosAbertos>(new Set());
@@ -36,7 +46,7 @@ export function useCaso() {
   const decisaoAtual = registrada?.decisao ?? p?.decisao_atual ?? null;
 
   return {
-    pid, processo, recomendacao, p, registrada, decisaoAtual,
+    pid, processo, recomendacao, p, registrada, decisaoAtual, extracaoPendente,
     mostrarForm: !decisaoAtual || novaDecisao,
     mostrarDecisaoAtual: !!decisaoAtual && !novaDecisao,
     abertos, abrirDocumento,

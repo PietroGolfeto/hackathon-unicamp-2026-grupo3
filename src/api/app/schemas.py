@@ -61,10 +61,15 @@ class ProcessoResumo(BaseModel):
     decisao_tipo: str | None
     decisao_status: str | None
     reservado_ate: datetime | None
+    # a leitura dos documentos desse caso ainda está na fila da preparação
+    extracao_pendente: bool = False
 
 
 class PreparacaoOut(BaseModel):
-    """Progresso da inferência dos casos; o front faz poll enquanto está `rodando`."""
+    """Progresso da leitura dos documentos (fase 2); o front faz poll enquanto está `rodando`.
+
+    A fase 1 já terminou quando esta resposta chega: os processos existem e podem ser listados.
+    """
 
     status: Literal["ocioso", "rodando", "pronto", "erro"]
     total: int
@@ -123,6 +128,9 @@ class ProcessoDetalhe(BaseModel):
     scores: dict[str, Any] | None
     decisao_atual: DecisaoOut | None
     reservado_ate: datetime | None
+    # enquanto for True, `dados_extraidos`, `analise` e a recomendação ainda vão mudar: o front
+    # mostra loading só nessa parte da tela e deixa o resto do caso utilizável
+    extracao_pendente: bool = False
     created_at: datetime
 
 

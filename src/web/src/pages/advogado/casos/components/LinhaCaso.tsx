@@ -1,4 +1,4 @@
-import { Anchor, Badge, Group, Table, Text } from "@mantine/core";
+import { Anchor, Badge, Group, Loader, Table, Text } from "@mantine/core";
 import { Link } from "react-router";
 
 import type { ProcessoResumo } from "../../../../api/client";
@@ -27,9 +27,19 @@ export function LinhaCaso({ p, gestor, temAutor, onSelecionar }: {
       <Table.Td align="right"><Text size="sm" className="numero">{brl(p.valor_causa)}</Text></Table.Td>
       <Table.Td><SubsidiosTracos p={p} /></Table.Td>
       <Table.Td>
-        <TipoBadge tipo={p.recomendacao?.tipo} size="sm" />
-        {p.recomendacao?.valor_sugerido != null && (
-          <Text size="xs" c="dimmed" mt={2} className="numero">{brl(p.recomendacao.valor_sugerido)}</Text>
+        {/* a recomendação depende do que a leitura dos autos achar; até lá a linha diz o que falta */}
+        {p.extracao_pendente ? (
+          <Group gap={6} wrap="nowrap">
+            <Loader size={12} color="laranja" />
+            <Text size="xs" c="dimmed">lendo documentos</Text>
+          </Group>
+        ) : (
+          <>
+            <TipoBadge tipo={p.recomendacao?.tipo} size="sm" />
+            {p.recomendacao?.valor_sugerido != null && (
+              <Text size="xs" c="dimmed" mt={2} className="numero">{brl(p.recomendacao.valor_sugerido)}</Text>
+            )}
+          </>
         )}
       </Table.Td>
       <Table.Td>

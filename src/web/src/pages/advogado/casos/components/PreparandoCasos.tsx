@@ -1,25 +1,31 @@
-import { Loader, Paper, Progress, Stack, Text } from "@mantine/core";
+import { Group, Loader, Paper, Progress, Text } from "@mantine/core";
 
 import type { Preparacao } from "../../../../api/client";
 
-/** Ocupa o lugar da tabela enquanto o backend lê os PDFs e roda os dois modelos. */
+/**
+ * Faixa acima da tabela enquanto a leitura dos PDFs ainda roda no servidor.
+ *
+ * Não substitui a lista: os casos já estão ali com número, valor, subsídios e documentos. Só o
+ * que depende da leitura (resumo e recomendação) aparece depois, caso a caso.
+ */
 export function PreparandoCasos({ preparacao }: { preparacao: Preparacao | undefined }) {
   const total = preparacao?.total ?? 0;
   const prontos = preparacao?.prontos ?? 0;
   return (
-    <Paper withBorder radius={12} p="xl">
-      <Stack align="center" gap="sm">
-        <Loader color="laranja" />
-        <Text className="serif" fz="lg">Lendo os autos e os subsídios</Text>
-        <Text size="sm" c="dimmed">
-          {total ? `${prontos} de ${total} casos prontos` : "Preparando os casos"}
-          {preparacao?.atual ? ` · ${preparacao.atual}` : ""}
-        </Text>
-        <Progress value={total ? (prontos / total) * 100 : 0} w={320} color="laranja" animated />
-        <Text size="xs" c="dimmed">
-          Na primeira vez a extração leva cerca de um minuto por caso; depois fica em cache.
-        </Text>
-      </Stack>
+    <Paper withBorder radius={12} px="md" py="sm">
+      <Group gap="sm" wrap="nowrap" align="center">
+        <Loader color="laranja" size="sm" />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Text size="sm" fw={500}>
+            Lendo os autos e os subsídios em segundo plano
+            {total ? ` · ${prontos} de ${total} casos prontos` : ""}
+          </Text>
+          <Text size="xs" c="dimmed">
+            Pode abrir qualquer caso agora: o resumo e a recomendação chegam quando a leitura dele terminar.
+          </Text>
+        </div>
+        <Progress value={total ? (prontos / total) * 100 : 0} w={{ base: 90, sm: 180 }} color="laranja" animated />
+      </Group>
     </Paper>
   );
 }

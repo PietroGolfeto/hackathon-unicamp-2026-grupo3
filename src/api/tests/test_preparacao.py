@@ -50,3 +50,52 @@ def test_preparacao_deixa_a_recomendacao_pronta_na_lista(adv: TestClient):
 
 def test_preparacao_exige_sessao(anon: TestClient):
     assert anon.get("/api/preparacao").status_code == 401
+
+
+class ExtratorDuble:
+    """Extrator que devolve uma leitura mínima, sem PDF nem LLM."""
+
+    def extrair(self, processo_dir, numero: str):
+        from datetime import UTC, datetime
+
+        from core.docs import DadosExtraidos
+
+        return DadosExtraidos(numero=numero, origem="stub", resumo_fatos="bullet do dublê",
+                              valor_causa=42000.0, gerado_em=datetime.now(UTC))
+
+    def analisar(self, caso, dados, scores):
+        from core.docs import Analise
+
+        return Analise(numero=caso.numero, origem="stub")
+
+    def redigir(self, caso, dados, rec):  # pragma: no cover - a decisão não entra neste teste
+        raise NotImplementedError
+
+
+def test_fase_1_nao_apaga_o_que_a_leitura_dos_documentos_ja_gravou(app_pronto, tmp_path):
+    """A base roda a cada POST; ela nunca pode desfazer a extração de um caso já lido."""
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import Escritorio
+    from app.services import ingest
+
+    pasta = tmp_path / "exemplos" / "0800001-11.2024.8.10.0001"
+    (pasta / "autos").mkdir(parents=True)
+    (pasta / "autos" / "peticao_inicial.pdf").write_bytes(b"%PDF-1.4")
+    with SessionLocal() as db:
+        esc = db.scalar(select(Escritorio).where(Escritorio.nome == "Escritório A"))
+        lido = ingest.ingerir_pasta(db, pasta, tmp_path, ExtratorDuble(), app_pronto.state.modelo,
+                                    esc.id)
+        assert lido.dados_extraidos is not None and lido.valor_causa == 42000.0
+
+        base = ingest.ingerir_base(db, pasta, tmp_path, app_pronto.state.modelo, esc.id)
+        assert base.dados_extraidos is not None, "a base sobrescreveu a extração"
+        assert base.valor_causa == 42000.0, "a base voltou o valor da causa para o padrão"
+
+
+def test_processo_sem_p3_nunca_fica_marcado_como_pendente(adv: TestClient, exemplos: dict[str, int]):
+    """Sem extrator plugado não há leitura a esperar: a tela não pode ficar em loading eterno."""
+    pid = next(iter(exemplos.values()))
+    assert adv.get(f"/api/processos/{pid}").json()["extracao_pendente"] is False
+    assert all(not p["extracao_pendente"] for p in adv.get("/api/processos").json())

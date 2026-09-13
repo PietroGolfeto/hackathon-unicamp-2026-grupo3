@@ -61,6 +61,8 @@ export interface ProcessoResumo {
   n_subsidios: number; sinais: string[]; scores_origem: string | null; extracao_origem: string | null;
   recomendacao: RecomendacaoResumo | null; decisao_tipo: string | null; decisao_status: string | null;
   reservado_ate: string | null;
+  /** A leitura dos documentos desse caso ainda está na fila da preparação. */
+  extracao_pendente: boolean;
 }
 
 export type Relevancia = "alta" | "media" | "baixa";
@@ -101,7 +103,10 @@ export interface ProcessoDetalhe {
   id: number; numero: string; uf: string; sub_assunto: string | null; valor_causa: number; status: string;
   origem: string; escritorio_id: number; escritorio: string; subsidios: Record<string, boolean>;
   documentos: Documento[]; dados_extraidos: DadosExtraidos | null; analise: Analise | null; sinais: Sinal[];
-  scores: Scores | null; decisao_atual: Decisao | null; reservado_ate: string | null; created_at: string;
+  scores: Scores | null; decisao_atual: Decisao | null; reservado_ate: string | null;
+  /** Enquanto for true, `dados_extraidos`, `analise` e a recomendação ainda vão mudar. */
+  extracao_pendente: boolean;
+  created_at: string;
 }
 
 export interface Recomendacao {
@@ -113,6 +118,7 @@ export interface Recomendacao {
   created_at: string;
 }
 
+/** Progresso da fase 2 (leitura dos PDFs). A fase 1 já terminou quando esta resposta chega. */
 export interface Preparacao {
   status: "ocioso" | "rodando" | "pronto" | "erro";
   total: number; prontos: number; atual: string | null; erro: string | null; atualizado_em: string | null;

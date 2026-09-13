@@ -12,7 +12,7 @@ export default function Casos() {
   const {
     busca, setBusca, situacao, setSituacao, gestor,
     processos, filtrados, pendentes, temAutor, colunas, isLoading, error,
-    preparacao, preparando, erroPreparacao,
+    preparacao, lendoDocumentos, erroPreparacao,
   } = useCasos();
 
   return (
@@ -35,15 +35,12 @@ export default function Casos() {
       </Group>
 
       {error && <Alert color="vermelho" variant="light">{error.message}</Alert>}
-      {erroPreparacao && !preparando && (
+      {erroPreparacao && !lendoDocumentos && (
         <Alert color="laranja" variant="light">Alguns casos não puderam ser preparados: {erroPreparacao}</Alert>
       )}
 
-      {preparando ? (
-        <PreparandoCasos preparacao={preparacao} />
-      ) : (
-        <TabelaCasos casos={filtrados} gestor={!!gestor} temAutor={temAutor} colunas={colunas} carregando={isLoading} />
-      )}
+      {lendoDocumentos && <PreparandoCasos preparacao={preparacao} />}
+      <TabelaCasos casos={filtrados} gestor={!!gestor} temAutor={temAutor} colunas={colunas} carregando={isLoading} />
     </Stack>
   );
 }

@@ -3,19 +3,20 @@ import { useMemo, useState } from "react";
 
 import { api } from "../../../../api/client";
 import { useSession } from "../../../../auth/useSession";
+import { usePreparacao } from "../../../../hooks/usePreparacao";
 import { COLUNAS_BASE } from "../casos.const";
 import type { Situacao } from "../casos.types";
-import { usePreparacao } from "./usePreparacao";
 
 /** Lista de processos com filtro de situação e busca por número ou autor. */
 export function useCasos() {
   const [busca, setBusca] = useState("");
   const [situacao, setSituacao] = useState<Situacao>("todos");
   const { data: usuario } = useSession();
-  // a lista só busca depois que todas as inferências terminaram
-  const { preparacao, pronto, preparando, erroPreparacao } = usePreparacao();
+  // a lista espera só a fase 1 (milissegundos); a leitura dos PDFs continua em background e cada
+  // linha se completa sozinha conforme os casos ficam prontos
+  const { preparacao, base, lendoDocumentos, erroPreparacao } = usePreparacao();
   const { data, isLoading, error } = useQuery({
-    queryKey: ["processos"], queryFn: () => api.processos(), enabled: pronto,
+    queryKey: ["processos"], queryFn: () => api.processos(), enabled: base,
   });
   const gestor = usuario?.papel === "gestor";
 
@@ -38,7 +39,7 @@ export function useCasos() {
     busca, setBusca, situacao, setSituacao,
     usuario, gestor, processos: data, filtrados,
     pendentes, temAutor, colunas,
-    preparacao, preparando, erroPreparacao,
-    isLoading: isLoading || !pronto, error: error as Error | null,
+    preparacao, lendoDocumentos, erroPreparacao,
+    isLoading: isLoading || !base, error: error as Error | null,
   };
 }
