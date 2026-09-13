@@ -81,7 +81,7 @@ Implementáveis nesta ordem; cada um é uma fatia testável.
 |---|---|---|
 | Resposta | Percentual de aderência e volume de decisões | Número grande com estado por cor; verde a partir de 80% |
 | Leitura | Aderência por escritório (ordenada, pior primeiro) e evolução semanal | Barra horizontal e linha |
-| Ação | Fila de desvios: quando, processo, advogado, recomendado, decidido, justificativa, parecer da IA | Tabela com linha clicável |
+| Ação | Fila de desvios: quando, processo, advogado, recomendado, decidido, justificativa, situação | Tabela com linha clicável |
 
 Desvio de tipo e desvio de valor são apresentados como **decomposição** do total não aderente, não como métricas independentes. Tempo médio de análise, percentual que decidiu sem ver a recomendação e a quebra por advogado vão para um bloco recolhível.
 
