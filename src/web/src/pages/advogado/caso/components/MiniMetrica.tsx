@@ -4,7 +4,7 @@ export function MiniMetrica({ rotulo, valor, cor }: { rotulo: string; valor: str
   return (
     <Paper p="sm" radius={8} bg="gray.0">
       <Text size="xs" c="dimmed">{rotulo}</Text>
-      <Text fw={500} className="numero" c={cor}>{valor}</Text>
+      <Text className="serif numero" fz="lg" fw={500} c={cor}>{valor}</Text>
     </Paper>
   );
 }

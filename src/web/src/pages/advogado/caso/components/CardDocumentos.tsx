@@ -11,7 +11,7 @@ export function CardDocumentos({ p, abertos, onAbrir }: ProcessoProps & {
   if (p.documentos.length === 0) {
     return (
       <Card>
-        <Text fw={500}>Documentos</Text>
+        <Text fw={600}>Documentos</Text>
         <Text size="sm" c="dimmed" mt={4}>Processo sem PDFs anexados (caso sintético).</Text>
         <ListaSubsidios subsidios={p.subsidios} />
       </Card>
@@ -25,7 +25,7 @@ export function CardDocumentos({ p, abertos, onAbrir }: ProcessoProps & {
   }
   return (
     <Card>
-      <Text fw={500}>Documentos</Text>
+      <Text fw={600}>Documentos</Text>
       <Text size="xs" c="dimmed" mb="sm">
         Abrem em nova aba. Os que você abriu ficam marcados. O comentário abaixo de cada um é da leitura da IA.
       </Text>

@@ -25,8 +25,8 @@ export function CardRecomendacao({ p, rec, carregando, erro }: {
       <Group justify="space-between" align="flex-start" wrap="wrap" gap="xl" mt={4}>
         <div style={{ flex: "1 1 280px" }}>
           <Group gap="sm" align="baseline">
-            <Title order={1} c={defesa ? "tinta.6" : "laranja.8"} className="subir">{ROTULO_TIPO[rec.tipo] ?? rec.tipo}</Title>
-            {temOferta && !instruir && <Text className="numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
+            <Title order={1} c={defesa ? "tinta.6" : "laranja.8"} className="serif subir" fw={500}>{ROTULO_TIPO[rec.tipo] ?? rec.tipo}</Title>
+            {temOferta && !instruir && <Text className="serif numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
           </Group>
           {instruir && (
             <Alert color="laranja" variant="light" mt="sm" p="xs">
@@ -41,7 +41,7 @@ export function CardRecomendacao({ p, rec, carregando, erro }: {
             <Group justify="space-between" align="baseline">
               <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>Probabilidade de êxito na defesa</Text>
               <Group gap={6}>
-                <Text className="numero" fz={26} lh={1}>{pct(s.p_exito_defesa)}</Text>
+                <Text className="serif numero" fz={26} lh={1}>{pct(s.p_exito_defesa)}</Text>
                 <OrigemBadge origem={s.origem} rotulo="score stub" />
               </Group>
             </Group>

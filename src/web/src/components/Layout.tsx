@@ -60,7 +60,7 @@ export function Layout() {
                   <Box visibleFrom="sm" w={190} style={{ lineHeight: 1.15 }}>
                     <Text size="sm" fw={500} truncate>{usuario.nome}</Text>
                     <Text size="xs" c="dimmed" truncate>
-                      {usuario.papel === "gestor" ? "Gestor · Banco Unicamp" : usuario.escritorio_nome ?? "Advogado"}
+                      {usuario.papel === "gestor" ? "Gestor · Banco Unicamp" : "Advogado"}
                     </Text>
                   </Box>
                   {usuario.papel === "gestor" && <Badge size="sm" color="laranja" variant="light" hiddenFrom="sm">Gestor</Badge>}

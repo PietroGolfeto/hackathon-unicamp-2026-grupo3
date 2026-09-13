@@ -1,8 +1,8 @@
-import { Alert, Box, Button, Card, Collapse, Group, NumberInput, SegmentedControl, Stack, Text, Textarea } from "@mantine/core";
+import { Alert, Button, Card, Collapse, Group, NumberInput, SegmentedControl, Stack, Text, Textarea } from "@mantine/core";
 
 import type { DecisaoRegistrada, Recomendacao, TipoDecisao } from "../../../../api/client";
-import { IcoAcordo, IcoCheck, IcoEscudo, IcoRelogio } from "../../../../components/Icones";
-import { brl, duracao } from "../../../../lib/format";
+import { IcoAcordo, IcoCheck, IcoEscudo } from "../../../../components/Icones";
+import { brl } from "../../../../lib/format";
 import type { DocumentosAbertos } from "../caso.types";
 import { useFormDecisao } from "../hooks/useFormDecisao";
 
@@ -10,19 +10,12 @@ export function FormDecisao({ pid, rec, abertos, inicio, onOk }: {
   pid: number; rec: Recomendacao; abertos: DocumentosAbertos; inicio: number; onOk: (r: DecisaoRegistrada) => void;
 }) {
   const {
-    tipo, setTipo, valor, setValor, justificativa, setJustificativa, segundos, foraDaBanda, diverge, registrar,
+    tipo, setTipo, valor, setValor, justificativa, setJustificativa, foraDaBanda, diverge, registrar,
   } = useFormDecisao({ pid, rec, abertos, inicio, onOk });
 
   return (
     <Card>
-      <Group justify="space-between">
-        <Text fw={500}>Sua decisão</Text>
-        <Group gap={6} c="dimmed">
-          <Box w={6} h={6} bg="laranja.6" className="pulsar" style={{ borderRadius: 999 }} />
-          <IcoRelogio size={14} />
-          <Text size="xs" className="numero">{duracao(segundos)}</Text>
-        </Group>
-      </Group>
+      <Text fw={600}>Sua decisão</Text>
       <form onSubmit={(e) => { e.preventDefault(); registrar.mutate(); }}>
         <Stack gap="md" mt="md">
           <SegmentedControl fullWidth size="md" radius={8} color="tinta" value={tipo} onChange={(v) => setTipo(v as TipoDecisao)}

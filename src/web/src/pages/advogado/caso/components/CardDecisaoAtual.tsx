@@ -17,9 +17,9 @@ export function CardDecisaoAtual({ d, registrada, p, onNova, onResultado }: Proc
     <Card>
       <Group justify="space-between" wrap="wrap" gap="sm">
         <Group gap="sm" wrap="wrap">
-          <Text fw={500}>Decisão registrada</Text>
+          <Text fw={600}>Decisão registrada</Text>
           <TipoBadge tipo={d.tipo} size="sm" />
-          {d.tipo === "acordo" && <Text className="numero" fz="lg">{brl(d.valor_proposto)}</Text>}
+          {d.tipo === "acordo" && <Text className="serif numero" fz="lg">{brl(d.valor_proposto)}</Text>}
           <StatusBadge status={d.status} size="sm" />
           <AderenciaBadge aderente={d.aderente} tipoDesvio={d.tipo_desvio} size="sm" />
         </Group>

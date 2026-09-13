@@ -10,7 +10,7 @@ import { useCasos } from "./hooks/useCasos";
 
 export default function Casos() {
   const {
-    busca, setBusca, situacao, setSituacao, usuario, gestor,
+    busca, setBusca, situacao, setSituacao, gestor,
     processos, filtrados, pendentes, temAutor, colunas, isLoading, error,
     preparacao, preparando, erroPreparacao,
   } = useCasos();
@@ -19,10 +19,11 @@ export default function Casos() {
     <Stack gap="lg">
       <Group justify="space-between" align="end" wrap="wrap" gap="md">
         <div>
-          <Title order={2}>Casos</Title>
+          <Text size="xs" fw={600} tt="uppercase" lts=".1em" c="laranja.8">Empréstimo não reconhecido</Text>
+          <Title order={1} className="serif" fw={500}>Casos</Title>
           <Text c="dimmed" size="sm" mt={4}>
-            {gestor ? "Todos os escritórios" : usuario?.escritorio_nome}
-            {processos ? ` · ${num(processos.length)} processos · ${num(pendentes)} pendentes` : ""}
+            {[gestor ? "Todos os escritórios" : null, processos ? `${num(processos.length)} processos · ${num(pendentes)} pendentes` : null]
+              .filter(Boolean).join(" · ")}
           </Text>
         </div>
         <Group gap="sm" wrap="wrap">

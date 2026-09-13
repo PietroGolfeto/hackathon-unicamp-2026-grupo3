@@ -10,7 +10,7 @@ export function MinutasView({ m }: { m: Minutas }) {
   ].filter(([, t]) => t);
   return (
     <Stack gap="xs" mt="md">
-      <Group gap="xs"><Text fw={500} size="sm">Minutas</Text><OrigemBadge origem={m.origem} rotulo="minuta stub" /></Group>
+      <Group gap="xs"><Text fw={600} size="sm">Minutas</Text><OrigemBadge origem={m.origem} rotulo="minuta stub" /></Group>
       {itens.map(([titulo, texto]) => (
         <div key={titulo}>
           <Group justify="space-between" mb={2}>

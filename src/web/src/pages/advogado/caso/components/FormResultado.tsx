@@ -10,7 +10,7 @@ export function FormResultado({ d, onOk }: { d: Decisao; onOk: () => void }) {
 
   return (
     <Paper withBorder p="md" mt="md" radius={8}>
-      <Text fw={500} size="sm">Resultado da negociação</Text>
+      <Text fw={600} size="sm">Resultado da negociação</Text>
       <Text size="xs" c="dimmed" mb="sm">É isso que alimenta a efetividade da política. Registre assim que souber.</Text>
       <form onSubmit={(e) => { e.preventDefault(); registrar.mutate(); }}>
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">

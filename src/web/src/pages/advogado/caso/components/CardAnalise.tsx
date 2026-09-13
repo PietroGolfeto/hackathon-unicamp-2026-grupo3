@@ -13,7 +13,7 @@ export function CardAnalise({ p }: ProcessoProps) {
   return (
     <Card>
       <Group justify="space-between">
-        <Text fw={500}>Resumo do caso</Text>
+        <Text fw={600}>Resumo do caso</Text>
         <OrigemBadge origem={a?.origem ?? d?.origem} rotulo="análise stub" />
       </Group>
       <List size="sm" mt="xs" spacing={4}>
