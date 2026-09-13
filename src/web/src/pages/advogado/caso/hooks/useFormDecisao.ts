@@ -8,9 +8,7 @@ import type { DocumentosAbertos } from "../caso.types";
 export function useFormDecisao({ pid, rec, abertos, inicio, onOk }: {
   pid: number; rec: Recomendacao; abertos: DocumentosAbertos; inicio: number; onOk: (r: DecisaoRegistrada) => void;
 }) {
-  // O advogado decide acordo ou defesa. "instruir" é um acordo adiado: a aderência é medida
-  // contra ele, então é ele que vem pré-selecionado. Mesma regra do backend.
-  const esperado: TipoDecisao = rec.tipo === "instruir" ? "acordo" : rec.tipo;
+  const esperado: TipoDecisao = rec.tipo;
   const [tipo, setTipo] = useState<TipoDecisao>(esperado);
   const [valor, setValor] = useState<number | null>(rec.valor_sugerido);
   const [justificativa, setJustificativa] = useState("");

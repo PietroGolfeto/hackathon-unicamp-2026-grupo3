@@ -23,10 +23,6 @@ FLAGS_ENTEROS: dict[str, str] = {
 }
 QUANTIS = ("p20", "p50", "p80")
 log = logging.getLogger(__name__)
-# volta do nome do engine para a flag do portal
-FLAGS_PORTAL: dict[str, str] = {v: k for k, v in FLAGS_ENTEROS.items()}
-
-
 def _clip(v: float) -> float:
     return float(min(max(v, 0.0), 1.0))
 
@@ -46,12 +42,8 @@ class ModeloEnteros:
         uf = caso.uf if caso.uf in self._cfg.UFS else ""  # UF desconhecida cai na referência do modelo
         return sub, flags, uf
 
-    def _instrucao(self, caso: CasoFeatures, sub: str, uf: str) -> tuple[bool, list[str], dict[str, float]]:
-        """Subsídios ausentes que compensa pedir antes de acordar, pelo valor esperado da informação.
-
-        Precisa da recomendação do engine (o EVSI depende de custo de busca e de atraso, não só de p).
-        Falha do engine não pode derrubar o score: sem instrução, o portal decide como antes.
-        """
+    def _mais_dados_recomendado(self, caso: CasoFeatures, sub: str, uf: str) -> bool:
+        """Indique quando o valor esperado da informação favorece obter mais dados."""
         from enteros.schemas import CaseFeatures, DocsStatus
 
         try:
@@ -62,18 +54,16 @@ class ModeloEnteros:
                 numero=caso.numero, uf=uf or self._cfg.UFS[0], sub_assunto=sub,
                 valor_causa=caso.valor_causa, docs=docs,
             ))
-        except Exception:  # noqa: BLE001 - engine indisponível só desliga a instrução
-            log.warning("engine não recomendou para %s; sem instrução de subsídios", caso.numero)
-            return False, [], {}
-        pedir = [FLAGS_PORTAL[d] for d in rec.docs_a_solicitar if d in FLAGS_PORTAL]
-        evsi = {FLAGS_PORTAL[d]: round(float(v), 2) for d, v in rec.evsi_por_doc.items() if d in FLAGS_PORTAL}
-        return rec.decisao == self._cfg.DECISAO_INSTRUIR and bool(pedir), pedir, evsi
+        except Exception:  # noqa: BLE001 - engine indisponível só omite o aviso de mais dados
+            log.warning("engine não recomendou para %s; análise de mais dados indisponível", caso.numero)
+            return False
+        return rec.decisao == self._cfg.DECISAO_INSTRUIR
 
     def score(self, caso: CasoFeatures) -> Scores:
         sub, flags, uf = self._entrada(caso)
         p_perda, _, _ = self._eng.p_perda(sub, flags, uf)
         r = self._eng.ratio.para(uf, sub)
-        instruir, pedir, evsi = self._instrucao(caso, sub, uf)
+        mais_dados_recomendado = self._mais_dados_recomendado(caso, sub, uf)
         contribs = [
             Contribuicao(
                 feature=c["feature"], valor=c["valor"],
@@ -87,7 +77,7 @@ class ModeloEnteros:
             p_exito_defesa=_clip(1.0 - p_perda),
             condenacao_p20=r["p20"] * caso.valor_causa, condenacao_p50=r["p50"] * caso.valor_causa,
             condenacao_p80=r["p80"] * caso.valor_causa, contribuicoes=contribs, gerado_em=datetime.now(UTC),
-            instruir_recomendado=instruir, docs_a_solicitar=pedir, evsi_por_doc=evsi,
+            mais_dados_recomendado=mais_dados_recomendado,
         )
 
     def score_batch(self, casos: list[CasoFeatures]) -> list[Scores]:

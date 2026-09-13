@@ -27,10 +27,8 @@ class Scores(BaseModel):
     condenacao_p80: float = Field(ge=0)
     contribuicoes: list[Contribuicao] = Field(default_factory=list)  # top 5, com sinal
     gerado_em: datetime
-    # valor esperado da informação (aditivos): subsídios ausentes que compensa pedir antes de acordar
-    instruir_recomendado: bool = False
-    docs_a_solicitar: list[str] = Field(default_factory=list)  # chaves de core.caso.NOMES_SUBSIDIOS
-    evsi_por_doc: dict[str, float] = Field(default_factory=dict)
+    # O valor esperado da informação indica que mais dados podem melhorar a análise.
+    mais_dados_recomendado: bool = False
 
 
 class CalibracaoBin(BaseModel):

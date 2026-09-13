@@ -45,7 +45,7 @@ export function duracao(segundos: number | null | undefined): string {
 }
 
 export const ROTULO_TIPO: Record<string, string> = {
-  acordo: "Acordo", defesa: "Defesa", instruir: "Solicitar documentos",
+  acordo: "Propor acordo", defesa: "Defender",
 };
 export const ROTULO_STATUS: Record<string, string> = {
   pendente: "Pendente", decidido: "Decidido", encerrado: "Encerrado",
@@ -58,5 +58,4 @@ export const ROTULO_RESULTADO: Record<string, string> = {
 export const ROTULO_REGRA: Record<string, string> = {
   defesa_forte: "êxito acima do limiar de defesa forte", acordo_forte: "êxito abaixo do limiar de acordo forte",
   custo: "comparação de custo esperado", sinal: "sinal nos autos força acordo",
-  instruir: "vale pedir o subsídio que falta antes de acordar",
 };

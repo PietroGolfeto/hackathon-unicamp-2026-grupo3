@@ -1,4 +1,4 @@
-import { ActionIcon, AppShell, Avatar, Badge, Box, Container, Group, SegmentedControl, Text, Tooltip, UnstyledButton } from "@mantine/core";
+import { ActionIcon, AppShell, Box, Container, Group, SegmentedControl, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import { Link, Outlet, useLocation } from "react-router";
 
 import type { Papel } from "../api/client";
@@ -10,10 +10,6 @@ const LINKS_ADV = [{ to: "/casos", rotulo: "Casos" }];
 const LINKS_GESTOR = [
   { to: "/gestor/painel", rotulo: "Painel" },
 ];
-
-function iniciais(nome: string): string {
-  return nome.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
-}
 
 function LinkTopo({ to, rotulo, ativo }: { to: string; rotulo: string; ativo: boolean }) {
   return (
@@ -48,23 +44,9 @@ export function Layout() {
             </Group>
             <Group gap="sm" wrap="nowrap">
               {usuario && (
-                <Tooltip label="Ver como (troca sem sair)">
-                  <SegmentedControl visibleFrom="sm" size="xs" disabled={trocar.isPending} value={usuario.papel}
-                    onChange={(v) => trocar.mutate(v as Papel)}
-                    data={[{ label: "Advogado", value: "advogado" }, { label: "Gestor", value: "gestor" }]} />
-                </Tooltip>
-              )}
-              {usuario && (
-                <Group gap={10} wrap="nowrap">
-                  <Avatar size={30} radius="xl" color="tinta" variant="filled" fz={11} fw={600}>{iniciais(usuario.nome)}</Avatar>
-                  <Box visibleFrom="sm" w={190} style={{ lineHeight: 1.15 }}>
-                    <Text size="sm" fw={500} truncate>{usuario.nome}</Text>
-                    <Text size="xs" c="dimmed" truncate>
-                      {usuario.papel === "gestor" ? "Gestor · Banco Unicamp" : "Advogado"}
-                    </Text>
-                  </Box>
-                  {usuario.papel === "gestor" && <Badge size="sm" color="laranja" variant="light" hiddenFrom="sm">Gestor</Badge>}
-                </Group>
+                <SegmentedControl size="xs" disabled={trocar.isPending} value={usuario.papel}
+                  onChange={(v) => trocar.mutate(v as Papel)}
+                  data={[{ label: "Advogado", value: "advogado" }, { label: "Gestor", value: "gestor" }]} />
               )}
               <Tooltip label="Sair">
                 <ActionIcon variant="subtle" color="tinta" size="lg" radius="xl" aria-label="Sair"

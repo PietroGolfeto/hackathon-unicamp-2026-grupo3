@@ -19,7 +19,7 @@ export default function Casos() {
     <Stack gap="lg">
       <Group justify="space-between" align="end" wrap="wrap" gap="md">
         <div>
-          <Title order={1} className="serif" fw={500}>Casos</Title>
+          <Title order={1} className="serif">Casos</Title>
           <Text c="dimmed" size="sm" mt={4}>
             {[gestor ? "Todos os escritórios" : null, processos ? `${num(processos.length)} processos · ${num(pendentes)} pendentes` : null]
               .filter(Boolean).join(" · ")}

@@ -48,7 +48,7 @@ export default function Aprovacoes() {
           <Center>
             <Stack align="center" gap="xs" py="lg">
               <ThemeIcon size={48} radius="xl" color="verde" variant="light"><IcoCheck size={24} /></ThemeIcon>
-              <Text className="serif" fz="xl">Nada pendente.</Text>
+              <Text className="serif" fw={400} fz="xl">Nada pendente.</Text>
               <Text size="sm" c="dimmed" ta="center" maw={420}>
                 Quando um advogado propuser acordo fora da banda ou acima do teto de valor da causa, o pedido aparece aqui.
               </Text>

@@ -56,6 +56,7 @@ class ProcessoResumo(BaseModel):
     n_subsidios: int
     sinais: list[str]
     scores_origem: str | None
+    mais_dados_recomendado: bool
     extracao_origem: str | None
     recomendacao: RecomendacaoResumo | None
     decisao_tipo: str | None
@@ -140,7 +141,7 @@ class RecomendacaoOut(Saida):
     politica_id: int
     politica_versao: int
     politica_nome: str
-    tipo: str  # acordo | defesa | instruir
+    tipo: str  # acordo | defesa
     valor_sugerido: float | None
     valor_min: float | None
     valor_max: float | None

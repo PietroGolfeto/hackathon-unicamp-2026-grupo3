@@ -29,6 +29,11 @@ def params_de(politica: Politica) -> PoliticaParams:
     return PoliticaParams.model_validate(politica.params)
 
 
+def tipo_binario(tipo: str) -> str:
+    """Converta recomendações antigas de instrução no acordo que elas adiavam."""
+    return "acordo" if tipo == "instruir" else tipo
+
+
 def caso_de(processo: Processo) -> CasoFeatures:
     dados = processo.dados_extraidos or {}
     sinais = {s["codigo"]: True for s in dados.get("sinais_alerta", []) if s.get("codigo")}
@@ -65,7 +70,7 @@ def obter_ou_criar(
             custo_esperado_defesa=rec.custo_esperado_defesa,
             custo_esperado_acordo=rec.custo_esperado_acordo, economia_esperada=rec.economia_esperada,
             regra=rec.regra, sinais_acionados=rec.sinais_acionados,
-            docs_a_solicitar=rec.docs_a_solicitar, motivos=rec.motivos,
+            docs_a_solicitar=[], motivos=rec.motivos,
             scores_snapshot=rec.scores_snapshot.model_dump(mode="json"),
         ).on_conflict_do_nothing(constraint="uq_rec_processo_politica")
     )
@@ -79,15 +84,17 @@ def obter_ou_criar(
 def para_saida(rec: Recomendacao, politica: Politica, processo: Processo) -> RecomendacaoOut:
     prm = params_de(politica)
     teto = prm.valor_causa_max_sem_aprovacao
+    legado_instruir = rec.tipo == "instruir"
     return RecomendacaoOut(
         id=rec.id, processo_id=rec.processo_id, politica_id=rec.politica_id,
-        politica_versao=politica.versao, politica_nome=politica.nome, tipo=rec.tipo,
+        politica_versao=politica.versao, politica_nome=politica.nome, tipo=tipo_binario(rec.tipo),
         valor_sugerido=rec.valor_sugerido, valor_min=rec.valor_min, valor_max=rec.valor_max,
         custo_esperado_defesa=rec.custo_esperado_defesa,
         custo_esperado_acordo=rec.custo_esperado_acordo, economia_esperada=rec.economia_esperada,
         regra=rec.regra, sinais_acionados=list(rec.sinais_acionados or []),
-        docs_a_solicitar=list(rec.docs_a_solicitar or []),
-        motivos=list(rec.motivos or []), scores_snapshot=dict(rec.scores_snapshot or {}),
+        docs_a_solicitar=[],
+        motivos=list(rec.motivos or [])[1:] if legado_instruir else list(rec.motivos or []),
+        scores_snapshot=dict(rec.scores_snapshot or {}),
         exige_aprovacao_valor_causa=teto is not None and processo.valor_causa > teto,
         created_at=rec.created_at,
     )
@@ -105,9 +112,7 @@ def avaliar_decisao(
         and dados.valor_proposto is not None
         and rec.valor_min - 0.01 <= dados.valor_proposto <= rec.valor_max + 0.01
     )
-    # O advogado só decide acordo ou defesa. "instruir" é um acordo adiado até os subsídios chegarem:
-    # acordar na banda continua aderente; defender é que é desvio.
-    esperado = "acordo" if rec.tipo == "instruir" else rec.tipo
+    esperado = tipo_binario(rec.tipo)
     aderente = dados.tipo == esperado and (dados.tipo != "acordo" or na_banda)
     tipo_desvio = "nenhum" if aderente else ("tipo" if dados.tipo != esperado else "valor")
     if not aderente and not (dados.justificativa or "").strip():
@@ -140,11 +145,11 @@ def rec_core_de(rec: Recomendacao):
     from core.politica import Recomendacao as RecCore
 
     return RecCore(
-        tipo=rec.tipo, valor_sugerido=rec.valor_sugerido, valor_min=rec.valor_min,
+        tipo=tipo_binario(rec.tipo), valor_sugerido=rec.valor_sugerido, valor_min=rec.valor_min,
         valor_max=rec.valor_max, custo_esperado_defesa=rec.custo_esperado_defesa,
         custo_esperado_acordo=rec.custo_esperado_acordo, economia_esperada=rec.economia_esperada,
-        regra=rec.regra, sinais_acionados=list(rec.sinais_acionados or []),
-        docs_a_solicitar=list(rec.docs_a_solicitar or []),
+        regra="custo" if rec.regra == "instruir" else rec.regra,
+        sinais_acionados=list(rec.sinais_acionados or []),
         motivos=list(rec.motivos or []), scores_snapshot=Scores.model_validate(rec.scores_snapshot),
         politica_id=rec.politica_id,
     )

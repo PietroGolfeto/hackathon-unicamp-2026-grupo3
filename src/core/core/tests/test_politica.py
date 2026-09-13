@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 import numpy as np
+import pytest
 
 from core.caso import CasoFeatures, Subsidios
 from core.modelo import Scores
@@ -114,49 +115,24 @@ def test_custos_reais_e_baselines():
 
 
 def test_params_incoerentes_falham():
-    import pytest
-
     with pytest.raises(ValueError):
         PoliticaParams(limiar_acordo_forte=0.9, limiar_defesa_forte=0.5)
     with pytest.raises(ValueError):
         PoliticaParams(arredondamento=0)
 
 
-def _com_instrucao(p: float, causa: float, docs: list[str] | None = None) -> Scores:
-    docs = docs or ["extrato"]
-    s = scores(p, causa)
-    s.instruir_recomendado = True
-    s.docs_a_solicitar = docs
-    s.evsi_por_doc = {d: 4788.0 for d in docs}
-    return s
-
-
-def test_instruir_quando_o_caso_caminha_para_acordo_e_vale_pedir_subsidio():
+def test_mais_dados_nao_substitui_recomendacao_binaria():
     subs = Subsidios(contrato=True, comprovante_credito=True, dossie=True,
                      demonstrativo_divida=True, laudo_referenciado=True)
-    rec = aplicar(_com_instrucao(0.62, 20000), caso(20000, subs), PRM, politica_id=1)
-    assert rec.tipo == "instruir"
-    assert rec.regra == "instruir"
-    assert rec.docs_a_solicitar == ["extrato"]
-    assert rec.valor_sugerido is not None  # o acordo segue dimensionado, só espera o documento
-    assert len(rec.motivos) == 3
-    assert "extrato" in rec.motivos[0]
+    s = scores(0.62, 20000)
+    s.mais_dados_recomendado = True
+    rec = aplicar(s, caso(20000, subs), PRM, politica_id=1)
+    assert rec.tipo == "acordo"
 
 
-def test_instruir_nao_sobrepoe_defesa_nem_sinal_que_forca_acordo():
-    # defesa forte: não há acordo a adiar
-    defesa = aplicar(_com_instrucao(0.97, 20000), caso(20000, TODOS), PRM, politica_id=1)
-    assert defesa.tipo == "defesa" and defesa.docs_a_solicitar == []
-    # sinal força acordo: não há o que esperar
-    forcado = aplicar(_com_instrucao(0.62, 20000), caso(20000, sinais={"CREDITO_CONTA_TERCEIRO": True}),
-                      PRM, politica_id=1)
-    assert forcado.tipo == "acordo" and forcado.regra == "sinal" and forcado.docs_a_solicitar == []
-
-
-def test_scores_sem_os_campos_de_instrucao_continua_valido():
-    """Snapshot gravado antes dos campos aditivos precisa validar e não virar instruir."""
+def test_scores_sem_campo_de_mais_dados_continua_valido():
+    """Snapshot gravado antes do campo aditivo precisa validar como não sensível."""
     antigo = scores(0.62, 20000).model_dump(mode="json")
-    for campo in ("instruir_recomendado", "docs_a_solicitar", "evsi_por_doc"):
-        antigo.pop(campo)
-    rec = aplicar(Scores.model_validate(antigo), caso(20000), PRM, politica_id=1)
-    assert rec.tipo in ("acordo", "defesa") and rec.docs_a_solicitar == []
+    antigo.pop("mais_dados_recomendado")
+    restaurado = Scores.model_validate(antigo)
+    assert restaurado.mais_dados_recomendado is False

@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import type { ProcessoDetalhe, Recomendacao } from "../../../../api/client";
 import { OrigemBadge } from "../../../../components/Badges";
 import { brl, ROTULO_TIPO } from "../../../../lib/format";
-import { NOMES_SUBSIDIOS } from "../caso.const";
 import { AnelProbabilidade } from "./AnelProbabilidade";
 import { BandaOferta } from "./BandaOferta";
 import { MiniMetrica } from "./MiniMetrica";
@@ -17,8 +16,6 @@ export function CardRecomendacao({ p, rec, carregando, erro }: {
   if (!rec) return null;
   const s = rec.scores_snapshot;
   const defesa = rec.tipo === "defesa";
-  const instruir = rec.tipo === "instruir";
-  // "instruir" é um acordo já dimensionado que espera os subsídios: tem oferta e banda como o acordo.
   const temOferta = rec.valor_sugerido != null;
   return (
     <Card p={{ base: "lg", sm: 32 }} bg="tinta.6" c="white" pos="relative"
@@ -37,10 +34,10 @@ export function CardRecomendacao({ p, rec, carregando, erro }: {
               <Text size="xs" fw={600} tt="uppercase" lts=".1em" c="laranja.5">A política recomenda</Text>
             </Group>
             <div>
-              <Title order={1} className="serif subir" fz={{ base: 46, sm: 62 }} lh={1} fw={600} lts="-.01em" c={defesa ? undefined : "laranja.4"}>
+              <Title order={1} className="serif subir" fz={{ base: 46, sm: 62 }} lh={1} lts="-.01em" c={defesa ? undefined : "laranja.4"}>
                 {ROTULO_TIPO[rec.tipo] ?? rec.tipo}
               </Title>
-              {temOferta && !instruir && (
+              {temOferta && (
                 <Text className="serif numero" fz={{ base: 26, sm: 34 }} lh={1.1} mt={10}>{brl(rec.valor_sugerido)}</Text>
               )}
             </div>
@@ -57,12 +54,6 @@ export function CardRecomendacao({ p, rec, carregando, erro }: {
           </Stack>
         </Group>
 
-        {instruir && (
-          <Aviso>
-            Solicitar ao banco: {rec.docs_a_solicitar.map((d) => NOMES_SUBSIDIOS[d] ?? d).join(", ")}.
-            {temOferta && ` Se o banco não localizar, propor o acordo de ${brl(rec.valor_sugerido)}.`}
-          </Aviso>
-        )}
         {rec.exige_aprovacao_valor_causa && (
           <Aviso>Valor da causa acima do teto: acordo exige aprovação do gestor.</Aviso>
         )}

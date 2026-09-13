@@ -42,8 +42,7 @@ async function req<T>(path: string, init: RequestInit & { json?: unknown } = {})
 
 export type Papel = "advogado" | "gestor";
 export type TipoDecisao = "acordo" | "defesa";
-/** A recomendação tem uma saída a mais que a decisão: instruir = pedir subsídios antes de acordar. */
-export type TipoRecomendacao = TipoDecisao | "instruir";
+export type TipoRecomendacao = TipoDecisao;
 
 export interface Usuario {
   id: number; nome: string; email: string; papel: Papel;
@@ -59,6 +58,7 @@ export interface ProcessoResumo {
   id: number; numero: string; uf: string; sub_assunto: string | null; valor_causa: number;
   autor: string | null; status: string; origem: string; escritorio_id: number; escritorio: string;
   n_subsidios: number; sinais: string[]; scores_origem: string | null; extracao_origem: string | null;
+  mais_dados_recomendado: boolean;
   recomendacao: RecomendacaoResumo | null; decisao_tipo: string | null; decisao_status: string | null;
   reservado_ate: string | null;
   /** A leitura dos documentos desse caso ainda está na fila da preparação. */

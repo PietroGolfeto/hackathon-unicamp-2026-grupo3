@@ -27,10 +27,10 @@ const theme = createTheme({
   fontFamilyMonospace: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
   headings: {
     fontFamily: "'Noto Serif', Georgia, 'Times New Roman', serif",
-    fontWeight: "400",
+    fontWeight: "600",
     sizes: {
-      h1: { fontSize: rem(40), lineHeight: "1.12", fontWeight: "300" },
-      h2: { fontSize: rem(30), lineHeight: "1.2", fontWeight: "300" },
+      h1: { fontSize: rem(40), lineHeight: "1.12" },
+      h2: { fontSize: rem(30), lineHeight: "1.2" },
       h3: { fontSize: rem(24), lineHeight: "1.25" },
       h4: { fontSize: rem(19), lineHeight: "1.3" },
     },

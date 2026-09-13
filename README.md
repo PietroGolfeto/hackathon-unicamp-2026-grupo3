@@ -48,6 +48,36 @@ o gestor a qualquer momento.
 
 `make seed-demo` acrescenta 340 processos sintéticos (todos pendentes) para dar volume ao painel; `make down` derruba tudo.
 
+#### O painel do gestor começa vazio — e isso é de propósito
+
+Aderência, efetividade, fila de desvios e aprovações vêm **só do que um advogado registrou no portal**. Num banco
+recém-criado ninguém decidiu nada, então o painel mostra `—`, "sem dados" e "Nenhum desvio registrado": preferimos o
+estado vazio a exibir número sorteado ao gestor como se fosse medido.
+
+Para ver o painel cheio sem decidir 120 casos à mão:
+
+```bash
+make mock-painel   # 120 decisões de desenvolvimento, espalhadas por 6 semanas
+```
+
+Recarregue `/gestor` e o painel passa a ter tudo o que ele existe para mostrar:
+
+| O que aparece | Com os números desta semente |
+|---|---|
+| Pulso operacional | 78% de aderência em 120 decisões, 94 aderentes e 26 desvios |
+| Aderência por semana | 6 pontos no gráfico de tendência (81%, 81%, 60%, 85%, 84%, 78%) |
+| Aderência por escritório | Escritório A 96%, B 79% e **C 54%** — encontrar o escritório fora da política é o caso de uso do painel |
+| Fila de desvios | 26 divergências justificadas, 16 de tipo e 10 de valor; as 20 mais recentes na fila, 9 já com o parecer consultivo da IA |
+| Efetividade | desfecho registrado em ~50 acordos; o resto sem resposta, que é o que aciona o aviso de cobertura parcial |
+| Aprovações | 24 acordos fora da banda esperando o gestor |
+
+O que é sorteado aqui é **apenas o comportamento do advogado** (se aderiu, a justificativa, o desfecho da negociação).
+A recomendação de cada caso sai do motor real, então todo agregado do painel é calculado de verdade sobre ela. É
+determinístico: a semente é fixa, então o mesmo banco produz o mesmo painel em qualquer máquina. `make reset-demo`
+apaga tudo e devolve o painel ao estado vazio.
+
+O comando aborta se a `DATABASE_URL` não for local, para o ambiente publicado nunca exibir esse dado.
+
 ### 3. Engine de política e backtest — sem banco e sem Docker
 
 ```bash
@@ -114,8 +144,9 @@ três processos exemplo já estão em `data/exemplos/<numero>/{autos,subsidios}`
 4. Antes do LLM, o texto passa por uma checagem de segurança e vira um brief determinístico de ~1/3 do tamanho.
 5. Uma chamada à OpenAI devolve um resumo em até 5 bullets e as contradições entre a petição e os subsídios.
 6. O modelo estima a probabilidade de o banco vencer e a condenação esperada se perder.
-7. A política compara o custo esperado de defender com o de acordar e devolve **defesa**, **acordo** (com valor sugerido
-   e banda) ou **instruir** (pedir os subsídios que faltam antes de acordar).
+7. A política compara o custo esperado de defender com o de acordar e devolve **defesa** ou **acordo** (com valor
+   sugerido e banda). Quando o valor esperado da informação indica que mais subsídios mudariam a conta, o caso recebe
+   um aviso de que o modelo precisa de mais dados; a recomendação continua binária e a escolha é do banco.
 8. A recomendação é gravada no momento em que o advogado abre o caso; a decisão dele aponta para ela e o desvio exige
    justificativa. O painel do gestor mede aderência, efetividade e simula parâmetros da política sobre os 60 mil casos.
 
@@ -124,7 +155,7 @@ três processos exemplo já estão em `data/exemplos/<numero>/{autos,subsidios}`
 **Entra**: os dois CSVs das 60 mil sentenças e a planilha equivalente para o engine; os autos e os subsídios de cada
 processo em PDF; os parâmetros de custo e da curva de aceite em `src/enteros/policy/policy.yaml`.
 
-**Sai**: a decisão (defesa, acordo ou instruir) com os motivos e a probabilidade de êxito; o valor sugerido com abertura,
+**Sai**: a decisão (defesa ou acordo) com os motivos e a probabilidade de êxito; o valor sugerido com abertura,
 alvo e teto; o resumo do processo em bullets e as contradições entre petição e subsídios; as minutas de proposta, roteiro
 de defesa e mensagem à parte adversa; o backtest em `docs/backtest/` e a aderência e a efetividade no painel do gestor.
 

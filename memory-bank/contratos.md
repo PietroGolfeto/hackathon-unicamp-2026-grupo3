@@ -27,10 +27,7 @@ class Scores(BaseModel):
     condenacao_p20: float; condenacao_p50: float; condenacao_p80: float   # condicionais a perder
     contribuicoes: list[Contribuicao] = []                  # top 5, com sinal
     gerado_em: datetime
-    # aditivos: valor esperado da informação, vindo do engine; StubModelo deixa False/vazio
-    instruir_recomendado: bool = False                      # compensa pedir subsídio antes de acordar
-    docs_a_solicitar: list[str] = []                        # chaves de NOMES_SUBSIDIOS
-    evsi_por_doc: dict[str, float] = {}
+    mais_dados_recomendado: bool = False                    # EVSI favorece obter mais dados
 
 class CalibracaoBin(BaseModel): p_min: float; p_max: float; n: int; p_prevista_media: float; taxa_exito_real: float
 class ModeloInfo(BaseModel): versao: str; treinado_em: datetime; n_treino: int; metricas: dict[str, float]; calibracao: list[CalibracaoBin] = []; importancias: dict[str, float] = {}
@@ -96,13 +93,12 @@ class PoliticaParams(BaseModel):
     incluir_extincao_no_backtest: bool = True
 
 class Recomendacao(BaseModel):
-    tipo: Literal["acordo", "defesa", "instruir"]; valor_sugerido: float | None; valor_min: float | None; valor_max: float | None
+    tipo: Literal["acordo", "defesa"]; valor_sugerido: float | None; valor_min: float | None; valor_max: float | None
     custo_esperado_defesa: float; custo_esperado_acordo: float; economia_esperada: float
-    regra: Literal["defesa_forte", "acordo_forte", "custo", "sinal", "instruir"]; sinais_acionados: list[str] = []
-    docs_a_solicitar: list[str] = []    # só quando tipo == "instruir"
+    regra: Literal["defesa_forte", "acordo_forte", "custo", "sinal"]; sinais_acionados: list[str] = []
     motivos: list[str]; scores_snapshot: Scores; politica_id: int
 ```
-`instruir` é um acordo já dimensionado que espera os subsídios de `docs_a_solicitar`: `valor_sugerido`, `valor_min` e `valor_max` vêm preenchidos como no acordo, então quem precisa saber se há oferta testa `valor_sugerido is not None`, nunca o rótulo do tipo. Só acontece quando a decisão seria acordo e nenhum sinal o força — sinal vence, porque aí não há o que esperar. `DecisaoIn.tipo` continua `acordo | defesa`: a aderência de um `instruir` é medida contra o acordo que ele adia.
+O portal sempre recomenda `acordo` ou `defesa` pela política de limiares, sinais e custo esperado. `mais_dados_recomendado` não muda essa escolha: sinaliza que o valor esperado da informação do engine favorece obter mais dados. Recomendações antigas `instruir` persistidas no banco são apresentadas como acordo.
 `DocumentoOut` da API ganha `comentario` e `relevancia`, cruzados por nome de arquivo com `dados_extraidos.comentarios_documentos`; ficam nulos sem P3 (decisão 27). O comentário de um documento é o bullet do `resumo` que o cita (sem a tag), com relevância alta quando o documento entra numa contradição; documento não citado fica sem comentário.
 Validação dos params: `limiar_acordo_forte ≤ limiar_defesa_forte`, `piso ≤ teto`, `arredondamento > 0`.
 Funções: `calcular(p_exito, p20, p50, p80, valor_causa, prm, sinais_forcam=None)` → dict de arrays (`acordo, oferta, valor_min, valor_max, custo_defesa, custo_acordo, economia, regra, oferta_limitada`); `custos_reais(..., perdeu, valor_condenacao, prm)` acrescenta `custo_defesa_real, custo_acordo_real, custo_politica` para o backtest; `aplicar(scores, caso, prm, politica_id) -> Recomendacao` com 3 motivos determinísticos em português.
