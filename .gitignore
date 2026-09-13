@@ -60,6 +60,7 @@ plano-implementacao.md
 # Pastas dos processos exemplo da Enter (só o CSV sintético e o README ficam)
 data/exemplos/*/
 docs/Caso_*/
+data/mock-para-tela-advogado/
 # Dados brutos do hackathon (não versionar) — ver data/README.md
 data/raw/
 data/*.xlsx

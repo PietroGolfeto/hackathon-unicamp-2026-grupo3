@@ -63,7 +63,7 @@ Leitura: com custas R$ 1.500 + 10% de honorários, defender custa ≥ R$ 3k por 
 | Por UF | economia de 21,7% (MA) a 42,9% (AP); % acordo 26% (MA) → 60% (AP) |
 Os dois backtests (engine e API) usam resultados reais, mas premissas de custo diferentes; por isso os totais não batem. Ver decisão 25.
 
-## Processos exemplo (PDFs em `docs/Caso_01_…/` e `docs/Caso_02_…/`, não versionados; `make exemplos-docs` copia para `data/exemplos/`)
+## Processos exemplo (PDFs em `docs/Caso_01_…/` e `docs/Caso_02_…/`, não versionados; `make exemplos-docs` copia para `data/exemplos/`; a tela do advogado usa os mesmos PDFs em `data/mock-para-tela-advogado/` via `make mocks-advogado`)
 | Fato | Caso 01 `0801234-56.2024.8.10.0001` (São Luís/MA) | Caso 02 `0654321-09.2024.8.04.0001` (Manaus/AM) |
 |---|---|---|
 | Arquivos | 7 PDFs (autos + 6 subsídios), 1–8 páginas, com camada de texto, gerados por pypdf, sem scripts | 4 PDFs (autos + comprovante, demonstrativo, laudo); sem contrato, extrato e dossiê |
@@ -72,6 +72,7 @@ Os dois backtests (engine e API) usam resultados reais, mas premissas de custo d
 | Contrato | nº 502348719, R$ 5.000 em 72 × R$ 120, correspondente por telemarketing, assinatura manuscrita (dossiê: 91%), liveness 97,3% | nº 603827451, R$ 8.500 em 84 × R$ 180, app mobile com biometria; laudo admite que o vídeo de liveness não foi localizado |
 | Crédito | conta própria no Banco UFMG; extrato mostra TED p/ conta própria no Bradesco, PIX a familiar e saque em São Luís — a petição diz que "jamais utilizou os valores" | conta na Caixa (ag 3245, cc 00012345-6) que o autor diz não ter |
 | Parcelas | 21 de 72 pagas, saldo R$ 1.037,66 | 8 de 84 pagas, saldo R$ 2.748,38 |
+Caso 03 `0801235-56.2024.8.10.0001` é o caso 01 sem o extrato bancário (5 de 6 subsídios), montado por `make mocks-advogado` para a tela ter as três saídas do modelo (decisão 44). O que o engine dá nos três, sob a política padrão do portal: caso 01 **defesa** (p de êxito 97%, regra `defesa_forte`); caso 02 **acordo** de R$ 15.000 (p de êxito 2%, regra `sinal` — crédito em conta de terceiro força); caso 03 **instruir** pedindo o extrato (p de êxito 62%, zona intermediária, acordo de R$ 3.800 como plano B se o banco não localizar). Tirar contrato e extrato juntos levaria o caso 03 a p de êxito 7% e regra `acordo_forte`, indistinguível do caso 02.
 Benchmark com chamadas reais (prompt 2026-09-12.4, 3 chamadas por modelo × caso com cache separado; gabarito de 20–21 critérios objetivos por caso sobre a saída crua do LLM; sinais finais após a reconciliação por regra; relatório e tabelas do deck em `docs/extractor/benchmark-llm.md`):
 | Modelo | Tokens entrada · saída (raciocínio) | Latência p50 (min–máx) | Gabarito (LLM cru) | Sinais finais certos | Custo/processo sem prompt cache · 5 mil/mês |
 |---|---|---|---|---|---|
