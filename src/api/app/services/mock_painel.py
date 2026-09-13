@@ -165,10 +165,12 @@ def _entrada(
     documentos = sorteio.sample(["contrato", "extrato", "dossie"], k=sorteio.randrange(3))
     tempo = sorteio.randrange(90, 900)
     if aderir:
+        # "instruir" vira "acordo" para o advogado, mesma regra de avaliar_decisao/useFormDecisao.
+        tipo_decisao: TipoDecisao = "acordo" if rec.tipo == "instruir" else cast(TipoDecisao, rec.tipo)
         valor = None
-        if rec.tipo == "acordo" and rec.valor_min is not None and rec.valor_max is not None:
+        if tipo_decisao == "acordo" and rec.valor_min is not None and rec.valor_max is not None:
             valor = round(sorteio.uniform(rec.valor_min, rec.valor_max), 2)
-        return DecisaoIn(tipo=cast(TipoDecisao, rec.tipo), valor_proposto=valor,
+        return DecisaoIn(tipo=tipo_decisao, valor_proposto=valor,
                          tempo_analise_s=tempo, documentos_abertos=documentos)
 
     pode_desviar_valor = rec.tipo == "acordo" and rec.valor_max is not None
