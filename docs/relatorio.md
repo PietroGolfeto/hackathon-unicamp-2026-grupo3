@@ -7,8 +7,7 @@
 > **monitoramento que aprende** (aderência com taxonomia de desvio, curva de aceite por experimento). Custo por caso:
 > centavos. Decisão: < 1 ms. Tudo reproduzível na base de 60 mil sentenças.
 
-Este relatório consolida **todas as decisões** do grupo e o que aprendemos com os dados e com as 10 submissões da edição
-UFMG. Documentos de apoio: [`docs/politica.md`](politica.md) (política em linguagem jurídica),
+Este relatório consolida **todas as decisões** do grupo e o que aprendemos com os dados. Documentos de apoio: [`docs/politica.md`](politica.md) (política em linguagem jurídica),
 [`docs/premissas.md`](premissas.md) (cada número: observado × premissa), [`docs/backtest/resumo.md`](backtest/resumo.md)
 (números gerados por script), [`docs/modelo/comparacao.md`](modelo/comparacao.md) (comparação de modelos pelo
 custo de decisão), [`docs/analises/resumo.md`](analises/resumo.md) (análises e figuras para a demo),
@@ -484,41 +483,12 @@ headline vem com banda e sensibilidade, e a curva se aprende em produção com b
 
 ---
 
-## 3. O que os 10 grupos da UFMG fizeram — e onde ficaram os furos
-
-Tabelas completas por grupo (stack, regra de decisão, fórmula de valor, UI, monitoramento, ideia única, furo) em [`docs/analise_ufmg_2026.md`](analise_ufmg_2026.md).
-
-**Vencedor (Exit.OS, G1)**: XGBoost com limiar fixo 0,60 → depois precifica com banda de quantis empíricos. Venceu pelos
-**artefatos concretos por processo** (`Defesa.pdf` gerado por LLM com prompt bem guardado, `Contato.json` com o
-advogado adverso extraído dos autos) e por UX memorável (cronômetro, chips de "recibo de leitura"). Sem número
-financeiro, sem persistência, não reproduzível. **Pódio (G10)**: infra pesada (Postgres/pgvector/Docker), UX rica
-(Central de Evidências, trechos citados, justificativa se delta > 15%), mas a **LLM fazia a conta do valor** e o deck
-prometia RAG de 60k que não existia.
-
-Ideias únicas dos demais: G8 apetite de risco como quantil dos 280 acordos + IFP; G2 formulação probabilística limpa
-+ economia contrafactual; G3-UFMG matriz UF × nº docs com backtest real + LLM-as-judge; G7 único a modelar aceite do
-autor (parâmetros chutados) e otimizar a oferta; G9 registro de premissas H1–H14 com "observado × assumido"; G4
-política gerada/criticada/versionada por LLM + regras duras + checagem contrato × depósito; G6 KPIs fatiados por
-"seguiu × não seguiu"; G5 score qualitativo da LLM move o limiar + saída "extinção".
-
-**Table stakes** (todos fizeram; não diferencia): custo esperado como framing; 6 flags + UF + sub-assunto; upload →
-extração → card com justificativa em linguagem natural; botão de confirmar; dashboard de aderência; dial de apetite.
-
-**Furos que ninguém fechou** (e que atacamos): (1) valor esperado com custo **total** de litigar e limiar derivado da
-economia; (2) número financeiro **tirado dos dados por script reproduzível**; (3) **calibração** de verdade; (4)
-verificação de **conteúdo** dos documentos e contradições petição × subsídios; (5) dossiê/laudo inúteis + **valor de
-recuperar** um subsídio ausente; (6) loop de efetividade com **experimento** para aprender a curva de aceite; (7)
-aderência com **taxonomia de desvio**; (8) oferta **decomposta** + escada + mensagem ao adverso; (9) **evals** de LLM;
-(10) rodar com um comando, com e sem chave.
-
----
-
-## 4. Nossos diferenciais (por critério de avaliação)
+## 3. Nossos diferenciais (por critério de avaliação)
 
 | # | Diferencial | Critério |
 |---|---|---|
 | D1 | **Decisão por valor esperado em três ações** (defesa, acordo, instruir): `EV_defesa = escritório + p·[cond·(1+honorários)·tempo + custas + saldo]` vs `EV_acordo = a·(alvo + saldo) + (1−a)·EV_defesa + op` vs `EV_instruir`. O ponto de indiferença é saída por caso, não 0,60 arbitrário | Leitura do problema · Execução |
-| D2 | **Backtest reproduzível** com resultados reais e p out-of-fold: baselines (defender tudo, acordar tudo, heurísticas, limiar 0,60 da UFMG, oráculo), % do ganho máximo capturado, banda por fold/bootstrap, sensibilidade a aceite/custos/JEC (`make backtest`); seleção de modelo pelo custo de decisão (`make compare-models`) | Potencial financeiro · Execução |
+| D2 | **Backtest reproduzível** com resultados reais e p out-of-fold: baselines (defender tudo, acordar tudo, heurísticas de documento, limiar fixo 0,60, oráculo), % do ganho máximo capturado, banda por fold/bootstrap, sensibilidade a aceite/custos/JEC (`make backtest`); seleção de modelo pelo custo de decisão (`make compare-models`) | Potencial financeiro · Execução |
 | D3 | **Escada decomposta**: abertura / alvo / teto; alvo = argmin do custo esperado sob curva de aceite (premissa declarada); piso = devolução simples; oferta = cancelamento + baixa + devolução + indenização | Criatividade · Leitura |
 | D4 | **Auditoria de conteúdo por IA** (trilha em andamento): titularidade da conta de depósito, TED × valor liberado, liveness, dossiê favorável, contradições da petição. Documento inconsistente é **rebaixado** a ausente pelo engine | Uso de IA · Execução |
 | D5 | **Valor da informação com probabilidade total**: "instruir antes de acordar" em 34% dos casos (EVSI R$ 50M sob q_d cheio); se todos os contratos ausentes fossem localizados, o custo esperado de litigar cairia **R$ 111M**; extratos, **R$ 63M**; dossiê/laudo: zero → rever o gasto com perícia terceirizada | Leitura do problema |
@@ -528,33 +498,33 @@ aderência com **taxonomia de desvio**; (8) oferta **decomposta** + escada + men
 
 ---
 
-## 5. Registro de decisões (ADR curto)
+## 4. Registro de decisões (ADR curto)
 
 | # | Decisão | Por quê |
 |---|---|---|
-| 1 | **Valor esperado em vez de limiar de probabilidade** | 0,60 (usado por 3 grupos) não tem justificativa econômica; o EV torna o limiar função dos custos e explicável ao jurídico |
+| 1 | **Valor esperado em vez de limiar de probabilidade** | Um limiar fixo (0,60, o mais comum na literatura de uso) não tem justificativa econômica; o EV torna o limiar função dos custos e explicável ao jurídico |
 | 2 | **Regressão logística aditiva (4 docs + sub + UF), não XGBoost nem tabela** | Processo gerador aditivo em log-odds: todas as variantes empatam (AUC 0,9226; < R$ 1M de custo OOF); artefato é um JSON de ~35 coeficientes, auditável e sem dependência (`make compare-models`) |
 | 3 | **Logística única; tabela de segmentos é saída do modelo; incerteza = IC de Laplace** (substitui a v1 "média entre tabela e logística; intervalo = discordância") | A média piorava a logística e a discordância não era intervalo estatístico; o IC epistêmico marca 2,2% de decisões sensíveis para revisão |
 | 4 | **Dossiê e laudo exportados com coeficiente 0** (fora do ajuste, dentro das colunas) | Efeito observado é zero (LR p = 0,26); coeficiente 0 mantém o contrato do portal e vira argumento no slide |
-| 5 | **LLM só nas pontas** (extrair, cruzar fatos, redigir); engine determinístico | Custo (centavos/caso), latência, consistência entre advogados e auditabilidade — G10 perdeu credibilidade deixando a LLM calcular valor |
-| 6 | **Extinção mantida como êxito** (defesa vencida com condenação zero) | É ⅓ constante dos êxitos em todo estrato de docs; excluir 23% da base enviesaria o baseline (o vencedor anterior excluiu). Não é sinal de litigância predatória |
+| 5 | **LLM só nas pontas** (extrair, cruzar fatos, redigir); engine determinístico | Custo (centavos/caso), latência, consistência entre advogados e auditabilidade: dinheiro calculado por LLM não é reproduzível nem defensável em auditoria |
+| 6 | **Extinção mantida como êxito** (defesa vencida com condenação zero) | É ⅓ constante dos êxitos em todo estrato de docs; excluir 23% da base enviesaria o baseline. Não é sinal de litigância predatória |
 | 7 | **Curva de aceite é premissa declarada + experimento** | Só há 280 acordos, todos aceitos (viés de seleção); a base não permite estimar a curva — por isso 15% de exploração em bandas para aprendê-la |
 | 8 | **Custos de defesa como parâmetros com fonte** (`policy.yaml`, `docs/premissas.md`) | A base não tem honorários, custas nem datas; o jurídico ajusta e o backtest mostra a sensibilidade |
 | 9 | **Sinais da IA entram por regra dura, não pelo modelo** | O histórico não tem esses rótulos; vender "conta de terceiro" como feature treinada seria desonesto (Súmula 479 STJ justifica a regra) |
 | 10 | **Nenhum dado da Enter no repositório** | Regra da organização; versionamos só modelos em JSON, resumo do backtest e um CSV sintético gerado pelos modelos |
 | 11 | **Engine roda sem banco (`make demo`)**; persistência, portal do advogado e painel do gestor vivem na API FastAPI + Postgres + React (`src/api`, `src/web`, `infra/`, um Caddy) | O engine continua reproduzível com um comando; o portal é onde advogado e gestor trabalham e onde a recomendação vista fica gravada |
-| 12 | **React + Vite + Tailwind para a tela** (time tem frontend); Streamlit descartado | Foi o que 4 grupos usaram; usabilidade é critério |
+| 12 | **React + Vite + Tailwind para a tela** (time tem frontend); Streamlit descartado | Usabilidade é critério de avaliação e a tela é o produto para o advogado |
 | 13 | **Constantes centralizadas** (`config.py`, `policy.yaml`); nomes de domínio em português | Nada hardcoded; política versionada é requisito de aderência |
-| 14 | **Limitações declaradas no deck** | G10 perdeu credibilidade prometendo o que não entregou |
+| 14 | **Limitações declaradas no deck** | Prometer no deck o que o código não faz custa credibilidade na banca |
 | 15 | **Acordos históricos fora do treino de frequência e severidade** | Não são sentenças (razão pago/causa ≈ U(0,20–0,40)); entravam como perda e puxavam a severidade para baixo; ficam no backtest como custo real e como âncora da curva de aceite |
 | 16 | **Três ações por valor esperado; "instruir" nasce do EVSI com probabilidade total sobre conjuntos de documentos** | "Info" não é classe de classificador; sem `p_falha` o valor da informação é superestimado; documento sozinho raramente vira a decisão, o par contrato + extrato vira |
-| 17 | **Breakeven é saída por caso; custos com base legal e cenário JEC na sensibilidade** | O limiar 0,60 de três grupos da UFMG não tinha base econômica; os custos movem a fatia de acordos de 10% para 36% |
+| 17 | **Breakeven é saída por caso; custos com base legal e cenário JEC na sensibilidade** | Um limiar fixo de 0,60 não tem base econômica; os custos movem a fatia de acordos de 10% para 36% |
 | 18 | **Sem Bayesian Optimization; seleção de modelo pelo custo de decisão OOF** | 60 mil rótulos e verossimilhança fechada; backtest em ms; a métrica que importa é R$, não AUC |
 | 19 | **Validação 5-fold OOF para o modelo; nenhuma para a decisão de acordar** | Sem datas não há corte temporal; todos os casos foram à sentença → o lado acordo é hipótese com banda e sensibilidade, aprendida em produção (H11) |
 
 ---
 
-## 6. Arquitetura
+## 5. Arquitetura
 
 ```mermaid
 flowchart LR
@@ -599,7 +569,7 @@ cache por hash → **≈ R$ 0,05–0,15 por caso, < R$ 1 mil/mês** para 5 mil c
 
 ---
 
-## 7. Divisão de trabalho e cronograma
+## 6. Divisão de trabalho e cronograma
 
 | Trilha | Entrega | Pasta | Estado |
 |---|---|---|---|
@@ -614,7 +584,7 @@ ponta · H11–13 números do backtest no deck · H13–14 vídeo · H14–15 bu
 
 ---
 
-## 8. Status por requisito
+## 7. Status por requisito
 
 | # | Requisito | Onde | Estado |
 |---|---|---|---|
@@ -626,7 +596,7 @@ ponta · H11–13 números do backtest no deck · H13–14 vídeo · H14–15 bu
 
 ---
 
-## 9. Limitações conhecidas
+## 8. Limitações conhecidas
 - Base sintética e uniforme por UF; sem datas → sem modelo de duração nem de custo de capital observado.
 - Só 280 acordos, todos aceitos → curva de aceite é premissa (por isso o experimento de bandas).
 - Custos de defesa (honorários, custas, escritório) são parâmetros a confirmar com o jurídico; o backtest mostra a sensibilidade.
@@ -637,7 +607,7 @@ ponta · H11–13 números do backtest no deck · H13–14 vídeo · H14–15 bu
 - A banda do headline (± 0,4 p.p.) mede só a variação amostral do modelo; a incerteza real está no aceite (17%–31%).
 - Buscas de documentos tratadas como independentes entre si; custo do atraso = correção de 5 dias sobre o EV de litigar.
 
-## 10. Próximos passos com +1 mês
+## 9. Próximos passos com +1 mês
 Integração ao EnterOS (webhook de novo caso → parecer); OCR; ingestão do resultado real de negociação e recalibração
 mensal; bandit de oferta em produção com alçadas; features de litigância predatória (OAB, comarca, boilerplate);
 modelo de duração com datas reais; expansão a cartão e outras modalidades.

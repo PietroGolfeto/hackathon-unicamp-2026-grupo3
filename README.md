@@ -2,53 +2,110 @@
 
 > Aplique IA para resolver, em equipe, um problema real que toda grande empresa do Brasil enfrenta.
 
-Solução do **Grupo 3** para o desafio da Enter: política de acordos do Banco UFMG em processos de empréstimo não
-reconhecido. Duas camadas sobre a mesma base de 60 mil sentenças: um **engine de política** (modelo de perda calibrado,
-valor esperado, escada de negociação e backtest) e um **portal** onde o advogado vê a recomendação e decide, e o gestor
-mede aderência e efetividade.
+Solução do **Grupo 3** para o desafio da Enter: a política de acordos do Banco UFMG em processos de empréstimo não
+reconhecido. Duas camadas sobre a mesma base de 60 mil sentenças:
 
-Relatório técnico completo (política em linguagem jurídica, números, decisões e limitações):
-[`docs/relatorio.md`](docs/relatorio.md). Instalação e execução em detalhe: [`SETUP.md`](SETUP.md).
+- **Engine de política** (`src/enteros`, roda sem banco): modelo de perda calibrado, decisão por custo esperado em três
+  ações — defesa, acordo ou instruir —, escada de negociação e backtest reproduzível nos 60 mil casos.
+- **Portal** (`src/api` + `src/web`): o advogado abre o caso, vê a recomendação — gravada no instante em que ele a viu —
+  e decide; o gestor mede aderência e efetividade e simula parâmetros da política.
 
-## Como Executar a Solução
+| Documento | O que tem |
+|---|---|
+| [`docs/relatorio.md`](docs/relatorio.md) | relatório técnico: política, números do backtest, decisões, limitações e próximos passos |
+| [`docs/politica.md`](docs/politica.md) | a política em linguagem jurídica, para o time jurídico |
+| [`SETUP.md`](SETUP.md) | instalação em detalhe, jobs de carga, deploy e todas as variáveis de ambiente |
+| [`docs/`](docs/) | backtest, análises, premissas de custo e benchmarks da extração |
+| [`memory-bank/`](memory-bank/) | estado vivo do projeto: leia antes de mexer no código |
+
+## Como rodar
+
+Pré-requisitos: [`uv`](https://docs.astral.sh/uv/) (traz o Python 3.12), `make`, Node 20 e Docker com Compose v2.
+
+### 1. Instalar
 
 ```bash
-cp .env.example .env
-make install       # .venv único (engine, core e api) + npm install do web
+git clone https://github.com/PietroGolfeto/hackathon-unicamp-2026-grupo3.git
+cd hackathon-unicamp-2026-grupo3
+cp .env.example .env     # ponha a OPENAI_API_KEY aqui; veja "Chave da OpenAI" abaixo
+make install             # .venv único (engine, core, api, extractor) + npm install do web
 ```
 
-**Engine de política e backtest** (sem banco, sem Docker):
+### 2. Portal do advogado e painel do gestor — é o que a demonstração mostra
+
+```bash
+make up            # Postgres + API + SPA atrás de um Caddy em http://localhost:8080
+make jobs-docker   # cria as tabelas, semeia usuários e política, carrega o histórico e ingere os processos exemplo
+```
+
+Abra `http://localhost:8080` e entre com a senha `senha123`:
+
+| E-mail | Papel | O que vê |
+|---|---|---|
+| `adv1@escritorio-a` | advogado | lista de casos e, em cada caso, a recomendação, os PDFs lidos pela IA, a decisão e o resultado da negociação |
+| `gestor@banco-ufmg` | gestor | painel de aderência e efetividade, fila de desvios, aprovação de acordo fora da banda e simulação da política |
+
+`make seed-demo` acrescenta 340 processos sintéticos (todos pendentes) para dar volume ao painel; `make down` derruba tudo.
+
+### 3. Engine de política e backtest — sem banco e sem Docker
 
 ```bash
 make demo          # dados → treino → backtest → testes
-make backtest      # replay nos 60k: docs/backtest/resumo.md, gráficos e as tabelas do relatório
-make engine-api    # http://localhost:8001/docs  (POST /recomendacao)
+make backtest      # replay nos 60 mil casos: docs/backtest/resumo.md, gráficos e as tabelas do relatório
+make engine-api    # http://localhost:8001/docs — POST /recomendacao
 ```
 
-**Portal completo** (Postgres + API + SPA atrás de um Caddy):
+Uma recomendação pela API do engine, com os dados do segundo processo exemplo:
 
 ```bash
-make up            # sobe db, api e caddy em http://localhost:8080
-make jobs-docker   # cria tabelas, seed, carrega o histórico e ingere os processos exemplo
+curl -s localhost:8001/recomendacao -H 'content-type: application/json' -d '{
+  "uf": "AM", "sub_assunto": "Golpe", "valor_causa": 25000,
+  "docs": {"comprovante": "presente", "demonstrativo": "presente", "laudo": "presente"},
+  "conta_deposito_titular_autor": false, "liveness_presente": false,
+  "parcelas_pagas": 8, "valor_parcela": 180, "saldo_devedor": 2748.38
+}' | python -m json.tool
 ```
 
-Usuários da demonstração (senha `senha123`): `adv1@escritorio-a` (advogado) e `gestor@banco-ufmg` (gestor).
-
-### Variável de ambiente para a extração dos documentos
-
-A leitura dos autos e subsídios chama a OpenAI uma vez por processo, com cache em disco por conteúdo:
+### 4. Testes
 
 ```bash
-export OPENAI_API_KEY="sua_chave_aqui"
+make check   # o mesmo que a CI: segredos, memory-bank, mensagens de commit, ruff, pytest e build do web
+make test    # só os testes
 ```
 
-Sem a chave, o portal sobe e funciona: o extractor responde do cache e, se não houver cache, a ingestão para com aviso
-em vez de inventar leitura dos documentos. O parecer consultivo do painel do gestor fica indisponível.
+Os testes da API precisam de um Postgres (o de `make up` serve); sem ele são pulados com aviso.
 
-Os dados da organização não são versionados. Sem eles, tudo roda sobre os CSVs sintéticos gerados por nós em
-`data/exemplos/`; com eles, coloque os dois CSVs e a planilha em `data/` conforme o [`SETUP.md`](SETUP.md).
+### Chave da OpenAI
 
-## Como o Sistema Funciona
+A leitura dos autos e dos subsídios chama a OpenAI **uma vez por processo**, com cache em disco por conteúdo — mesmos
+PDFs, zero chamadas. A chave vai no `.env`, que a API e os jobs leem:
+
+```bash
+OPENAI_API_KEY=sk-...
+```
+
+Sem chave e sem cache, a ingestão para com aviso em vez de inventar leitura de documento: a API sobe, a lista de casos
+fica vazia e o parecer consultivo do painel do gestor fica indisponível. O resto — engine, backtest, histórico e
+painel — não depende da OpenAI.
+
+### Dados
+
+Nenhuma linha da base da Enter é versionada. Sem os arquivos da organização tudo roda sobre os CSVs sintéticos que nós
+geramos (`data/exemplos/sinteticos*.csv`, números ilustrativos). Com eles, copie para `data/` conforme o
+[`SETUP.md`](SETUP.md): os dois CSVs das 60 mil sentenças (portal) e a planilha em `data/raw/` (engine). Os PDFs dos
+três processos exemplo já estão em `data/exemplos/<numero>/{autos,subsidios}`.
+
+## Os cinco requisitos, e onde cada um está
+
+| # | Requisito | Onde |
+|---|---|---|
+| 1 | Regra de decisão acordo × defesa | custo esperado em três ações e ponto de indiferença por caso: `src/enteros/policy/engine.py`, parâmetros em `policy.yaml` |
+| 2 | Valor sugerido do acordo | escada de abertura, alvo e teto, decomposta: `src/enteros/policy/negotiation.py` |
+| 3 | Acesso do advogado à recomendação | portal em `/casos/:id` com resumo copiável e link direto por caso; `POST /recomendacao` para quem integrar pelo EnterOS |
+| 4 | Monitoramento de aderência | a recomendação é gravada quando o advogado a vê; a decisão aponta para ela e o desvio exige justificativa (`GET /api/dashboard/aderencia`) |
+| 5 | Monitoramento de efetividade | resultado real da negociação no portal e backtest da política nos 60 mil casos (`GET /api/dashboard/efetividade`, `docs/backtest/`) |
+
+## Como o sistema funciona
 
 1. `make backtest` treina e avalia a política nos 60 mil casos e exporta o modelo para `models/*.json`.
 2. O portal carrega esse histórico e pontua cada processo pelo modelo do engine.
@@ -58,25 +115,33 @@ Os dados da organização não são versionados. Sem eles, tudo roda sobre os CS
 6. O modelo estima a probabilidade de o banco vencer e a condenação esperada se perder.
 7. A política compara o custo esperado de defender com o de acordar e devolve **defesa**, **acordo** (com valor sugerido
    e banda) ou **instruir** (pedir os subsídios que faltam antes de acordar).
-8. A recomendação é gravada no momento em que o advogado abre o caso; a decisão dele aponta para ela, e o desvio exige
+8. A recomendação é gravada no momento em que o advogado abre o caso; a decisão dele aponta para ela e o desvio exige
    justificativa. O painel do gestor mede aderência, efetividade e simula parâmetros da política sobre os 60 mil casos.
 
-### Entradas principais
+### O que entra e o que sai
 
-- `data/Hackaton_Enter_Base_Candidatos.xlsx - *.csv` e `data/raw/*.xlsx`: 60 mil sentenças e os subsídios de cada uma
-- `data/exemplos/<numero>/autos/`: autos do processo (petição inicial, procuração, documentos pessoais)
-- `data/exemplos/<numero>/subsidios/`: documentos do banco (contrato, extrato, comprovante de crédito, dossiê,
-  demonstrativo da dívida, laudo referenciado)
-- `src/enteros/policy/policy.yaml`: parâmetros da política (custos, limiares, curva de aceite)
+**Entra**: os dois CSVs das 60 mil sentenças e a planilha equivalente para o engine; os autos e os subsídios de cada
+processo em PDF; os parâmetros de custo e da curva de aceite em `src/enteros/policy/policy.yaml`.
 
-### Saídas principais
+**Sai**: a decisão (defesa, acordo ou instruir) com os motivos e a probabilidade de êxito; o valor sugerido com abertura,
+alvo e teto; o resumo do processo em bullets e as contradições entre petição e subsídios; as minutas de proposta, roteiro
+de defesa e mensagem à parte adversa; o backtest em `docs/backtest/` e a aderência e a efetividade no painel do gestor.
 
-- decisão de `defesa`, `acordo` ou `instruir`, com os motivos e a probabilidade de êxito da defesa
-- valor sugerido do acordo e a banda mínima/máxima, com escada de abertura, alvo e teto
-- resumo do processo em bullets e contradições entre a petição e os subsídios
-- minutas de proposta, roteiro de defesa e mensagem à parte adversa
-- backtest da política nos 60 mil casos em `docs/backtest/` e aderência e efetividade no painel do gestor
+## Estrutura do repositório
 
+```
+src/enteros     engine de política: carga da base, modelo, negociação, backtest e API própria
+src/core        contratos entre as partes, política operacional e parsing compartilhado
+src/api         FastAPI + SQLAlchemy 2 + jobs de carga (pacote `app`)
+src/extractor   leitura dos PDFs, checagem de segurança, chamada ao LLM e minutas
+src/web         React 19 + Vite + Mantine: portal do advogado e painel do gestor
+infra/          compose, Caddyfile e Dockerfiles
+models/         modelos exportados em JSON (segmentos, logística, razão de condenação)
+data/           exemplos e CSVs sintéticos; nada da base da Enter (ver data/README.md)
+docs/           relatório técnico, política, premissas, backtest e análises
+memory-bank/    estado vivo do projeto
+tests/          testes do engine (os demais ficam ao lado de cada pacote)
+```
 ---
 
 _O texto abaixo é do organizador, como veio no template do desafio (edição UFMG, mesmo case). A nossa edição é a da
