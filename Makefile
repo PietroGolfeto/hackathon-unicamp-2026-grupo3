@@ -121,16 +121,8 @@ bench-extractor: ## benchmark da compressão de tokens (sem LLM) → docs/extrac
 	$(if $(UV),$(UVENV) uv run --no-sync --with tiktoken python,$(PY)) -m extractor.benchmark docs/Caso_*/ \
 	  src/extractor/tests/dados/*/ --stress --cache-dir data/cache/extractor --md docs/extractor/benchmark.md
 
-mocks-advogado: ## data/mock-para-tela-advogado/Caso_NN/ -> data/exemplos/<numero>/{autos,subsidios} (+ caso derivado)
+exemplos-docs: ## regenera data/exemplos/<numero>/{autos,subsidios} (+ caso derivado) a partir de docs/Caso_*/
 	./scripts/mocks_advogado.sh
-
-exemplos-docs: ## copia docs/Caso_*/ (PDFs da Enter, não versionados) para data/exemplos/<numero>/{autos,subsidios}
-	@for d in docs/Caso_*/; do \
-	  n=$$(basename "$$d" | sed -E 's/^Caso_[0-9]+_//; s/([0-9]{7})-([0-9]{2})-([0-9]{4})-([0-9])-([0-9]{2})-([0-9]{4})/\1-\2.\3.\4.\5.\6/'); \
-	  mkdir -p "data/exemplos/$$n/autos" "data/exemplos/$$n/subsidios"; \
-	  for f in "$$d"*.pdf; do case "$$(basename "$$f")" in *Autos*|*autos*|*Peticao*|*peticao*) cp "$$f" "data/exemplos/$$n/autos/";; *) cp "$$f" "data/exemplos/$$n/subsidios/";; esac; done; \
-	  echo "→ data/exemplos/$$n"; ls "data/exemplos/$$n"/*; \
-	done
 
 test-llm: ## chama a OpenAI de verdade nos PDFs de docs/Caso_*/ e mostra o que o modelo devolve (gasta tokens)
 	$(PY) -m pytest -q src/extractor --llm -m llm -p no:cacheprovider
@@ -176,4 +168,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test test-llm install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair exemplo-injecao bench-extractor exemplos-docs mocks-advogado data train backtest compare-models scored analises sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test test-llm install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair exemplo-injecao bench-extractor exemplos-docs data train backtest compare-models scored analises sinteticos engine-api demo deploy backup

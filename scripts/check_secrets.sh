@@ -5,12 +5,12 @@ set -euo pipefail
 erros=0
 rastreados="$(git ls-files)"
 
-# Em data/ entram data/README.md, data/exemplos/ e data/mock-para-tela-advogado/
-# (PDFs dos casos exemplo, decisão 19/45). Dentro de data/exemplos/, CSV só sinteticos*.csv.
+# Em data/ entram data/README.md e data/exemplos/ (PDFs dos casos exemplo, decisão 19/45).
+# Dentro de data/exemplos/, CSV só sinteticos*.csv.
 proibidos="$(
   {
     printf '%s\n' "$rastreados" | grep -E '(^|/)\.env(\.[^/]+)?$' | grep -vE '\.env\.example$' || true
-    printf '%s\n' "$rastreados" | grep -E '^data/' | grep -vE '^data/README\.md$|^data/exemplos/|^data/mock-para-tela-advogado/' || true
+    printf '%s\n' "$rastreados" | grep -E '^data/' | grep -vE '^data/README\.md$|^data/exemplos/' || true
     printf '%s\n' "$rastreados" | grep -E '^data/exemplos/.*\.csv$' | grep -vE '^data/exemplos/sinteticos[^/]*\.csv$' || true
     printf '%s\n' "$rastreados" | grep -E '\.(joblib|pkl|pickle|pt|bin|gguf|safetensors)$|(^|/)node_modules/' || true
   } | grep . || true

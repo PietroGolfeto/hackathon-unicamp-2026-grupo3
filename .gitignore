@@ -57,8 +57,8 @@ Thumbs.db
 # Plano de implementação local (não versionar)
 plano-implementacao.md
 
-# data/exemplos/<numero>/ e data/mock-para-tela-advogado/ passaram a ser versionados
-# (decisão 19/45): a banca não tem esses PDFs prontos, o app precisa deles pra rodar.
+# data/exemplos/<numero>/ passou a ser versionado (decisão 19/45): a banca não tem
+# esses PDFs prontos e o app precisa deles pra rodar.
 docs/Caso_*/
 # Dados brutos do hackathon (não versionar) — ver data/README.md
 data/raw/

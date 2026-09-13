@@ -20,15 +20,18 @@ make hooks                    # verificações locais de commit (uma vez por clo
 make install                  # .venv único (engine, core e api) + npm install do web
 ```
 
-Dados da organização (não versionados; tudo sobe sem eles, com dados sintéticos nossos):
+Dados tabulares da organização (não versionados; tudo sobe sem eles, com dados sintéticos nossos):
 
 ```
 data/
 ├── Hackaton_Enter_Base_Candidatos.xlsx - Resultados dos processos.csv      # portal
 ├── Hackaton_Enter_Base_Candidatos.xlsx - Subsídios disponibilizados.csv    # portal
-├── raw/Hackaton_Enter_Base_Candidatos.xlsx                                 # engine
-└── exemplos/<numero-cnj>/{autos,subsidios}/*.pdf                           # as 2 pastas de processos exemplo
+└── raw/Hackaton_Enter_Base_Candidatos.xlsx                                 # engine
 ```
+
+Os PDFs dos três processos exemplo já estão versionados em `data/exemplos/<numero-cnj>/{autos,subsidios}/`
+(decisão 19/45). Quem tiver as pastas originais da organização em `docs/Caso_*/` regenera os três com
+`make exemplos-docs`.
 
 ## 2. Engine e backtest (sem banco)
 
@@ -54,7 +57,7 @@ curl -s localhost:8001/recomendacao -H 'content-type: application/json' -d '{
 
 ```bash
 make up            # db + api + caddy, sem TLS
-make jobs-docker   # cria tabelas, seed, carrega os CSVs, ingere os exemplos, gera a demo
+make jobs-docker   # cria tabelas, seed, carrega os CSVs e ingere os 3 processos exemplo
 ```
 
 Usuários (senha `senha123`):
@@ -130,7 +133,7 @@ src/core         contratos, política operacional em numpy, parsing (pacote `cor
 src/api          FastAPI + SQLAlchemy 2 + CLI de jobs (pacote `app`)
 src/web          React 19 + Vite + Mantine (portal do advogado e painel do gestor)
 infra/           compose, Caddyfile, Dockerfiles
-docs/            relatorio.md (relatório técnico do grupo), politica.md, premissas.md, backtest/ (gerado)
-data/exemplos    CSVs sintéticos nossos; pastas dos exemplos reais (ignoradas)
+docs/            relatorio.md (relatório técnico do grupo), politica.md, premissas.md, backtest/ e analises/ (gerados)
+data/exemplos    CSVs sintéticos nossos e os PDFs dos 3 processos exemplo
 memory-bank/     estado vivo do projeto: leia antes de mexer
 ```

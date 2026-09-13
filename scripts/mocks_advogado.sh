@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
-# Monta os casos da tela do advogado a partir de data/mock-para-tela-advogado/.
+# Monta os casos da tela do advogado a partir das pastas Caso_NN/ da organização (docs/, não versionadas).
 #
-# Cada Caso_NN/ é uma pasta plana de PDFs; o ingest espera
+# Cada Caso_NN*/ é uma pasta plana de PDFs; o ingest espera
 # data/exemplos/<numero-cnj>/{autos,subsidios}/. O número sai do nome do arquivo de autos.
 # O terceiro caso é derivado do primeiro sem o extrato: mesmo autor, mesma UF, só o acervo de
 # subsídios muda. Tirar só o extrato deixa o caso na zona intermediária, onde vale a pena pedir o
 # documento antes de acordar; tirar contrato e extrato juntos faria dele um clone do segundo caso.
 set -euo pipefail
 
-ORIGEM="${ORIGEM:-data/mock-para-tela-advogado}"
+ORIGEM="${ORIGEM:-docs}"
 DESTINO="${DESTINO:-data/exemplos}"
 DERIVADO_NUMERO="${DERIVADO_NUMERO:-0801235-56.2024.8.10.0001}"
 DERIVADO_DE="${DERIVADO_DE:-Caso_01}"
 # subsídio que o caso derivado não tem
 DERIVADO_SEM='extrato'
 
-[ -d "$ORIGEM" ] || { echo "erro: $ORIGEM não existe (PDFs da Enter não são versionados)" >&2; exit 1; }
+# Os três casos já estão versionados em data/exemplos/; isto só os regenera a partir dos PDFs originais.
+compgen -G "$ORIGEM/Caso_*/" >/dev/null || {
+  echo "erro: nenhuma pasta $ORIGEM/Caso_*/ (PDFs da organização não são versionados)" >&2; exit 1; }
 
 e_autos() { case "$(basename "$1")" in *Autos*|*autos*|*Peticao*|*peticao*) return 0;; *) return 1;; esac; }
 
@@ -46,14 +48,14 @@ copiar() {
   echo "→ $alvo ($(ls "$alvo/autos" | wc -l) autos, $(ls "$alvo/subsidios" | wc -l) subsídios)"
 }
 
-for pasta in "$ORIGEM"/*/; do
+for pasta in "$ORIGEM"/Caso_*/; do
   [ -d "$pasta" ] || continue
   numero=$(numero_do_caso "$pasta")
   [ -n "$numero" ] || { echo "aviso: sem número CNJ no nome dos autos de $pasta; pulando" >&2; continue; }
   copiar "$pasta" "$numero"
 done
 
-derivado="$ORIGEM/$DERIVADO_DE"
+derivado="$(echo "$ORIGEM/$DERIVADO_DE"*/)"
 if [ -d "$derivado" ]; then
   copiar "$derivado" "$DERIVADO_NUMERO" "$DERIVADO_SEM"
   echo "  (derivado de $DERIVADO_DE sem o extrato)"
