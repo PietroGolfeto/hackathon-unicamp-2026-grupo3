@@ -32,6 +32,8 @@ build/
 *.cache
 .DS_Store
 Thumbs.db
+# Screenshot da UI com Chrome headless: o --user-data-dir despeja um perfil inteiro aqui
+.tmp-shot/
 
 # IDEs
 .idea/
