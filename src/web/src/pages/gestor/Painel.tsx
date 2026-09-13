@@ -34,7 +34,7 @@ export default function Painel() {
       <Group justify="space-between" align="end" wrap="wrap" gap="md">
         <div>
           <Text size="xs" fw={600} tt="uppercase" lts=".1em" c="laranja.8">Monitoramento</Text>
-          <Title order={1} className="serif" fw={500}>Política de acordos</Title>
+          <Title order={1} className="serif">Política de acordos</Title>
           <Text c="dimmed" size="sm" mt={4}>
             {e.politica ? `Política ativa v${e.politica.versao} · ${e.politica.nome}` : "Nenhuma política ativa"}
           </Text>

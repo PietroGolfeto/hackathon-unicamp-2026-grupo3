@@ -24,8 +24,10 @@ body {
   color: var(--enter-tinta);
 }
 
-/* Utilitários tipográficos */
-.serif { font-family: var(--mantine-font-family-headings); }
+/* Utilitários tipográficos.
+   A Noto Serif é carregada só em 300, 400 e 600 (ver index.html): pedir 500 cai no 400 e o título
+   sai fino. Então a serifa de display é 600, e texto corrido em serifa pede fw={400} explícito. */
+.serif { font-family: var(--mantine-font-family-headings); font-weight: 600; }
 .numero { font-variant-numeric: tabular-nums; }
 
 /* Keyframes */
