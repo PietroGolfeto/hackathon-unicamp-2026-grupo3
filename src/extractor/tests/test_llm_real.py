@@ -10,12 +10,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from ajuda_llm import ESPERADOS, gravar, medir, pasta_da_rodada, pastas_casos
+from ajuda_llm import ESPERADOS, MAX_PALAVRAS_BULLET, gravar, medir, pasta_da_rodada, pastas_casos
 from dotenv import load_dotenv
 
 from extractor.cache import Cache
 from extractor.llm import ClienteOpenAI, ErroConfiguracao
-from extractor.pipeline import Extrator
+from extractor.pipeline import MAX_BULLETS, Extrator
 
 pytestmark = pytest.mark.llm
 
@@ -35,8 +35,8 @@ def pasta_run() -> Path:
 
 
 @pytest.mark.parametrize("pasta", pastas_casos(), ids=lambda p: p.name[:7])
-def test_llm_devolve_dados_e_analise(pasta: Path, cliente: ClienteOpenAI, pasta_run: Path, tmp_path: Path,
-                                     registrar_chamada):
+def test_llm_devolve_resumo_e_contradicoes(pasta: Path, cliente: ClienteOpenAI, pasta_run: Path, tmp_path: Path,
+                                           registrar_chamada):
     ext = Extrator(cliente=cliente, cache=Cache(tmp_path / "cache"))
     prep = ext.preparar(pasta)
     res = ext.processar(pasta)
@@ -46,9 +46,10 @@ def test_llm_devolve_dados_e_analise(pasta: Path, cliente: ClienteOpenAI, pasta_
 
     assert not res.cache_hit and res.tokens_entrada > 0 and res.tokens_saida > 0
     s = res.saida_llm
-    assert s.dados.resumo_fatos.strip() and s.analise.tese_provavel_autor.strip() and s.analise.texto.strip()
-    assert 0.0 <= s.dados.confianca <= 1.0
-    assert s.dados.autor.nome and s.dados.advogado_autor.nome
+    assert 1 <= len(s.resumo) <= MAX_BULLETS and all(b.strip() and "\n" not in b.strip() for b in s.resumo)
+    assert all(len(b.split()) <= MAX_PALAVRAS_BULLET + 5 for b in s.resumo), "bullet longo demais"
+    assert all(c.strip() for c in s.contradicoes)
+    assert res.dados.resumo_fatos and res.dados.comentarios_documentos
 
     if esperado := ESPERADOS.get(res.numero):  # o que as regras garantem, seja qual for o modelo
         finais = set(res.dados.codigos_sinais())
