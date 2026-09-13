@@ -80,6 +80,7 @@ export interface DadosExtraidos {
 export interface Analise {
   origem: string; pontos_fortes_banco: string[]; pontos_fracos_banco: string[];
   tese_provavel_autor: string; riscos: string[]; texto: string;
+  contradicoes?: string[];  // petição × subsídios; ausente em linhas gravadas antes do campo
 }
 
 export interface Contribuicao { feature: string; valor: unknown; contribuicao: number; descricao?: string | null }

@@ -86,6 +86,8 @@ class Analise(BaseModel):
     tese_provavel_autor: str = ""
     riscos: list[str] = Field(default_factory=list)
     texto: str = ""
+    # aditivo: afirmações de fato da petição desmentidas por prova objetiva de um subsídio (LLM)
+    contradicoes: list[str] = Field(default_factory=list)
 
 
 class Minutas(BaseModel):

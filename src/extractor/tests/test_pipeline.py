@@ -38,7 +38,7 @@ def test_processa_mapeia_e_cacheia(pasta_exemplo: Path, fake: FakeCliente, tmp_p
     assert d.resumo_fatos.split("\n") == saida_exemplo().resumo  # bullets do LLM, um por linha
     a = res.analise
     assert a.origem == "llm:fake-1" and a.tese_provavel_autor == "" and a.texto == ""
-    assert a.pontos_fortes_banco == ["Contradição: " + saida_exemplo().contradicoes[0]]
+    assert a.contradicoes == saida_exemplo().contradicoes and a.pontos_fortes_banco == []
     assert {"Contrato não apresentado pelo banco", "Extrato não apresentado pelo banco"} <= set(a.pontos_fracos_banco)
     assert any("liveness" in r for r in a.riscos) and not any("Banco não apresentou" in p for p in a.pontos_fracos_banco)
 
@@ -167,7 +167,7 @@ def test_bullets_normalizados_sem_repeticao_e_no_maximo_cinco(pasta_exemplo: Pat
     linhas = res.dados.resumo_fatos.split("\n")
     assert len(linhas) == 5 and linhas[0] == base.resumo[0]  # marcador sai, vazio sai
     assert linhas[1] == base.resumo[1] + " continua na linha de baixo"  # um item, uma linha
-    assert "Sexto" not in res.dados.resumo_fatos and len(res.analise.pontos_fortes_banco) == 1
+    assert "Sexto" not in res.dados.resumo_fatos and len(res.analise.contradicoes) == 1
 
 
 def test_regra_decide_sinais_pelos_documentos(pasta_exemplo: Path, tmp_path: Path):
@@ -203,7 +203,7 @@ def test_itens_que_citam_subsidio_ausente_saem(pasta_exemplo: Path, tmp_path: Pa
     saida.contradicoes.append('Petição afirma "nunca assinou"; [Dossiê] mostra assinatura compatível 91%.')
     res = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(pasta_exemplo)
     assert "Saques" not in res.dados.resumo_fatos and "[Dossiê] ausente" in res.dados.resumo_fatos
-    assert len(res.analise.pontos_fortes_banco) == 1 and "91%" not in res.analise.pontos_fortes_banco[0]
+    assert len(res.analise.contradicoes) == 1 and "91%" not in res.analise.contradicoes[0]
 
 
 def test_canal_nao_digital_nao_gera_sinal_de_liveness(pasta_exemplo: Path, tmp_path: Path):

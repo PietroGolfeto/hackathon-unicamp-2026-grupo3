@@ -383,10 +383,10 @@ def _comentarios(resumo: list[str], contradicoes: list[str], docs: list[parsing.
 
 def _analise_de(numero: str, modelo: str, contradicoes: list[str], ausentes: list[str],
                 sinais: list[SinalAlerta]) -> Analise:
-    """Contradições do LLM favorecem o banco; o que falta e os sinais de regra pesam contra. Sem tese nem parecer."""
+    """Contradições do LLM em campo próprio; o que falta e os sinais de regra em pontos fracos. Sem tese nem parecer."""
     fracos = [f"{NOMES_SUBSIDIOS.get(k, k)} não apresentado pelo banco" for k in ausentes]
     fracos += [s.descricao for s in sinais if s.severidade == "alta" and s.codigo != "SEM_CONTRATO"]
-    return Analise(numero=numero, origem=f"{ORIGEM}:{modelo}", pontos_fortes_banco=[f"Contradição: {c}" for c in contradicoes],
+    return Analise(numero=numero, origem=f"{ORIGEM}:{modelo}", contradicoes=contradicoes, pontos_fortes_banco=[],
                    pontos_fracos_banco=fracos, tese_provavel_autor="", riscos=[s.descricao for s in sinais], texto="")
 
 

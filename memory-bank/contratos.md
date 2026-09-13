@@ -70,6 +70,7 @@ class ComentarioDocumento(BaseModel):   # o que cada arquivo prova, ou deixa de 
 class Analise(BaseModel):     # independe da decisão; nunca fica obsoleta
     numero: str; origem: str; pontos_fortes_banco: list[str]; pontos_fracos_banco: list[str]
     tese_provavel_autor: str; riscos: list[str]; texto: str
+    contradicoes: list[str] = []   # aditivo: afirmações da petição desmentidas por subsídio (LLM). O card do advogado mostra só resumo_fatos (bullets) e isto
 
 class Minutas(BaseModel):     # depende da recomendação; guarda politica_id
     numero: str; politica_id: int | None; origem: str; proposta_acordo: str; roteiro_defesa: str; mensagem_contato: str
@@ -121,7 +122,7 @@ Backtest usa **resultados reais**: `custo_defesa_real = custas + hon·causa + co
 Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. A classe precisa ser instanciável **sem argumentos** (carrega seus artefatos sozinha). Import ou construção falha, log alto: o modelo cai em `StubModelo` (campo `origem` mostra "stub" na UI); o extrator vira `None` e nada é extraído, analisado ou redigido (decisão 27). `app/plugins.py` faz isso no start e em `POST /api/internal/reload-historico`.
 
 Extractor real (padrão): `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. Env: `OPENAI_API_KEY`, `OPENAI_MODEL` (padrão `gpt-5-mini`), `EXTRACTOR_CACHE_DIR` (padrão `DATA_DIR/cache/extractor`). Sem chave, `Extrator()` constrói e serve só do cache; `extrair` sem cache levanta `ErroConfiguracao` (o ingest para avisando). `extrair` e `analisar` vêm da mesma chamada ao LLM; `redigir` é template. O LLM devolve só `resumo` (lista de até 5 bullets de uma linha, fonte entre colchetes) e `contradicoes` (`extractor/schema.py`, decisão 49); ambos ficam íntegros no cache (`saida_llm`). `resumo_fatos` = bullets separados por `
-`; `pedidos` fica vazio, `tese_provavel_autor` e `texto` da análise ficam vazios, `confianca` = (petição legível + subsídios entregues) / 7. Tudo o mais em `DadosExtraidos` vem de regra: petição por regex, contrato por rótulos dos subsídios, sinais pela decisão 42 (mais ASSINATURA_DIVERGENTE pela perícia). `SinalAlerta.codigo` não recebe mais `OUTRO`.
+`; `pedidos` fica vazio; na análise, `contradicoes` recebe a lista do LLM e `pontos_fortes_banco`, `tese_provavel_autor` e `texto` ficam vazios; `confianca` = (petição legível + subsídios entregues) / 7. Tudo o mais em `DadosExtraidos` vem de regra: petição por regex, contrato por rótulos dos subsídios, sinais pela decisão 42 (mais ASSINATURA_DIVERGENTE pela perícia). `SinalAlerta.codigo` não recebe mais `OUTRO`.
 
 ## O que P1 entregou na fase 1 (`src/enteros`, pacote `enteros`)
 Contratos próprios em `enteros/schemas.py`: `CaseFeatures` (uf, sub_assunto, valor_causa, `docs` com status `presente|ausente|inconsistente`, opcionais da IA documental) → `Recomendacao` (decisão `defesa|acordo|instruir`, faixa, `p_perda` e intervalo, condenação p20/p50/p80, `ev_defesa`, `ev_acordo`, escada abertura/alvo/teto, decomposição, VOI, motivos, regras, contribuições). Parâmetros em `enteros/policy/policy.yaml`.
