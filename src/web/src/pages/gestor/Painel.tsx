@@ -1,8 +1,8 @@
 import {
   Alert, Anchor, Badge, Box, Button, Card, Divider, Grid, Group, Paper, Progress, SimpleGrid,
-  Skeleton, Stack, Table, Text, ThemeIcon, Title,
+  Skeleton, Stack, Table, Text, ThemeIcon, Title, Tooltip,
 } from "@mantine/core";
-import { AreaChart, BarChart, DonutChart } from "@mantine/charts";
+import { AreaChart, DonutChart } from "@mantine/charts";
 import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -11,7 +11,7 @@ import { Link } from "react-router";
 import { api, type Justificativa, type ParecerIA } from "../../api/client";
 import { StatusBadge, TipoBadge } from "../../components/Badges";
 import { IcoBaixo, IcoCheck } from "../../components/Icones";
-import { useContagem } from "../../lib/animacao";
+import { useContagem, useMontado } from "../../lib/animacao";
 import { brl, brlCompacto, dataHora, num, pct } from "../../lib/format";
 
 const POLL = 5000;
@@ -284,35 +284,125 @@ function Decisao({ tipo, valor }: { tipo: string; valor: number | null }) {
   return <Stack gap={2}><TipoBadge tipo={tipo} size="xs" />{valor != null && <Text size="xs" className="numero">{brl(valor)}</Text>}</Stack>;
 }
 
+// Grade compartilhada pelo cabeçalho e pelas linhas do comparativo: cenário · barra · custo · variação.
+const COLUNAS_CENARIO = "minmax(96px,148px) minmax(48px,1fr) minmax(104px,122px) 52px";
+
 function Potencial({ potencial }: { potencial: ReturnTypePotencial }) {
+  const pronto = useMontado();
+  const economia = useContagem(potencial?.economia_vs_defender);
   if (!potencial) return <Card><Vazio texto="Backtest do engine indisponível." /></Card>;
-  const dados = [
-    { cenario: "Defender tudo", custo: potencial.defender_tudo },
-    { cenario: "Acordar tudo", custo: potencial.acordar_tudo },
-    { cenario: "Nossa política", custo: potencial.politica },
+
+  // Defender tudo é a régua: cada barra vai de zero até o custo do cenário, na mesma escala.
+  const base = potencial.defender_tudo;
+  const cenarios = [
+    { nome: "Defender tudo", nota: "nenhum acordo proposto", custo: potencial.defender_tudo },
+    { nome: "Acordar tudo", nota: "acordo em todos os casos", custo: potencial.acordar_tudo },
+    { nome: "Nossa política", nota: `acordo em ${pct(potencial.pct_acordo)} dos casos`, custo: potencial.politica, destaque: true },
   ];
+
   return (
-    <Card h="100%">
-      <Group justify="space-between" align="start">
-        <CabecalhoCard titulo="Potencial nos 60 mil casos" detalhe="Replay histórico · não é resultado operacional" />
-        <Button component={Link} to="/gestor/politica" variant="subtle" color="tinta" size="compact-sm">Ver política</Button>
+    <Card h="100%" pos="relative" style={{ overflow: "hidden" }}>
+      <Box pos="absolute" w={320} h={320} right={-160} top={-190}
+        style={{ pointerEvents: "none", borderRadius: 999, background: "radial-gradient(circle, rgba(255,174,53,.14), transparent 70%)" }} />
+      <CabecalhoCard titulo="Potencial nos 60 mil casos" detalhe="Replay histórico · não é resultado operacional" />
+
+      <Box mt="xl" px={12} style={{ display: "grid", gridTemplateColumns: COLUNAS_CENARIO, columnGap: 12, alignItems: "end" }}>
+        <Rotulo>Cenário</Rotulo>
+        <span />
+        <Rotulo alinharDireita>Custo total</Rotulo>
+        <Rotulo alinharDireita>vs. base</Rotulo>
+      </Box>
+      <Divider my={8} />
+      <Stack gap={2}>
+        {cenarios.map((c, i) => (
+          <Cenario key={c.nome} {...c} base={base} pronto={pronto} atraso={i * 120} />
+        ))}
+      </Stack>
+
+      <Divider my="lg" />
+      <Group justify="space-between" align="end" gap="xl" wrap="wrap">
+        <div>
+          <Text size="xs" c="dimmed">Economia potencial vs. defender tudo</Text>
+          <Group align="baseline" gap="sm" mt={4}>
+            <Text className="serif numero" fz={{ base: 30, sm: 36 }} lh={1}>{brlCompacto(economia)}</Text>
+            <Badge color="verde" variant="light" size="lg">{pct(potencial.economia_pct)} menor</Badge>
+          </Group>
+        </div>
+        <Box miw={210} style={{ flex: 1, maxWidth: 300 }}>
+          <Group justify="space-between" mb={6}>
+            <Text size="xs" c="dimmed">Composição da política</Text>
+            <Text size="xs" c="dimmed" className="numero">{num(potencial.n_casos)} casos</Text>
+          </Group>
+          <Box h={8} bg="gray.2" style={{ display: "flex", borderRadius: 999, overflow: "hidden" }}>
+            <Box bg="laranja.6" className="preencher" style={{ width: pronto ? `${potencial.pct_acordo * 100}%` : 0 }} />
+            <Box flex={1} bg="tinta.3" />
+          </Box>
+          <Group gap="lg" mt={8}>
+            <Legenda cor="laranja.6" rotulo="Acordo" valor={pct(potencial.pct_acordo)} />
+            <Legenda cor="tinta.3" rotulo="Defesa" valor={pct(1 - potencial.pct_acordo)} />
+          </Group>
+        </Box>
       </Group>
-      <SimpleGrid cols={{ base: 1, sm: 3 }} my="md">
-        {dados.map((d) => <Mini key={d.cenario} rotulo={d.cenario} valor={brlCompacto(d.custo)}
-          destaque={d.cenario === "Nossa política"} />)}
-      </SimpleGrid>
-      <BarChart h={210} data={dados} dataKey="cenario"
-        series={[{ name: "custo", label: "Custo total", color: "laranja.6" }]}
-        valueFormatter={(v) => brlCompacto(Number(v))} gridAxis="y" />
-      <Divider my="md" />
-      <Group justify="space-between" gap="md">
-        <div><Text size="xs" c="dimmed">Economia vs defender tudo</Text><Text className="serif numero" fz="xl">{brlCompacto(potencial.economia_vs_defender)} · {pct(potencial.economia_pct)}</Text></div>
-        <div><Text size="xs" c="dimmed">Casos em acordo</Text><Text className="serif numero" fz="xl">{pct(potencial.pct_acordo)}</Text></div>
-      </Group>
-      <Text size="10px" c="dimmed" mt="md">
+      <Text size="10px" c="dimmed" mt="lg">
         Política {potencial.politica_versao} · modelo {potencial.modelo_versao} · defesa usa desfechos reais; acordos usam curva estimada de aceite.
       </Text>
     </Card>
+  );
+}
+
+function Cenario({ nome, nota, custo, base, destaque, pronto, atraso }: {
+  nome: string; nota: string; custo: number; base: number; destaque?: boolean; pronto: boolean; atraso: number;
+}) {
+  const largura = base > 0 ? Math.min(100, (custo / base) * 100) : 0;
+  const delta = base > 0 ? (custo - base) / base : 0;
+  return (
+    <Tooltip label={`${nome} · ${brl(custo)}`} withArrow position="top" openDelay={150}>
+      <Box px={12} py={12} style={{
+        display: "grid", gridTemplateColumns: COLUNAS_CENARIO, columnGap: 12, alignItems: "center",
+        borderRadius: 10,
+        background: destaque ? "var(--mantine-color-laranja-0)" : undefined,
+        boxShadow: destaque ? "inset 3px 0 0 var(--mantine-color-laranja-6)" : undefined,
+      }}>
+        <div>
+          <Text size="sm" fw={destaque ? 600 : 500} lh={1.25}>{nome}</Text>
+          <Text size="10px" c="dimmed" lh={1.4}>{nota}</Text>
+        </div>
+        <Box h={10} bg={destaque ? "rgba(255,174,53,.28)" : "gray.2"} style={{ borderRadius: 999, overflow: "hidden" }}>
+          <Box h="100%" className="preencher" style={{
+            width: pronto ? `${largura}%` : 0,
+            transitionDelay: `${atraso}ms`,
+            borderRadius: 999,
+            background: destaque
+              ? "linear-gradient(90deg, var(--mantine-color-laranja-5), var(--mantine-color-laranja-7))"
+              : "var(--mantine-color-gray-4)",
+          }} />
+        </Box>
+        <Text className="serif numero" fz={{ base: 18, sm: 21 }} ta="right" style={{ whiteSpace: "nowrap" }}>
+          {brlCompacto(custo)}
+        </Text>
+        <Text size="xs" fw={600} className="numero" ta="right" c={delta < 0 ? "verde.7" : "dimmed"}>
+          {delta < 0 ? pct(delta) : "base"}
+        </Text>
+      </Box>
+    </Tooltip>
+  );
+}
+
+function Rotulo({ children, alinharDireita }: { children: string; alinharDireita?: boolean }) {
+  return (
+    <Text size="10px" fw={600} tt="uppercase" lts=".08em" c="dimmed" ta={alinharDireita ? "right" : undefined}>
+      {children}
+    </Text>
+  );
+}
+
+function Legenda({ cor, rotulo, valor }: { cor: string; rotulo: string; valor: string }) {
+  return (
+    <Group gap={6}>
+      <Box w={8} h={8} bg={cor} style={{ borderRadius: 2 }} />
+      <Text size="xs" c="dimmed">{rotulo}</Text>
+      <Text size="xs" fw={600} className="numero">{valor}</Text>
+    </Group>
   );
 }
 
@@ -360,15 +450,6 @@ function Operacao({ e }: { e: Awaited<ReturnType<typeof api.efetividade>> }) {
 
 function CabecalhoCard({ titulo, detalhe }: { titulo: string; detalhe: string }) {
   return <div><Text fw={600}>{titulo}</Text><Text size="xs" c="dimmed">{detalhe}</Text></div>;
-}
-
-function Mini({ rotulo, valor, destaque }: { rotulo: string; valor: string; destaque?: boolean }) {
-  return (
-    <Paper p="sm" bg={destaque ? "laranja.1" : "gray.0"} style={destaque ? { border: "1px solid var(--enter-laranja)" } : undefined}>
-      <Text size="xs" c="dimmed">{rotulo}</Text>
-      <Text className="serif numero" fz="lg" fw={500}>{valor}</Text>
-    </Paper>
-  );
 }
 
 function Th({ children }: { children: string }) {

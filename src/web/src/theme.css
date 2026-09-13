@@ -95,8 +95,10 @@ body {
 
 /* Barra de preenchimento animada (medidores) */
 .preencher { transition: width 0.8s var(--enter-ease); }
+/* Arco de preenchimento animado (anel de probabilidade) */
+.preencher-anel { transition: stroke-dashoffset 0.9s var(--enter-ease); }
 
 @media (prefers-reduced-motion: reduce) {
   .subir, .surgir, .escalonado > *, .pulsar, .crescer, .pingar { animation: none !important; }
-  .cartao-hover, .linha-link, .preencher { transition: none !important; }
+  .cartao-hover, .linha-link, .preencher, .preencher-anel { transition: none !important; }
 }
