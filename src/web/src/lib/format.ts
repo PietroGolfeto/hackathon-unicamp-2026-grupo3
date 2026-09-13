@@ -45,7 +45,7 @@ export function duracao(segundos: number | null | undefined): string {
 }
 
 export const ROTULO_TIPO: Record<string, string> = {
-  acordo: "Acordo", defesa: "Defesa", instruir: "Solicitar documentos",
+  acordo: "Acordo", defesa: "Defesa", instruir: "Acordo",
 };
 export const ROTULO_STATUS: Record<string, string> = {
   pendente: "Pendente", decidido: "Decidido", encerrado: "Encerrado",

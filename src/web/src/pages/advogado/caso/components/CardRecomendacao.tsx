@@ -16,8 +16,8 @@ export function CardRecomendacao({ p, rec, carregando, erro }: {
   if (!rec) return null;
   const s = rec.scores_snapshot;
   const defesa = rec.tipo === "defesa";
-  const instruir = rec.tipo === "instruir";
-  // "instruir" é um acordo já dimensionado que espera os subsídios: tem oferta e banda como o acordo.
+  const incerto = rec.tipo === "instruir";
+  // "instruir" aparece na UI como um acordo: mesma oferta e banda, com um aviso de incerteza.
   const temOferta = rec.valor_sugerido != null;
   return (
     <Card style={{ borderColor: defesa ? "var(--enter-tinta)" : "var(--enter-laranja)", borderWidth: 2 }}>
@@ -26,12 +26,11 @@ export function CardRecomendacao({ p, rec, carregando, erro }: {
         <div style={{ flex: "1 1 280px" }}>
           <Group gap="sm" align="baseline">
             <Title order={1} c={defesa ? "tinta.6" : "laranja.8"} className="serif subir" fw={500}>{ROTULO_TIPO[rec.tipo] ?? rec.tipo}</Title>
-            {temOferta && !instruir && <Text className="serif numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
+            {temOferta && <Text className="serif numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
           </Group>
-          {instruir && (
+          {incerto && (
             <Alert color="laranja" variant="light" mt="sm" p="xs">
-              Solicitar ao banco: {rec.docs_a_solicitar.map((d) => NOMES_SUBSIDIOS[d] ?? d).join(", ")}.
-              {temOferta && ` Se o banco não localizar, propor o acordo de ${brl(rec.valor_sugerido)}.`}
+              Recomendação incerta: confirme com o banco {rec.docs_a_solicitar.map((d) => NOMES_SUBSIDIOS[d] ?? d).join(", ")} antes de fechar nesta faixa.
             </Alert>
           )}
           {temOferta && rec.valor_min != null && rec.valor_max != null && rec.valor_sugerido != null && (

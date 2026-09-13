@@ -7,11 +7,7 @@ import { ROTULO_STATUS, ROTULO_TIPO } from "../lib/format";
 export function TipoBadge({ tipo, size = "md" }: { tipo: string | null | undefined; size?: string }) {
   if (!tipo) return <Badge color="gray" variant="light" size={size}>sem recomendação</Badge>;
   return (
-    <Badge
-      color={tipo === "defesa" ? "tinta" : "laranja"}
-      size={size}
-      variant={tipo === "instruir" ? "outline" : "filled"}
-    >
+    <Badge color={tipo === "defesa" ? "tinta" : "laranja"} size={size} variant="filled">
       {ROTULO_TIPO[tipo] ?? tipo}
     </Badge>
   );
