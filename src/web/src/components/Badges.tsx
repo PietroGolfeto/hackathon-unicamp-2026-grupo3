@@ -10,7 +10,7 @@ export function TipoBadge({ tipo, size = "md" }: { tipo: string | null | undefin
     <Badge
       color={tipo === "defesa" ? "tinta" : "laranja"}
       size={size}
-      variant={tipo === "instruir" ? "outline" : "filled"}
+      variant="filled"
     >
       {ROTULO_TIPO[tipo] ?? tipo}
     </Badge>
