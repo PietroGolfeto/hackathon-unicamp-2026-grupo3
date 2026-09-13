@@ -1,0 +1,889 @@
+{
+ "n_casos": 60000,
+ "base_real": true,
+ "p_out_of_fold": true,
+ "n_acordos_historicos": 280,
+ "condenacao_total": 192982862.0684,
+ "condenacao_por_caso": 3216.381034,
+ "custo_defender_tudo": 342936656.90799,
+ "custo_acordar_tudo": 246726532.210948,
+ "custo_politica_curva": 236758328.080627,
+ "economia_politica_curva": 106178328.827364,
+ "economia_pct_curva": 0.309615,
+ "share_acordo": 0.363183,
+ "baselines": {
+  "linhas": [
+   {
+    "nome": "Defender tudo (o que aconteceu)",
+    "custo": 342936656.90799,
+    "economia": 0.0,
+    "economia_pct": 0.0,
+    "share_acordo": 0.0,
+    "captura_do_ganho_maximo": 0.0
+   },
+   {
+    "nome": "Acordar tudo a 30% do VC (aceite 65%)",
+    "custo": 313319488.780247,
+    "economia": 29617168.127744,
+    "economia_pct": 0.086363,
+    "share_acordo": 1.0,
+    "captura_do_ganho_maximo": 0.195025
+   },
+   {
+    "nome": "Heurística: sem contrato → acordo",
+    "custo": 260748873.61821,
+    "economia": 82187783.28978,
+    "economia_pct": 0.239659,
+    "share_acordo": 0.283617,
+    "captura_do_ganho_maximo": 0.541196
+   },
+   {
+    "nome": "Heurística: sem contrato e sem extrato → acordo",
+    "custo": 297618984.396757,
+    "economia": 45317672.511233,
+    "economia_pct": 0.132146,
+    "share_acordo": 0.108217,
+    "captura_do_ganho_maximo": 0.298411
+   },
+   {
+    "nome": "Limiar fixo p_perda > 0.60 (3 grupos da UFMG), oferta 30%",
+    "custo": 257885697.642123,
+    "economia": 85050959.265867,
+    "economia_pct": 0.248008,
+    "share_acordo": 0.238483,
+    "captura_do_ganho_maximo": 0.56005
+   },
+   {
+    "nome": "Política EV (p OOF, escada, aceite fixo 65%)",
+    "custo": 263616789.701705,
+    "economia": 79319867.206286,
+    "economia_pct": 0.231296,
+    "share_acordo": 0.363183,
+    "captura_do_ganho_maximo": 0.522311
+   },
+   {
+    "nome": "Política EV (p OOF, escada + curva de aceite)",
+    "custo": 236758328.080627,
+    "economia": 106178328.827364,
+    "economia_pct": 0.309615,
+    "share_acordo": 0.363183,
+    "captura_do_ganho_maximo": 0.699171
+   },
+   {
+    "nome": "Oráculo: resultado conhecido, mesma escada (teto teórico)",
+    "custo": 191073478.192669,
+    "economia": 151863178.715321,
+    "economia_pct": 0.442832,
+    "share_acordo": 0.30445,
+    "captura_do_ganho_maximo": 1.0
+   }
+  ],
+  "ganho_maximo": 151863178.715321
+ },
+ "banda": {
+  "economia_pct_por_fold": [
+   0.307371,
+   0.309106,
+   0.316993,
+   0.309314,
+   0.312043
+  ],
+  "media": 0.310965,
+  "sd": 0.003761,
+  "bootstrap_ic95": [
+   0.305834,
+   0.313571
+  ],
+  "n_bootstrap": 200
+ },
+ "breakeven": {
+  "medio": 0.469924,
+  "p05": 0.236751,
+  "p95": 0.83882,
+  "share_sensiveis": 0.022383
+ },
+ "sensibilidade": [
+  {
+   "taxa_aceite": 0.5,
+   "mult_oferta": 0.8,
+   "custo": 270712443.275444,
+   "economia": 72224213.632546,
+   "economia_pct": 0.210605
+  },
+  {
+   "taxa_aceite": 0.5,
+   "mult_oferta": 1.0,
+   "custo": 283429982.133924,
+   "economia": 59506674.774066,
+   "economia_pct": 0.173521
+  },
+  {
+   "taxa_aceite": 0.5,
+   "mult_oferta": 1.2,
+   "custo": 296147520.992404,
+   "economia": 46789135.915586,
+   "economia_pct": 0.136437
+  },
+  {
+   "taxa_aceite": 0.6,
+   "mult_oferta": 0.8,
+   "custo": 254960140.548935,
+   "economia": 87976516.359055,
+   "economia_pct": 0.256539
+  },
+  {
+   "taxa_aceite": 0.6,
+   "mult_oferta": 1.0,
+   "custo": 270221187.179111,
+   "economia": 72715469.728879,
+   "economia_pct": 0.212038
+  },
+  {
+   "taxa_aceite": 0.6,
+   "mult_oferta": 1.2,
+   "custo": 285482233.809287,
+   "economia": 57454423.098703,
+   "economia_pct": 0.167537
+  },
+  {
+   "taxa_aceite": 0.7,
+   "mult_oferta": 0.8,
+   "custo": 239207837.822426,
+   "economia": 103728819.085564,
+   "economia_pct": 0.302472
+  },
+  {
+   "taxa_aceite": 0.7,
+   "mult_oferta": 1.0,
+   "custo": 257012392.224298,
+   "economia": 85924264.683692,
+   "economia_pct": 0.250554
+  },
+  {
+   "taxa_aceite": 0.7,
+   "mult_oferta": 1.2,
+   "custo": 274816946.62617,
+   "economia": 68119710.28182,
+   "economia_pct": 0.198636
+  },
+  {
+   "taxa_aceite": 0.8,
+   "mult_oferta": 0.8,
+   "custo": 223455535.095917,
+   "economia": 119481121.812073,
+   "economia_pct": 0.348406
+  },
+  {
+   "taxa_aceite": 0.8,
+   "mult_oferta": 1.0,
+   "custo": 243803597.269485,
+   "economia": 99133059.638505,
+   "economia_pct": 0.289071
+  },
+  {
+   "taxa_aceite": 0.8,
+   "mult_oferta": 1.2,
+   "custo": 264151659.443053,
+   "economia": 78784997.464937,
+   "economia_pct": 0.229736
+  },
+  {
+   "taxa_aceite": "curva",
+   "mult_oferta": 0.8,
+   "custo": 216141126.860585,
+   "economia": 126795530.047405,
+   "economia_pct": 0.369735
+  },
+  {
+   "taxa_aceite": "curva",
+   "mult_oferta": 1.0,
+   "custo": 236758328.080627,
+   "economia": 106178328.827364,
+   "economia_pct": 0.309615
+  },
+  {
+   "taxa_aceite": "curva",
+   "mult_oferta": 1.2,
+   "custo": 257375529.300668,
+   "economia": 85561127.607322,
+   "economia_pct": 0.249495
+  }
+ ],
+ "sensibilidade_custos": [
+  {
+   "cenario": "Base (vara: sucumbência 15%, custas 2%, 18 meses)",
+   "custo_defender_tudo": 342936656.90799,
+   "custo_politica": 236758328.080627,
+   "economia": 106178328.827364,
+   "economia_pct": 0.309615,
+   "share_acordo": 0.363183,
+   "p_breakeven_medio": 0.469924,
+   "fator_tempo": 1.196147
+  },
+  {
+   "cenario": "Escritório × 0,5",
+   "custo_defender_tudo": 306936656.90799,
+   "custo_politica": 210847822.968248,
+   "economia": 96088833.939743,
+   "economia_pct": 0.313058,
+   "share_acordo": 0.3509,
+   "p_breakeven_medio": 0.556154,
+   "fator_tempo": 1.196147
+  },
+  {
+   "cenario": "Escritório × 1,5",
+   "custo_defender_tudo": 378936656.90799,
+   "custo_politica": 261990371.550286,
+   "economia": 116946285.357705,
+   "economia_pct": 0.308617,
+   "share_acordo": 0.3928,
+   "p_breakeven_medio": 0.360114,
+   "fator_tempo": 1.196147
+  },
+  {
+   "cenario": "Sucumbência 10%",
+   "custo_defender_tudo": 331394858.742295,
+   "custo_politica": 233471320.168916,
+   "economia": 97923538.573379,
+   "economia_pct": 0.295489,
+   "share_acordo": 0.359967,
+   "p_breakeven_medio": 0.491988,
+   "fator_tempo": 1.196147
+  },
+  {
+   "cenario": "Sucumbência 20%",
+   "custo_defender_tudo": 354478455.073685,
+   "custo_politica": 239954925.424744,
+   "economia": 114523529.648942,
+   "economia_pct": 0.323076,
+   "share_acordo": 0.367683,
+   "p_breakeven_medio": 0.449647,
+   "fator_tempo": 1.196147
+  },
+  {
+   "cenario": "Tempo 10 meses (fator 1,10)",
+   "custo_defender_tudo": 322624409.252823,
+   "custo_politica": 230894003.80222,
+   "economia": 91730405.450603,
+   "economia_pct": 0.284326,
+   "share_acordo": 0.357733,
+   "p_breakeven_medio": 0.509724,
+   "fator_tempo": 1.104622
+  },
+  {
+   "cenario": "Tempo 22 meses (fator 1,25)",
+   "custo_defender_tudo": 353715452.535161,
+   "custo_politica": 239748706.374301,
+   "economia": 113966746.16086,
+   "economia_pct": 0.322199,
+   "share_acordo": 0.36735,
+   "p_breakeven_medio": 0.450936,
+   "fator_tempo": 1.244716
+  },
+  {
+   "cenario": "Sem custas",
+   "custo_defender_tudo": 337461357.81099,
+   "custo_politica": 235171979.169901,
+   "economia": 102289378.64109,
+   "economia_pct": 0.303114,
+   "share_acordo": 0.361667,
+   "p_breakeven_medio": 0.480549,
+   "fator_tempo": 1.196147
+  },
+  {
+   "cenario": "Cenário JEC (Lei 9.099: sem custas nem sucumbência em 1º grau, 9 meses)",
+   "custo_defender_tudo": 283062514.124686,
+   "custo_politica": 218101761.077044,
+   "economia": 64960753.047643,
+   "economia_pct": 0.229493,
+   "share_acordo": 0.347417,
+   "p_breakeven_medio": 0.602978,
+   "fator_tempo": 1.093685
+  }
+ ],
+ "sensibilidade_s50": [
+  {
+   "s50": 0.25,
+   "custo_defender_tudo": 342936656.90799,
+   "custo_politica": 223500106.46721,
+   "economia": 119436550.44078,
+   "economia_pct": 0.348276,
+   "share_acordo": 0.400733,
+   "p_breakeven_medio": 0.278757,
+   "fator_tempo": 1.196147
+  },
+  {
+   "s50": 0.3,
+   "custo_defender_tudo": 342936656.90799,
+   "custo_politica": 236758328.080627,
+   "economia": 106178328.827364,
+   "economia_pct": 0.309615,
+   "share_acordo": 0.363183,
+   "p_breakeven_medio": 0.469924,
+   "fator_tempo": 1.196147
+  },
+  {
+   "s50": 0.4,
+   "custo_defender_tudo": 342936656.90799,
+   "custo_politica": 261113124.993757,
+   "economia": 81823531.914233,
+   "economia_pct": 0.238597,
+   "share_acordo": 0.335433,
+   "p_breakeven_medio": 0.760633,
+   "fator_tempo": 1.196147
+  },
+  {
+   "s50": 0.5,
+   "custo_defender_tudo": 342936656.90799,
+   "custo_politica": 282671034.564945,
+   "economia": 60265622.343045,
+   "economia_pct": 0.175734,
+   "share_acordo": 0.312533,
+   "p_breakeven_medio": 0.825221,
+   "fator_tempo": 1.196147
+  }
+ ],
+ "instruir": {
+  "docs_avaliados": [
+   "contrato",
+   "extrato"
+  ],
+  "n_instruir": 20176,
+  "share_instruir": 0.336267,
+  "share_dos_acordos": 0.925887,
+  "evsi_total": 50489694.989549,
+  "por_mult_q": [
+   {
+    "mult_q": 0.5,
+    "n_instruir": 14335,
+    "share_instruir": 0.238917,
+    "evsi_total": 16880072.417445,
+    "evsi_medio": 1177.542547
+   },
+   {
+    "mult_q": 0.75,
+    "n_instruir": 18311,
+    "share_instruir": 0.305183,
+    "evsi_total": 32421003.59305,
+    "evsi_medio": 1770.57526
+   },
+   {
+    "mult_q": 1.0,
+    "n_instruir": 20176,
+    "share_instruir": 0.336267,
+    "evsi_total": 50489694.989549,
+    "evsi_medio": 2502.463074
+   }
+  ]
+ },
+ "por_uf": [
+  {
+   "uf": "AP",
+   "n": 2308,
+   "share_acordo": 0.60182,
+   "p_breakeven": 0.322801,
+   "ratio_media": 0.833927,
+   "perda_real": 0.483969,
+   "defender_tudo": 21969132.259743,
+   "politica": 12547069.43803,
+   "economia_pct": 0.428877
+  },
+  {
+   "uf": "AM",
+   "n": 2308,
+   "share_acordo": 0.610485,
+   "p_breakeven": 0.326451,
+   "ratio_media": 0.833733,
+   "perda_real": 0.481369,
+   "defender_tudo": 22220457.148998,
+   "politica": 12866934.023922,
+   "economia_pct": 0.420942
+  },
+  {
+   "uf": "BA",
+   "n": 2308,
+   "share_acordo": 0.433709,
+   "p_breakeven": 0.390695,
+   "ratio_media": 0.792464,
+   "perda_real": 0.354419,
+   "defender_tudo": 16347478.236648,
+   "politica": 10143974.845895,
+   "economia_pct": 0.379478
+  },
+  {
+   "uf": "GO",
+   "n": 2308,
+   "share_acordo": 0.444107,
+   "p_breakeven": 0.423838,
+   "ratio_media": 0.721093,
+   "perda_real": 0.377816,
+   "defender_tudo": 15981719.606103,
+   "politica": 10463913.616964,
+   "economia_pct": 0.345257
+  },
+  {
+   "uf": "RS",
+   "n": 2307,
+   "share_acordo": 0.442566,
+   "p_breakeven": 0.411837,
+   "ratio_media": 0.724517,
+   "perda_real": 0.377113,
+   "defender_tudo": 15927428.968202,
+   "politica": 10577430.576613,
+   "economia_pct": 0.335898
+  },
+  {
+   "uf": "RJ",
+   "n": 2307,
+   "share_acordo": 0.401821,
+   "p_breakeven": 0.448437,
+   "ratio_media": 0.681868,
+   "perda_real": 0.347638,
+   "defender_tudo": 14247302.025273,
+   "politica": 9788132.05209,
+   "economia_pct": 0.312983
+  },
+  {
+   "uf": "ES",
+   "n": 2308,
+   "share_acordo": 0.412045,
+   "p_breakeven": 0.463095,
+   "ratio_media": 0.679845,
+   "perda_real": 0.332756,
+   "defender_tudo": 13944506.615308,
+   "politica": 9673294.515267,
+   "economia_pct": 0.306301
+  },
+  {
+   "uf": "AL",
+   "n": 2308,
+   "share_acordo": 0.349653,
+   "p_breakeven": 0.47855,
+   "ratio_media": 0.676165,
+   "perda_real": 0.308925,
+   "defender_tudo": 13093324.864206,
+   "politica": 9128695.132718,
+   "economia_pct": 0.302798
+  },
+  {
+   "uf": "PE",
+   "n": 2308,
+   "share_acordo": 0.361352,
+   "p_breakeven": 0.471044,
+   "ratio_media": 0.681432,
+   "perda_real": 0.305026,
+   "defender_tudo": 13371084.22318,
+   "politica": 9371219.226609,
+   "economia_pct": 0.299143
+  },
+  {
+   "uf": "SP",
+   "n": 2307,
+   "share_acordo": 0.361508,
+   "p_breakeven": 0.466279,
+   "ratio_media": 0.688577,
+   "perda_real": 0.309059,
+   "defender_tudo": 13113532.379667,
+   "politica": 9209320.510914,
+   "economia_pct": 0.297724
+  },
+  {
+   "uf": "DF",
+   "n": 2308,
+   "share_acordo": 0.403813,
+   "p_breakeven": 0.46496,
+   "ratio_media": 0.680197,
+   "perda_real": 0.32669,
+   "defender_tudo": 13552332.727161,
+   "politica": 9553877.599586,
+   "economia_pct": 0.295038
+  },
+  {
+   "uf": "MG",
+   "n": 2308,
+   "share_acordo": 0.355286,
+   "p_breakeven": 0.480308,
+   "ratio_media": 0.677,
+   "perda_real": 0.299393,
+   "defender_tudo": 12655596.345882,
+   "politica": 8929356.546606,
+   "economia_pct": 0.294434
+  },
+  {
+   "uf": "PA",
+   "n": 2308,
+   "share_acordo": 0.32539,
+   "p_breakeven": 0.493533,
+   "ratio_media": 0.678314,
+   "perda_real": 0.279896,
+   "defender_tudo": 12056709.893713,
+   "politica": 8617431.644932,
+   "economia_pct": 0.285258
+  },
+  {
+   "uf": "SE",
+   "n": 2307,
+   "share_acordo": 0.325531,
+   "p_breakeven": 0.496355,
+   "ratio_media": 0.666643,
+   "perda_real": 0.289554,
+   "defender_tudo": 12204276.141104,
+   "politica": 8727746.693696,
+   "economia_pct": 0.284862
+  },
+  {
+   "uf": "RO",
+   "n": 2307,
+   "share_acordo": 0.303858,
+   "p_breakeven": 0.491654,
+   "ratio_media": 0.686196,
+   "perda_real": 0.257044,
+   "defender_tudo": 11362385.416671,
+   "politica": 8131214.592664,
+   "economia_pct": 0.284374
+  },
+  {
+   "uf": "PB",
+   "n": 2308,
+   "share_acordo": 0.327123,
+   "p_breakeven": 0.480088,
+   "ratio_media": 0.679771,
+   "perda_real": 0.285962,
+   "defender_tudo": 12089805.238361,
+   "politica": 8655041.243672,
+   "economia_pct": 0.284104
+  },
+  {
+   "uf": "AC",
+   "n": 2308,
+   "share_acordo": 0.323224,
+   "p_breakeven": 0.474108,
+   "ratio_media": 0.685435,
+   "perda_real": 0.275997,
+   "defender_tudo": 11958948.227302,
+   "politica": 8585899.957854,
+   "economia_pct": 0.282052
+  },
+  {
+   "uf": "SC",
+   "n": 2307,
+   "share_acordo": 0.323364,
+   "p_breakeven": 0.477345,
+   "ratio_media": 0.689544,
+   "perda_real": 0.274382,
+   "defender_tudo": 12024194.652189,
+   "politica": 8636463.234072,
+   "economia_pct": 0.281743
+  },
+  {
+   "uf": "CE",
+   "n": 2308,
+   "share_acordo": 0.330156,
+   "p_breakeven": 0.479877,
+   "ratio_media": 0.679948,
+   "perda_real": 0.283795,
+   "defender_tudo": 12172718.909169,
+   "politica": 8769052.595801,
+   "economia_pct": 0.279614
+  },
+  {
+   "uf": "PR",
+   "n": 2308,
+   "share_acordo": 0.308925,
+   "p_breakeven": 0.493409,
+   "ratio_media": 0.684625,
+   "perda_real": 0.255633,
+   "defender_tudo": 11209452.725875,
+   "politica": 8180401.83493,
+   "economia_pct": 0.270223
+  },
+  {
+   "uf": "TO",
+   "n": 2307,
+   "share_acordo": 0.28912,
+   "p_breakeven": 0.492316,
+   "ratio_media": 0.685713,
+   "perda_real": 0.24534,
+   "defender_tudo": 11176277.6322,
+   "politica": 8175064.715561,
+   "economia_pct": 0.268534
+  },
+  {
+   "uf": "PI",
+   "n": 2308,
+   "share_acordo": 0.276863,
+   "p_breakeven": 0.507123,
+   "ratio_media": 0.685988,
+   "perda_real": 0.22617,
+   "defender_tudo": 10606702.218238,
+   "politica": 7766495.765069,
+   "economia_pct": 0.267775
+  },
+  {
+   "uf": "RN",
+   "n": 2307,
+   "share_acordo": 0.284352,
+   "p_breakeven": 0.498864,
+   "ratio_media": 0.683544,
+   "perda_real": 0.241439,
+   "defender_tudo": 11036547.222336,
+   "politica": 8157269.976113,
+   "economia_pct": 0.260886
+  },
+  {
+   "uf": "MS",
+   "n": 2308,
+   "share_acordo": 0.301127,
+   "p_breakeven": 0.553549,
+   "ratio_media": 0.612138,
+   "perda_real": 0.2526,
+   "defender_tudo": 10037678.18068,
+   "politica": 7584470.492623,
+   "economia_pct": 0.2444
+  },
+  {
+   "uf": "MT",
+   "n": 2308,
+   "share_acordo": 0.287695,
+   "p_breakeven": 0.554824,
+   "ratio_media": 0.607977,
+   "perda_real": 0.235702,
+   "defender_tudo": 9703914.654581,
+   "politica": 7568765.284119,
+   "economia_pct": 0.22003
+  },
+  {
+   "uf": "MA",
+   "n": 2308,
+   "share_acordo": 0.257799,
+   "p_breakeven": 0.576706,
+   "ratio_media": 0.611154,
+   "perda_real": 0.207972,
+   "defender_tudo": 8873150.395199,
+   "politica": 6949791.964309,
+   "economia_pct": 0.216762
+  }
+ ],
+ "por_faixa": [
+  {
+   "faixa": "amarela",
+   "n": 11220,
+   "share": 0.187,
+   "p_perda_prevista": 0.359387,
+   "perda_real": 0.365062,
+   "condenacao_real": 42083426.4796,
+   "custo_real_defesa": 72577466.305992
+  },
+  {
+   "faixa": "verde",
+   "n": 34471,
+   "share": 0.574517,
+   "p_perda_prevista": 0.053355,
+   "perda_real": 0.054655,
+   "condenacao_real": 19311411.6798,
+   "custo_real_defesa": 68490478.09705
+  },
+  {
+   "faixa": "vermelha",
+   "n": 14309,
+   "share": 0.238483,
+   "p_perda_prevista": 0.860034,
+   "perda_real": 0.85869,
+   "condenacao_real": 131588023.909,
+   "custo_real_defesa": 201868712.504949
+  }
+ ],
+ "voi": {
+  "contrato": {
+   "casos_sem": 17017,
+   "ganho_total": 111440445.025714,
+   "ganho_por_caso": 6548.771524
+  },
+  "extrato": {
+   "casos_sem": 11105,
+   "ganho_total": 62898425.695715,
+   "ganho_por_caso": 5663.973498
+  },
+  "comprovante": {
+   "casos_sem": 23586,
+   "ganho_total": 47350278.689918,
+   "ganho_por_caso": 2007.558666
+  },
+  "demonstrativo": {
+   "casos_sem": 13785,
+   "ganho_total": 10617619.766119,
+   "ganho_por_caso": 770.229943
+  }
+ },
+ "efeito_docs": {
+  "contrato": {
+   "perda_com": 0.126818,
+   "perda_sem": 0.753129
+  },
+  "extrato": {
+   "perda_com": 0.188056,
+   "perda_sem": 0.816929
+  },
+  "comprovante": {
+   "perda_com": 0.198907,
+   "perda_sem": 0.467396
+  },
+  "dossie": {
+   "perda_com": 0.30453,
+   "perda_sem": 0.304263
+  },
+  "demonstrativo": {
+   "perda_com": 0.277615,
+   "perda_sem": 0.394414
+  },
+  "laudo": {
+   "perda_com": 0.304834,
+   "perda_sem": 0.302906
+  }
+ },
+ "metricas_modelo": {
+  "auc_oof": 0.922608,
+  "logloss_oof": 0.30786,
+  "brier_oof": 0.092913,
+  "acuracia_oof_0.5": 0.872823,
+  "ece_oof": 0.003125,
+  "n_treino": 59720,
+  "n_acordos_excluidos": 280,
+  "taxa_perda_base": 0.301189,
+  "tau_uf": 0.30229,
+  "encolhimento_uf_medio": 0.897243,
+  "custo_decisao_oof": 242674163.289523,
+  "custo_defender_tudo": 340766988.132112,
+  "share_acordo_oof": 0.360767
+ },
+ "calibracao": [
+  {
+   "p_min": -0.001,
+   "p_max": 0.1,
+   "n": 29745,
+   "p_prevista": 0.041923,
+   "taxa_real": 0.041452
+  },
+  {
+   "p_min": 0.1,
+   "p_max": 0.2,
+   "n": 7102,
+   "p_prevista": 0.14236,
+   "taxa_real": 0.146015
+  },
+  {
+   "p_min": 0.2,
+   "p_max": 0.3,
+   "n": 2608,
+   "p_prevista": 0.243782,
+   "taxa_real": 0.249233
+  },
+  {
+   "p_min": 0.3,
+   "p_max": 0.4,
+   "n": 878,
+   "p_prevista": 0.354098,
+   "taxa_real": 0.322323
+  },
+  {
+   "p_min": 0.4,
+   "p_max": 0.5,
+   "n": 2653,
+   "p_prevista": 0.455151,
+   "taxa_real": 0.460234
+  },
+  {
+   "p_min": 0.5,
+   "p_max": 0.6,
+   "n": 2606,
+   "p_prevista": 0.548195,
+   "taxa_real": 0.559094
+  },
+  {
+   "p_min": 0.6,
+   "p_max": 0.7,
+   "n": 1646,
+   "p_prevista": 0.651196,
+   "taxa_real": 0.62819
+  },
+  {
+   "p_min": 0.7,
+   "p_max": 0.8,
+   "n": 3134,
+   "p_prevista": 0.752478,
+   "taxa_real": 0.749202
+  },
+  {
+   "p_min": 0.8,
+   "p_max": 0.9,
+   "n": 3009,
+   "p_prevista": 0.846463,
+   "taxa_real": 0.845796
+  },
+  {
+   "p_min": 0.9,
+   "p_max": 1.0,
+   "n": 6339,
+   "p_prevista": 0.972782,
+   "taxa_real": 0.974759
+  }
+ ],
+ "politica_versao": "2026.09.12-v2",
+ "modelo_versao": "logit-60000-20260912",
+ "premissas": {
+  "versao": "2026.09.12-v2",
+  "faixas": {
+   "limiar_verde": 0.15,
+   "limiar_vermelha": 0.6,
+   "evsi_min_pct_causa": 0.02,
+   "q_doc_padrao": 0.6,
+   "prazo_instrucao_dias": 5
+  },
+  "custos": {
+   "custo_escritorio_defesa": 1200.0,
+   "custo_escritorio_acordo": 300.0,
+   "honorarios_sucumbencia_pct": 0.15,
+   "custas_pct_valor_causa": 0.02,
+   "taxa_correcao_mensal": 0.01,
+   "prazo_medio_meses": 18,
+   "custo_recuperar_subsidio": 80.0
+  },
+  "oferta": {
+   "aceite_s50": 0.3,
+   "aceite_largura": 0.06,
+   "margem_teto": 0.1,
+   "piso_pct_causa": 0.1,
+   "teto_pct_causa": 0.7,
+   "desconto_abertura": 0.2,
+   "arredondamento": 50.0,
+   "grade_passo": 0.01,
+   "saldo_devedor_no_acordo": true
+  },
+  "regras_duras": {
+   "sinais_forcam_acordo": [
+    "CREDITO_CONTA_TERCEIRO",
+    "LIVENESS_AUSENTE_CANAL_DIGITAL"
+   ],
+   "inconsistente_vale_ausente": true
+  },
+  "experimento": {
+   "fracao_exploracao": 0.15,
+   "bandas_pct_causa": [
+    0.25,
+    0.3,
+    0.35
+   ]
+  },
+  "comparacao": {
+   "oferta_pct_causa": 0.3,
+   "taxa_aceite": 0.65
+  },
+  "cenarios": {
+   "jec": {
+    "honorarios_sucumbencia_pct": 0.0,
+    "custas_pct_valor_causa": 0.0,
+    "prazo_medio_meses": 9.0
+   }
+  }
+ }
+}

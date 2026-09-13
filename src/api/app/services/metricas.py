@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -10,10 +13,45 @@ from core.modelo import ModeloInfo
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from app.models import Decisao, Escritorio, Evento, Politica, Processo, Recomendacao, Usuario
+from app.models import (
+    Decisao,
+    Escritorio,
+    Evento,
+    ParecerJustificativa,
+    Politica,
+    Processo,
+    Recomendacao,
+    Usuario,
+)
 from app.services.recomendacao import params_de
 
 ACEITES = ("aceito", "contraproposta_aceita")
+COBERTURA_CONFIAVEL = 0.8
+RESUMO_ENGINE = Path(__file__).resolve().parents[4] / "docs" / "backtest" / "resumo.json"
+
+
+@lru_cache(maxsize=1)
+def backtest_potencial() -> dict[str, Any] | None:
+    """Carregue o resumo agregado e versionado do backtest do engine.
+
+    Returns:
+        Comparação financeira essencial, ou ``None`` quando o artefato não está disponível.
+    """
+    try:
+        bruto = json.loads(RESUMO_ENGINE.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    return {
+        "n_casos": bruto["n_casos"],
+        "defender_tudo": bruto["custo_defender_tudo"],
+        "acordar_tudo": bruto["custo_acordar_tudo"],
+        "politica": bruto["custo_politica_curva"],
+        "economia_vs_defender": bruto["economia_politica_curva"],
+        "economia_pct": bruto["economia_pct_curva"],
+        "pct_acordo": bruto["share_acordo"],
+        "politica_versao": bruto["politica_versao"],
+        "modelo_versao": bruto["modelo_versao"],
+    }
 
 
 def _py(v: Any) -> Any:
@@ -47,11 +85,13 @@ def base_decisoes(db: Session, desde: datetime | None, escritorio_id: int | None
             Recomendacao.valor_sugerido, Recomendacao.valor_min, Recomendacao.valor_max,
             Recomendacao.custo_esperado_defesa, Recomendacao.custo_esperado_acordo,
             Recomendacao.economia_esperada, Recomendacao.politica_id,
+            ParecerJustificativa.conteudo.label("parecer_ia"),
         )
         .join(Usuario, Usuario.id == Decisao.usuario_id)
         .join(Processo, Processo.id == Decisao.processo_id)
         .join(Escritorio, Escritorio.id == Processo.escritorio_id)
         .join(Recomendacao, Recomendacao.id == Decisao.recomendacao_id)
+        .outerjoin(ParecerJustificativa, ParecerJustificativa.decisao_id == Decisao.id)
         .order_by(Decisao.created_at)
     )
     if desde is not None:
@@ -113,6 +153,7 @@ def aderencia(db: Session, escritorio_id: int | None = None, desde: datetime | N
         "justificativas": _records(desvios[[
             "decisao_id", "created_at", "numero", "processo_id", "advogado", "escritorio", "tipo",
             "rec_tipo", "valor_proposto", "valor_sugerido", "tipo_desvio", "status", "justificativa",
+            "parecer_ia",
         ]]),
     }
 
@@ -142,11 +183,15 @@ def efetividade(
         com_res["economia_realizada"] = com_res["custo_esperado_defesa"] - custo_real
     aceitos = com_res[com_res["aceito"]] if len(com_res) else com_res
     com_valor = aceitos[aceitos["valor_sugerido"] > 0] if len(aceitos) else aceitos
+    cobertura = len(com_res) / len(acordos) if len(acordos) else None
     return {
         "n_decisoes": len(df),
         "n_acordos": len(acordos),
         "n_defesas": int((df["tipo"] == "defesa").sum()) if len(df) else 0,
         "n_com_resultado": len(com_res),
+        "n_sem_resultado": len(acordos) - len(com_res),
+        "cobertura_resultados": cobertura,
+        "taxa_aceite_preliminar": cobertura is not None and cobertura < COBERTURA_CONFIAVEL,
         "taxa_aceite_real": float(com_res["aceito"].mean()) if len(com_res) else None,
         "taxa_aceite_esperada": prm.taxa_aceite_esperada if prm else None,
         "desconto_real": _py((com_valor["valor_final"] / com_valor["valor_sugerido"]).mean())
@@ -159,6 +204,7 @@ def efetividade(
         "por_uf": _grupo_efetividade(com_res, "uf"),
         "por_escritorio": _grupo_efetividade(com_res, "escritorio"),
         "por_semana": _grupo_efetividade(com_res, "semana"),
+        "backtest_potencial": backtest_potencial(),
         "politica": None if politica is None else {
             "id": politica.id, "versao": politica.versao, "nome": politica.nome,
             "publicada_em": politica.publicada_em, "resumo_backtest": politica.resumo_backtest,

@@ -63,10 +63,24 @@ class ProcessoResumo(BaseModel):
     reservado_ate: datetime | None
 
 
+class PreparacaoOut(BaseModel):
+    """Progresso da inferência dos casos; o front faz poll enquanto está `rodando`."""
+
+    status: Literal["ocioso", "rodando", "pronto", "erro"]
+    total: int
+    prontos: int
+    atual: str | None = None
+    erro: str | None = None
+    atualizado_em: datetime | None = None
+
+
 class DocumentoOut(BaseModel):
     tipo: str  # autos | subsidios
     arquivo: str
     url: str
+    # da extração de P3; None quando não houve extração (decisão 27)
+    comentario: str | None = None
+    relevancia: str | None = None
 
 
 class DecisaoOut(Saida):
@@ -118,7 +132,7 @@ class RecomendacaoOut(Saida):
     politica_id: int
     politica_versao: int
     politica_nome: str
-    tipo: str
+    tipo: str  # acordo | defesa | instruir
     valor_sugerido: float | None
     valor_min: float | None
     valor_max: float | None
@@ -127,6 +141,7 @@ class RecomendacaoOut(Saida):
     economia_esperada: float
     regra: str
     sinais_acionados: list[str]
+    docs_a_solicitar: list[str] = []
     motivos: list[str]
     scores_snapshot: dict[str, Any]
     exige_aprovacao_valor_causa: bool

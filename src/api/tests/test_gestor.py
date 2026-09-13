@@ -1,7 +1,13 @@
 """Políticas (simular/ativar), dashboards, aprovações e o link de demo."""
 
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 import pandas as pd
+import pytest
 from core.politica import PoliticaParams
 from fastapi.testclient import TestClient
 
@@ -101,33 +107,141 @@ def test_dashboards(gestor: TestClient, exemplos):
     assert a["por_semana"] and a["por_advogado"]
     e = gestor.get("/api/dashboard/efetividade").json()
     assert e["n_acordos"] >= 2 and e["n_com_resultado"] >= 1
+    assert e["n_sem_resultado"] == e["n_acordos"] - e["n_com_resultado"]
+    assert e["cobertura_resultados"] == e["n_com_resultado"] / e["n_acordos"]
     assert e["taxa_aceite_real"] == 1.0 and e["taxa_aceite_esperada"] == 0.65
     assert e["por_resultado"]["contraproposta_aceita"] == 1
+    assert e["backtest_potencial"]["defender_tudo"] > e["backtest_potencial"]["politica"]
+    assert e["backtest_potencial"]["n_casos"] == 60000
     assert e["politica"]["versao"] == 2 and e["modelo"]["versao"].startswith("stub")
     filtrado = gestor.get("/api/dashboard/aderencia", params={"escritorio_id": 999}).json()
     assert filtrado["total"] == 0 and filtrado["pct_aderente"] is None
 
 
-def test_seed_demo_idempotente(app_pronto, gestor: TestClient):
+def test_parecer_ia_e_gerado_uma_vez_e_persistido(
+    gestor: TestClient, adv: TestClient, exemplos: dict[str, int], monkeypatch
+):
+    """O parecer consultivo usa o provedor uma vez e depois retorna o cache persistido."""
+    from app.services import parecer_ia
+
+    chamadas = 0
+
+    def responder(_contexto: dict[str, Any]) -> dict[str, Any]:
+        """Retorne um parecer fixo e conte chamadas ao provedor."""
+        nonlocal chamadas
+        chamadas += 1
+        return {
+            "classificacao": "fundamentada",
+            "resumo": "A justificativa cita uma evidência concreta do caso.",
+            "pontos": ["Evidência específica"],
+            "confianca": 0.91,
+        }
+
+    monkeypatch.setattr(parecer_ia, "_chamar_openai", responder)
+    processo_id = exemplos["0654321-09.2024.8.04.0001"]
+    recomendacao = adv.get(f"/api/processos/{processo_id}/recomendacao").json()
+    tipo_divergente = "acordo" if recomendacao["tipo"] == "defesa" else "defesa"
+    decisao = adv.post(
+        f"/api/processos/{processo_id}/decisoes",
+        json={
+            "tipo": tipo_divergente,
+            "valor_proposto": 1500 if tipo_divergente == "acordo" else None,
+            "justificativa": "O extrato indica crédito em conta de terceiro.",
+        },
+    ).json()["decisao"]
+    url = f"/api/dashboard/desvios/{decisao['id']}/parecer"
+    primeiro = gestor.post(url)
+    segundo = gestor.post(url)
+
+    assert primeiro.status_code == 200
+    assert segundo.json() == primeiro.json()
+    assert chamadas == 1
+    desvios = gestor.get("/api/dashboard/aderencia").json()["justificativas"]
+    assert next(j for j in desvios if j["decisao_id"] == decisao["id"])["parecer_ia"]
+
+
+def test_seed_demo_cria_so_processos_pendentes(app_pronto, gestor: TestClient):
+    """Nada simulado entra no painel: decisões, eventos e resultados só vêm do portal."""
     from sqlalchemy import func, select
 
+    from app.config import settings
     from app.db import SessionLocal
-    from app.models import Decisao
+    from app.models import Decisao, Evento, Processo
     from app.services import seed_demo
-    from tests.conftest import SINTETICOS
 
+    SINTETICOS = Path(__file__).resolve().parents[3] / "data" / "exemplos" / "sinteticos_processos.csv"
+    antes = gestor.get("/api/dashboard/aderencia").json()
     with SessionLocal() as db:
-        r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, app_pronto.state.extrator)
-        assert r1["processos_criados"] >= 300 and 220 <= r1["decisoes_criadas"] <= 280
-        r2 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, app_pronto.state.extrator)
-        assert r2 == {"processos_criados": 0, "decisoes_criadas": 0}
-        n = db.scalar(select(func.count()).select_from(Decisao))
-    a = gestor.get("/api/dashboard/aderencia").json()
-    assert a["total"] == n and 0.6 < a["pct_aderente"] < 0.95
-    assert a["pct_sem_ver_recomendacao"] > 0
-    e = gestor.get("/api/dashboard/efetividade").json()
-    assert e["n_com_resultado"] > 50 and 0.5 < e["taxa_aceite_real"] < 0.9
-    assert e["economia_realizada"] != 0 and len(e["por_semana"]) >= 5
+        n_dec = db.scalar(select(func.count()).select_from(Decisao))
+        n_ev = db.scalar(select(func.count()).select_from(Evento))
+        r1 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, settings.data_dir)
+        assert r1 == {"processos_criados": 340, "documentos_populados": 0}
+        r2 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, settings.data_dir)
+        assert r2 == {"processos_criados": 0, "documentos_populados": 0}
+        assert db.scalar(select(func.count()).select_from(Decisao)) == n_dec
+        assert db.scalar(select(func.count()).select_from(Evento)) == n_ev
+        sint = list(db.scalars(select(Processo).where(Processo.origem == "sintetico")))
+        assert len(sint) == 340
+        assert all(p.status == "pendente" and p.dados_extraidos is None and p.analise is None
+                   for p in sint)
+        assert all(p.scores["origem"] == "stub" for p in sint)
+        assert all(p.documentos == seed_demo.DOCUMENTO_SINTETICO for p in sint)
+
+        sint[0].documentos = []
+        db.commit()
+        r3 = seed_demo.rodar(db, SINTETICOS, app_pronto.state.modelo, settings.data_dir)
+        assert r3 == {"processos_criados": 0, "documentos_populados": 1}
+        db.refresh(sint[0])
+        assert sint[0].documentos == seed_demo.DOCUMENTO_SINTETICO
+        pid = sint[0].id
+    depois = gestor.get("/api/dashboard/aderencia").json()
+    assert depois["total"] == antes["total"]
+    # o PDF de exemplo é servido de data/cache/sinteticos/ (fixture em tests/dados/cache/)
+    pdf = gestor.get(f"/api/files/{pid}/peticao_inicial_exemplo.pdf")
+    assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf"
+
+
+def test_pdf_exemplo_sem_permissao_de_escrita_so_avisa(tmp_path: Path, caplog):
+    """No container `data/` é só leitura: o job avisa e segue em vez de derrubar o reset."""
+    from app.services import seed_demo
+
+    if os.geteuid() == 0:
+        pytest.skip("root ignora permissões de diretório")
+    tmp_path.chmod(0o500)
+    try:
+        with caplog.at_level(logging.WARNING, logger="app.services.seed_demo"):
+            seed_demo._garantir_pdf_exemplo(tmp_path)
+    finally:
+        tmp_path.chmod(0o700)
+    assert not (tmp_path / seed_demo.CAMINHO_DOCUMENTO_SINTETICO).exists()
+    assert "não baixou o PDF de exemplo" in caplog.text
+
+
+def test_mock_painel_enche_o_painel_sem_tocar_na_banca(app_pronto, gestor: TestClient):
+    """A exceção de desenvolvimento à decisão 28 preserva o pool da banca e é coerente."""
+    from sqlalchemy import select
+
+    from app.db import SessionLocal
+    from app.models import Decisao, Escritorio, Processo
+    from app.services import mock_painel
+
+    antes = gestor.get("/api/dashboard/aderencia").json()["total"]
+    with SessionLocal() as db:
+        demo_id = db.scalar(select(Escritorio.id).where(Escritorio.nome == "Banca Demo"))
+        resumo = mock_painel.rodar(db, app_pronto.state.modelo, n=60)
+        assert resumo["decisoes"] == 60 and 0 < resumo["divergentes"] < 60
+        criadas = list(db.scalars(select(Decisao).order_by(Decisao.id.desc()).limit(60)))
+        assert all(d.justificativa for d in criadas if not d.aderente)
+        assert all(d.tipo_desvio != "nenhum" for d in criadas if not d.aderente)
+        assert all(d.tipo == "acordo" for d in criadas if d.resultado)
+        assert all(d.resultado_em > d.created_at for d in criadas if d.resultado)
+        reservados = db.scalars(select(Processo).where(Processo.escritorio_id == demo_id))
+        assert all(p.status == "pendente" for p in reservados)
+
+    depois = gestor.get("/api/dashboard/aderencia").json()
+    assert depois["total"] == antes + 60
+    assert len(depois["por_semana"]) > 1 and len(depois["por_escritorio"]) > 1
+    assert gestor.get("/api/dashboard/efetividade").json()["n_com_resultado"] >= 1
 
 
 def test_demo_reserva_casos_distintos(anon: TestClient, app_pronto):

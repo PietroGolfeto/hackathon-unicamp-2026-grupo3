@@ -24,6 +24,8 @@ CODIGOS_SINAIS: dict[str, str] = {
     "SEM_CONTRATO": "Banco não apresentou o contrato",
     "ASSINATURA_DIVERGENTE": "Assinatura divergente dos documentos",
     "CANAL_DIGITAL_SEM_PERFIL": "Contratação digital sem perfil compatível do autor",
+    "LIVENESS_AUSENTE_CANAL_DIGITAL": "Contratação digital sem prova de vida (liveness) localizada",
+    "DOCUMENTO_SUSPEITO": "Documento com conteúdo suspeito (instrução embutida ou estrutura anômala)",
 }
 
 

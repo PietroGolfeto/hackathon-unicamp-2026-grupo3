@@ -1,31 +1,38 @@
-import { Navigate, Route, Routes } from "react-router";
+import { Center, Loader } from "@mantine/core";
+import { lazy, Suspense } from "react";
+import { Navigate, Outlet, Route, Routes } from "react-router";
 
 import { RequireAuth, homeDe, useSession } from "./auth/useSession";
 import { Layout } from "./components/Layout";
-import Login from "./pages/Login";
-import Caso from "./pages/advogado/Caso";
-import Casos from "./pages/advogado/Casos";
-import Aprovacoes from "./pages/gestor/Aprovacoes";
-import Painel from "./pages/gestor/Painel";
-import Politica from "./pages/gestor/Politica";
+
+const Caso = lazy(() => import("./pages/advogado/caso/Caso.page"));
+const Casos = lazy(() => import("./pages/advogado/casos/Casos.page"));
+const Aprovacoes = lazy(() => import("./pages/gestor/Aprovacoes"));
+const Painel = lazy(() => import("./pages/gestor/Painel"));
+const Politica = lazy(() => import("./pages/gestor/Politica"));
+
+function Carregando() {
+  return <Center h={320}><Loader color="laranja" /></Center>;
+}
 
 function Inicio() {
   const { data, isLoading } = useSession();
   if (isLoading) return null;
-  return <Navigate to={data ? homeDe(data) : "/login"} replace />;
+  return <Navigate to={data ? homeDe(data) : "/casos"} replace />;
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
-        <Route path="/casos" element={<Casos />} />
-        <Route path="/casos/:id" element={<Caso />} />
-        <Route element={<RequireAuth papel="gestor"><Layout /></RequireAuth>}>
-          <Route path="/gestor/painel" element={<Painel />} />
-          <Route path="/gestor/politica" element={<Politica />} />
-          <Route path="/gestor/aprovacoes" element={<Aprovacoes />} />
+        <Route path="/casos" element={<Suspense fallback={<Carregando />}><Casos /></Suspense>} />
+        <Route path="/casos/:id" element={<Suspense fallback={<Carregando />}><Caso /></Suspense>} />
+        <Route element={<RequireAuth papel="gestor"><Outlet /></RequireAuth>}>
+          <Route path="/gestor/painel" element={
+            <Suspense fallback={<Carregando />}><Painel /></Suspense>
+          } />
+          <Route path="/gestor/politica" element={<Suspense fallback={<Carregando />}><Politica /></Suspense>} />
+          <Route path="/gestor/aprovacoes" element={<Suspense fallback={<Carregando />}><Aprovacoes /></Suspense>} />
         </Route>
       </Route>
       <Route path="*" element={<Inicio />} />

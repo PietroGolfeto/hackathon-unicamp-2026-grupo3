@@ -27,6 +27,10 @@ class Scores(BaseModel):
     condenacao_p20: float; condenacao_p50: float; condenacao_p80: float   # condicionais a perder
     contribuicoes: list[Contribuicao] = []                  # top 5, com sinal
     gerado_em: datetime
+    # aditivos: valor esperado da informação, vindo do engine; StubModelo deixa False/vazio
+    instruir_recomendado: bool = False                      # compensa pedir subsídio antes de acordar
+    docs_a_solicitar: list[str] = []                        # chaves de NOMES_SUBSIDIOS
+    evsi_por_doc: dict[str, float] = {}
 
 class CalibracaoBin(BaseModel): p_min: float; p_max: float; n: int; p_prevista_media: float; taxa_exito_real: float
 class ModeloInfo(BaseModel): versao: str; treinado_em: datetime; n_treino: int; metricas: dict[str, float]; calibracao: list[CalibracaoBin] = []; importancias: dict[str, float] = {}
@@ -36,8 +40,8 @@ class ModeloScores(Protocol):
     def score_batch(self, casos: list[CasoFeatures]) -> list[Scores]: ...
     def info(self) -> ModeloInfo: ...
 ```
-P1 também entrega `data/derived/historico_scored.csv` (local, não versionado; decisão 19) com colunas fixas em snake_case: `numero, uf, sub_assunto, resultado_macro (1/0), resultado_micro, valor_causa, valor_condenacao, contrato, extrato, comprovante_credito, dossie, demonstrativo_divida, laudo_referenciado, p_exito_oof, condenacao_p20_oof, condenacao_p50_oof, condenacao_p80_oof, fold`.
-P1 exporta ainda o modelo treinado em JSON ou UBJ do XGBoost em `src/model/artifacts/` (versionado), para o clone limpo subir com scores reais sem a base.
+P1 entrega `data/derived/historico_scored.csv` via `make scored` (local, não versionado; decisão 19): p out-of-fold dos 5 folds do treino e quantis de condenação ajustados sem o fold; acordos históricos ficam in-sample com `fold = -1`. `load-historico` prefere esse arquivo ao in-sample do adapter. Colunas fixas em snake_case: `numero, uf, sub_assunto, resultado_macro (1/0), resultado_micro, valor_causa, valor_condenacao, contrato, extrato, comprovante_credito, dossie, demonstrativo_divida, laudo_referenciado, p_exito_oof, condenacao_p20_oof, condenacao_p50_oof, condenacao_p80_oof, fold`.
+P1 exporta ainda o modelo treinado em JSON em `models/` (versionado; decisão 24), para o clone limpo subir com scores reais sem a base.
 
 ## P3 extração (`core/docs.py`)
 ```python
@@ -48,17 +52,25 @@ class ContratoInfo(BaseModel):
     assinatura: Literal["fisica", "digital", "biometria", "ausente", "desconhecida"] = "desconhecida"
     credito_conta_terceiro: bool | None; valor: float | None; parcelas: int | None; data: date | None
 class SinalAlerta(BaseModel): codigo: str; descricao: str; severidade: Literal["baixa", "media", "alta"]; fonte: str | None
-# códigos previstos: IDOSO, CREDITO_CONTA_TERCEIRO, BOLETIM_OCORRENCIA, RECLAMACAO_BACEN, SEM_CONTRATO, ASSINATURA_DIVERGENTE, CANAL_DIGITAL_SEM_PERFIL
+# códigos previstos: IDOSO, CREDITO_CONTA_TERCEIRO, BOLETIM_OCORRENCIA, RECLAMACAO_BACEN, SEM_CONTRATO, ASSINATURA_DIVERGENTE,
+#   CANAL_DIGITAL_SEM_PERFIL, LIVENESS_AUSENTE_CANAL_DIGITAL (canal digital sem vídeo de liveness), DOCUMENTO_SUSPEITO (emitido pelo
+#   extractor, não pelo LLM: PDF com script/ação/anexo ou texto com instrução embutida; o trecho sai do brief e o arquivo vai em `fonte`)
 
 class DadosExtraidos(BaseModel):
     numero: str; origem: Literal["llm", "stub"]; modelo: str | None
     autor: Pessoa; advogado_autor: Advogado; comarca: str | None; uf: str | None
     valor_causa: float | None; pedidos: list[str] = []; contrato: ContratoInfo = ContratoInfo()
     sinais_alerta: list[SinalAlerta] = []; resumo_fatos: str = ""; confianca: float = 0.0; gerado_em: datetime
+    comentarios_documentos: list[ComentarioDocumento] = []  # aditivo: um item por documento lido
+
+class ComentarioDocumento(BaseModel):   # o que cada arquivo prova, ou deixa de provar, para o banco
+    arquivo: str                        # nome como aparece em processos.documentos; o extractor descarta o que não bate
+    relevancia: Literal["baixa", "media", "alta"]; comentario: str
 
 class Analise(BaseModel):     # independe da decisão; nunca fica obsoleta
     numero: str; origem: str; pontos_fortes_banco: list[str]; pontos_fracos_banco: list[str]
     tese_provavel_autor: str; riscos: list[str]; texto: str
+    contradicoes: list[str] = []   # aditivo: afirmações da petição desmentidas por subsídio (LLM). O card do advogado mostra só resumo_fatos (bullets) e isto
 
 class Minutas(BaseModel):     # depende da recomendação; guarda politica_id
     numero: str; politica_id: int | None; origem: str; proposta_acordo: str; roteiro_defesa: str; mensagem_contato: str
@@ -84,11 +96,14 @@ class PoliticaParams(BaseModel):
     incluir_extincao_no_backtest: bool = True
 
 class Recomendacao(BaseModel):
-    tipo: Literal["acordo", "defesa"]; valor_sugerido: float | None; valor_min: float | None; valor_max: float | None
+    tipo: Literal["acordo", "defesa", "instruir"]; valor_sugerido: float | None; valor_min: float | None; valor_max: float | None
     custo_esperado_defesa: float; custo_esperado_acordo: float; economia_esperada: float
-    regra: Literal["defesa_forte", "acordo_forte", "custo", "sinal"]; sinais_acionados: list[str] = []
+    regra: Literal["defesa_forte", "acordo_forte", "custo", "sinal", "instruir"]; sinais_acionados: list[str] = []
+    docs_a_solicitar: list[str] = []    # só quando tipo == "instruir"
     motivos: list[str]; scores_snapshot: Scores; politica_id: int
 ```
+`instruir` é um acordo já dimensionado que espera os subsídios de `docs_a_solicitar`: `valor_sugerido`, `valor_min` e `valor_max` vêm preenchidos como no acordo, então quem precisa saber se há oferta testa `valor_sugerido is not None`, nunca o rótulo do tipo. Só acontece quando a decisão seria acordo e nenhum sinal o força — sinal vence, porque aí não há o que esperar. `DecisaoIn.tipo` continua `acordo | defesa`: a aderência de um `instruir` é medida contra o acordo que ele adia.
+`DocumentoOut` da API ganha `comentario` e `relevancia`, cruzados por nome de arquivo com `dados_extraidos.comentarios_documentos`; ficam nulos sem P3 (decisão 27). O comentário de um documento é o bullet do `resumo` que o cita (sem a tag), com relevância alta quando o documento entra numa contradição; documento não citado fica sem comentário.
 Validação dos params: `limiar_acordo_forte ≤ limiar_defesa_forte`, `piso ≤ teto`, `arredondamento > 0`.
 Funções: `calcular(p_exito, p20, p50, p80, valor_causa, prm, sinais_forcam=None)` → dict de arrays (`acordo, oferta, valor_min, valor_max, custo_defesa, custo_acordo, economia, regra, oferta_limitada`); `custos_reais(..., perdeu, valor_condenacao, prm)` acrescenta `custo_defesa_real, custo_acordo_real, custo_politica` para o backtest; `aplicar(scores, caso, prm, politica_id) -> Recomendacao` com 3 motivos determinísticos em português.
 Fórmula (uma implementação em numpy, serve escalar e coluna):
@@ -104,4 +119,46 @@ banda         = oferta·(1 ± margem_banda_pct)
 Backtest usa **resultados reais**: `custo_defesa_real = custas + hon·causa + condenação·(1 + sucumb) se perdeu`. Baselines "defender tudo" e "acordar tudo" lado a lado.
 
 ## Seleção de implementação
-Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. A classe precisa ser instanciável **sem argumentos** (carrega seus artefatos sozinha). Import ou construção falha → stub, log alto, campo `origem` mostra "stub" na UI. `app/plugins.py` faz isso no start e em `POST /api/internal/reload-historico`.
+Env `MODEL_IMPL=model.predict:Modelo` e `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. A classe precisa ser instanciável **sem argumentos** (carrega seus artefatos sozinha). Import ou construção falha, log alto: o modelo cai em `StubModelo` (campo `origem` mostra "stub" na UI); o extrator vira `None` e nada é extraído, analisado ou redigido (decisão 27). `app/plugins.py` faz isso no start e em `POST /api/internal/reload-historico`.
+
+Extractor real (padrão): `EXTRACTOR_IMPL=extractor.pipeline:Extrator`. Env: `OPENAI_API_KEY`, `OPENAI_MODEL` (padrão `gpt-5-mini`), `EXTRACTOR_CACHE_DIR` (padrão `DATA_DIR/cache/extractor`). Sem chave, `Extrator()` constrói e serve só do cache; `extrair` sem cache levanta `ErroConfiguracao` (o ingest para avisando). `extrair` e `analisar` vêm da mesma chamada ao LLM; `redigir` é template. O LLM devolve só `resumo` (lista de até 5 bullets de uma linha, fonte entre colchetes) e `contradicoes` (`extractor/schema.py`, decisão 49); ambos ficam íntegros no cache (`saida_llm`). `resumo_fatos` = bullets separados por `
+`; `pedidos` fica vazio; na análise, `contradicoes` recebe a lista do LLM e `pontos_fortes_banco`, `tese_provavel_autor` e `texto` ficam vazios; `confianca` = (petição legível + subsídios entregues) / 7. Tudo o mais em `DadosExtraidos` vem de regra: petição por regex, contrato por rótulos dos subsídios, sinais pela decisão 42 (mais ASSINATURA_DIVERGENTE pela perícia). `SinalAlerta.codigo` não recebe mais `OUTRO`.
+
+## O que P1 entregou na fase 1 (`src/enteros`, pacote `enteros`)
+Contratos próprios em `enteros/schemas.py`: `CaseFeatures` (uf, sub_assunto, valor_causa, `docs` com status `presente|ausente|inconsistente`, opcionais da IA documental) → `Recomendacao` (decisão `defesa|acordo|instruir`, faixa, `p_perda` e intervalo, condenação p20/p50/p80, `ev_defesa`, `ev_acordo`, escada abertura/alvo/teto, decomposição, VOI, motivos, regras, contribuições). Parâmetros em `enteros/policy/policy.yaml`.
+
+Mapa para o contrato do portal (`core.modelo.Scores`), implementado pelo adapter `src/api/app/modelo_enteros.py` (`ModeloEnteros`, padrão de `MODEL_IMPL`):
+| `core` | `enteros` |
+|---|---|
+| `p_exito_defesa` | `1 − p_perda` (logística única; a tabela de segmentos é só saída do modelo — decisão 31) |
+| `condenacao_p20/p50/p80` | quantis de `ratio_condenacao` (UF × sub-assunto) × `valor_causa` |
+| `contribuicoes` (positivo = favorece o banco) | `ModeloPerda.contribuicoes` com o sinal invertido (lá positivo = mais risco) |
+| `ModeloInfo.metricas/calibracao` | `modelo.metricas` (auc_oof, brier_oof, ece_oof, n_treino) e `modelo.calibracao` |
+| `Subsidios` (bool) | `DocsStatus` (`presente`/`ausente`; `inconsistente` só vem da IA) |
+
+Mapa `PoliticaParams` (API) ↔ `policy.yaml` (engine) e **proposta de calibração de P1** (decisão 25, pendente de o dono da API aplicar em `src/core`):
+| `PoliticaParams` | default hoje | proposta P1 | por quê |
+|---|---|---|---|
+| `custas_fixas_defesa` | 1.500 | **1.200** | escritório até sentença (premissa H2) |
+| `honorarios_defesa_pct` | 10% da causa | **0** | dobra com o custo fixo; custas só quando perde estão em `sucumbencia_pct`/fator abaixo |
+| `sucumbencia_pct` | 10% | **15%** (ou 0,375 para embutir a correção 1,196 do engine: (1+0,15)·1,196 − 1) | CPC art. 85 §2; engine corrige a condenação pelo tempo |
+| `limiar_defesa_forte` | 0,85 | 0,85 | = 1 − verde 0,15 |
+| `limiar_acordo_forte` | 0,30 | **0,40** | = 1 − vermelha 0,60 |
+| `teto_oferta_pct_causa` | 0,60 | **0,70** | igual ao engine; teto também ≤ 90% do EV de defesa |
+| `taxa_aceite_esperada` | 0,65 | 0,65 | ≈ curva no alvo; a API substitui pelo aceite medido |
+| `fator_oferta` | 0,80 | 0,80 (documentar como aproximação do argmin da escada) | |
+
+Mapa completo:
+| `PoliticaParams` (default) | `policy.yaml` | Nota |
+|---|---|---|
+| `limiar_defesa_forte` 0,85 | `1 − faixas.limiar_verde` = 0,85 | igual |
+| `limiar_acordo_forte` 0,30 | `1 − faixas.limiar_vermelha` = 0,40 | engine acorda mais cedo |
+| `custas_fixas_defesa` 1.500 | `custos.custo_escritorio_defesa` 1.200 | |
+| `honorarios_defesa_pct` 10% da causa | `custas_pct_valor_causa` 2% + correção `fator_tempo` 1,196 sobre a condenação | estruturas diferentes |
+| `sucumbencia_pct` 10% | `honorarios_sucumbencia_pct` 15% | |
+| `custo_operacional_acordo` 300 | `custo_escritorio_acordo` 300 | igual |
+| `taxa_aceite_esperada` 0,65 fixa | curva logística (`aceite_s50` 30% da causa, largura 0,06) | API mede o aceite real e substitui |
+| `fator_oferta` 0,80 × prejuízo esperado | alvo = argmin do custo esperado na grade | |
+| `piso/teto_oferta_pct_causa` 10% / 60% | 10% / 70%; teto também ≤ 90% do EV de defesa | |
+| `sinais_forcam_acordo` [CREDITO_CONTA_TERCEIRO] | + LIVENESS_AUSENTE_CANAL_DIGITAL | o segundo código já existe em `core/caso.py`; o extractor o emite quando o laudo diz que o liveness não foi localizado em contratação digital |
+

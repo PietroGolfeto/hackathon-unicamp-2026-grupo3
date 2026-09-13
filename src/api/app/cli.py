@@ -1,4 +1,4 @@
-"""Jobs de carga: python -m app.cli <seed|load-historico|ingest|seed-demo|reset-demo|reset>."""
+"""Jobs de carga: python -m app.cli <seed|load-historico|ingest|seed-demo|mock-painel|reset-demo|reset>."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from app import plugins
 from app.config import settings
 from app.db import Base, SessionLocal, engine
 from app.models import Escritorio
-from app.services import historico, ingest, seed, seed_demo
+from app.services import historico, ingest, mock_painel, seed, seed_demo
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("cli")
@@ -36,14 +36,13 @@ def cmd_load_historico() -> None:
     avisar_api()
 
 
-def _plugins():
-    hist = historico.carregar_cache(engine)
-    return plugins.carregar_modelo(hist), plugins.carregar_extrator()
+def _modelo():
+    return plugins.carregar_modelo(historico.carregar_cache(engine))
 
 
 def cmd_ingest(escritorio: str) -> None:
     Base.metadata.create_all(engine)
-    modelo, extrator = _plugins()
+    modelo, extrator = _modelo(), plugins.carregar_extrator()
     with SessionLocal() as db:
         seed.rodar(db)
         esc = db.scalar(select(Escritorio).where(Escritorio.nome == escritorio))
@@ -55,14 +54,24 @@ def cmd_ingest(escritorio: str) -> None:
 
 def cmd_seed_demo(csv: Path | None) -> None:
     Base.metadata.create_all(engine)
-    caminho = csv or settings.exemplos_dir / "sinteticos.csv"
+    caminho = csv or settings.exemplos_dir / "sinteticos_processos.csv"
     if not caminho.exists():
         sys.exit(f"{caminho} não encontrado")
-    modelo, extrator = _plugins()
+    modelo = _modelo()
     with SessionLocal() as db:
         seed.rodar(db)
-        resumo = seed_demo.rodar(db, caminho, modelo, extrator)
+        resumo = seed_demo.rodar(db, caminho, modelo, settings.data_dir)
     print(f"seed-demo: {resumo}")
+
+
+def cmd_mock_painel(n: int) -> None:
+    exigir_banco_local("mock-painel")
+    Base.metadata.create_all(engine)
+    modelo = _modelo()
+    with SessionLocal() as db:
+        seed.rodar(db)
+        resumo = mock_painel.rodar(db, modelo, n)
+    print(f"mock-painel: {resumo} (dados sorteados; 'make reset-demo' apaga)")
 
 
 def cmd_reset_demo() -> None:
@@ -71,10 +80,15 @@ def cmd_reset_demo() -> None:
     print("reset-demo: decisões, eventos e recomendações apagados; processos e políticas mantidos")
 
 
-def cmd_reset(sem_historico: bool) -> None:
+def exigir_banco_local(comando: str) -> None:
+    """Impede que um job destrutivo ou de dados falsos alcance a VPS."""
     if "@db:" not in settings.database_url and "localhost" not in settings.database_url \
             and "127.0.0.1" not in settings.database_url:
-        sys.exit("reset só roda contra banco local (DATABASE_URL aponta para fora)")
+        sys.exit(f"{comando} só roda contra banco local (DATABASE_URL aponta para fora)")
+
+
+def cmd_reset(sem_historico: bool) -> None:
+    exigir_banco_local("reset")
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     cmd_seed()
@@ -83,7 +97,6 @@ def cmd_reset(sem_historico: bool) -> None:
     else:
         log.warning("sem CSVs da Enter em %s: histórico vazio, simulação desabilitada", settings.data_dir)
     cmd_ingest("Escritório A")
-    cmd_seed_demo(None)
     avisar_api()
 
 
@@ -107,8 +120,10 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("load-historico", help="2 CSVs da Enter → historico_sentencas")
     p_ing = sub.add_parser("ingest", help="pastas data/exemplos/<numero>/ → processos")
     p_ing.add_argument("--escritorio", default="Escritório A")
-    p_sd = sub.add_parser("seed-demo", help="processos sintéticos + decisões simuladas")
+    p_sd = sub.add_parser("seed-demo", help="processos sintéticos, todos pendentes (sem decisões simuladas)")
     p_sd.add_argument("--csv", type=Path, default=None)
+    p_mp = sub.add_parser("mock-painel", help="decisões sorteadas para ver o painel cheio (só local)")
+    p_mp.add_argument("--n", type=int, default=120)
     sub.add_parser("reset-demo", help="apaga decisões/eventos/recomendações")
     p_rs = sub.add_parser("reset", help="recria o banco e roda tudo (só local)")
     p_rs.add_argument("--sem-historico", action="store_true")
@@ -122,6 +137,8 @@ def main(argv: list[str] | None = None) -> None:
             cmd_ingest(args.escritorio)
         case "seed-demo":
             cmd_seed_demo(args.csv)
+        case "mock-painel":
+            cmd_mock_painel(args.n)
         case "reset-demo":
             cmd_reset_demo()
         case "reset":

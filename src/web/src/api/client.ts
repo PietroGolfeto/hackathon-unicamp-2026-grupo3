@@ -42,6 +42,8 @@ async function req<T>(path: string, init: RequestInit & { json?: unknown } = {})
 
 export type Papel = "advogado" | "gestor";
 export type TipoDecisao = "acordo" | "defesa";
+/** A recomendação tem uma saída a mais que a decisão: instruir = pedir subsídios antes de acordar. */
+export type TipoRecomendacao = TipoDecisao | "instruir";
 
 export interface Usuario {
   id: number; nome: string; email: string; papel: Papel;
@@ -49,7 +51,7 @@ export interface Usuario {
 }
 
 export interface RecomendacaoResumo {
-  id: number; politica_id: number; tipo: TipoDecisao;
+  id: number; politica_id: number; tipo: TipoRecomendacao;
   valor_sugerido: number | null; valor_min: number | null; valor_max: number | null; created_at: string;
 }
 
@@ -61,7 +63,11 @@ export interface ProcessoResumo {
   reservado_ate: string | null;
 }
 
-export interface Documento { tipo: string; arquivo: string; url: string }
+export type Relevancia = "alta" | "media" | "baixa";
+export interface Documento {
+  tipo: string; arquivo: string; url: string;
+  comentario?: string | null; relevancia?: Relevancia | null;  // da extração; null sem P3
+}
 export interface Sinal { codigo: string; descricao: string; severidade: "baixa" | "media" | "alta"; fonte?: string | null }
 export interface Pessoa { nome?: string | null; cpf_mascarado?: string | null; idade?: number | null; email?: string | null; telefone?: string | null; oab?: string | null }
 
@@ -74,6 +80,7 @@ export interface DadosExtraidos {
 export interface Analise {
   origem: string; pontos_fortes_banco: string[]; pontos_fracos_banco: string[];
   tese_provavel_autor: string; riscos: string[]; texto: string;
+  contradicoes?: string[];  // petição × subsídios; ausente em linhas gravadas antes do campo
 }
 
 export interface Contribuicao { feature: string; valor: unknown; contribuicao: number; descricao?: string | null }
@@ -99,10 +106,16 @@ export interface ProcessoDetalhe {
 
 export interface Recomendacao {
   id: number; processo_id: number; politica_id: number; politica_versao: number; politica_nome: string;
-  tipo: TipoDecisao; valor_sugerido: number | null; valor_min: number | null; valor_max: number | null;
+  tipo: TipoRecomendacao; valor_sugerido: number | null; valor_min: number | null; valor_max: number | null;
   custo_esperado_defesa: number; custo_esperado_acordo: number; economia_esperada: number; regra: string;
-  sinais_acionados: string[]; motivos: string[]; scores_snapshot: Scores; exige_aprovacao_valor_causa: boolean;
+  sinais_acionados: string[]; docs_a_solicitar: string[]; motivos: string[]; scores_snapshot: Scores;
+  exige_aprovacao_valor_causa: boolean;
   created_at: string;
+}
+
+export interface Preparacao {
+  status: "ocioso" | "rodando" | "pronto" | "erro";
+  total: number; prontos: number; atual: string | null; erro: string | null; atualizado_em: string | null;
 }
 
 export interface DecisaoIn {
@@ -142,11 +155,15 @@ export interface Politica {
   created_at: string; publicada_em: string | null; resumo_backtest: Backtest | null;
 }
 
-export interface LinhaAderencia { [k: string]: unknown; total: number; aderentes: number; pct_aderente: number; tempo_medio_s: number | null; pct_acordo: number }
+export interface LinhaAderencia { [k: string]: unknown; semana?: string; total: number; aderentes: number; pct_aderente: number; tempo_medio_s: number | null; pct_acordo: number }
 export interface Justificativa {
   decisao_id: number; created_at: string; numero: string; processo_id: number; advogado: string; escritorio: string;
   tipo: string; rec_tipo: string; valor_proposto: number | null; valor_sugerido: number | null; tipo_desvio: string;
-  status: string; justificativa: string | null;
+  status: string; justificativa: string | null; parecer_ia: ParecerIA | null;
+}
+export interface ParecerIA {
+  decisao_id: number; classificacao: "fundamentada" | "generica" | "contradiz_evidencias";
+  resumo: string; pontos: string[]; confianca: number; modelo: string; gerado_em: string;
 }
 export interface Aderencia {
   total: number; aderentes: number; pct_aderente: number | null; pct_desvio_tipo: number | null;
@@ -158,9 +175,15 @@ export interface Aderencia {
 export interface LinhaEfetividade { [k: string]: unknown; n: number; taxa_aceite: number; economia_realizada: number; valor_final_medio: number | null }
 export interface Efetividade {
   n_decisoes: number; n_acordos: number; n_defesas: number; n_com_resultado: number;
+  n_sem_resultado: number; cobertura_resultados: number | null; taxa_aceite_preliminar: boolean;
   taxa_aceite_real: number | null; taxa_aceite_esperada: number | null; desconto_real: number | null;
   ticket_medio_final: number | null; economia_esperada: number; economia_realizada: number;
   por_resultado: Record<string, number>; por_uf: LinhaEfetividade[]; por_escritorio: LinhaEfetividade[]; por_semana: LinhaEfetividade[];
+  backtest_potencial: {
+    n_casos: number; defender_tudo: number; acordar_tudo: number; politica: number;
+    economia_vs_defender: number; economia_pct: number; pct_acordo: number;
+    politica_versao: string; modelo_versao: string;
+  } | null;
   politica: { id: number; versao: number; nome: string; publicada_em: string | null; resumo_backtest: Backtest | null } | null;
   modelo: { versao: string; treinado_em: string; n_treino: number; metricas: Record<string, number>; importancias: Record<string, number> };
 }
@@ -183,6 +206,9 @@ export const api = {
     }
   },
   logout: () => req<void>("/api/auth/logout", { method: "POST" }),
+
+  prepararCasos: () => req<Preparacao>("/api/preparacao", { method: "POST" }),
+  preparacao: () => req<Preparacao>("/api/preparacao"),
 
   processos: (busca?: string) =>
     req<ProcessoResumo[]>(`/api/processos${busca ? `?busca=${encodeURIComponent(busca)}` : ""}`),
@@ -210,6 +236,8 @@ export const api = {
   aderencia: (escritorioId?: number) =>
     req<Aderencia>(`/api/dashboard/aderencia${escritorioId ? `?escritorio_id=${escritorioId}` : ""}`),
   efetividade: () => req<Efetividade>("/api/dashboard/efetividade"),
+  gerarParecer: (decisaoId: number) =>
+    req<ParecerIA>(`/api/dashboard/desvios/${decisaoId}/parecer`, { method: "POST" }),
 
   aprovacoes: () => req<Aprovacao[]>("/api/aprovacoes"),
   aprovar: (decisaoId: number, acao: "aprovar" | "rejeitar", comentario?: string) =>

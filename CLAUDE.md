@@ -29,7 +29,7 @@ Não edite pasta de outro sem combinar. Mudança cruzada vai em PR pequeno com o
 ## Regras de colaboração
 
 ### 1. Commit pequeno e inteligível
-Um commit resolve uma coisa. Limite: 20 arquivos e 800 linhas (lockfiles, CSV, PDF e imagens não contam). Se precisar passar disso com justificativa, termine o assunto com `[grande]`. A CI bloqueia o resto.
+Um commit resolve uma coisa. Limite: 20 arquivos e 800 linhas (lockfiles, CSV, PDF, imagens e artefatos gerados por script, como `models/*.json` e os JSON de `docs/`, não contam). Se precisar passar disso com justificativa, termine o assunto com `[grande]`. A CI bloqueia o resto.
 
 ### 2. Mensagem com TL;DR
 Primeira linha: `<area>: <o que muda, em uma frase>`, até 72 caracteres, em português.
@@ -44,7 +44,7 @@ Aderência é medida contra ela mesmo se a política mudar depois.
 ```
 
 ### 3. Todo commit de código atualiza o memory-bank, in-place
-Tocou `src/` ou `infra/`? No mesmo commit, edite pelo menos `memory-bank/arquitetura.md` ou `memory-bank/features.md`. Edite a linha da feature; não adicione histórico nem datas. `memory-bank/README.md` diz qual arquivo editar para cada tipo de mudança. Hook e CI bloqueiam commit de código sem isso.
+Tocou `src/` ou `infra/`? No mesmo commit, edite pelo menos `memory-bank/arquitetura.md` ou `memory-bank/features.md`. Edite a linha da feature; não adicione histórico nem datas. `memory-bank/README.md` diz qual arquivo editar para cada tipo de mudança. O hook bloqueia o commit; a CI bloqueia o PR (ou o push) cujo conjunto de mudanças toca código sem tocar o memory-bank.
 
 ### 4. Nunca versionar
 `.env` (só `.env.example`), os CSVs da Enter em `data/`, `data/processos_exemplo/`, artefatos de modelo (`*.joblib`, `*.pkl`), `node_modules`, chaves. `scripts/check_secrets.sh` bloqueia.
@@ -72,7 +72,7 @@ Branch curta, PR pequeno para `main`, CI verde antes do merge, template de PR pr
 
 ## Convenções de código
 **Python**: 3.12, type hints em tudo, pydantic v2 para dados que cruzam fronteira, SQLAlchemy 2 estilo `Mapped[...]`, `ruff` com linha 100. Funções pequenas. Nomes de domínio em português (`processo`, `recomendacao`, `decisao`), termos técnicos em inglês (`router`, `service`, `client`). Erros de API via `HTTPException` com `detail` legível pelo usuário.
-**TypeScript**: `strict`, componentes funcionais, dados via TanStack Query, UI via Mantine, formatação de dinheiro e data só em `src/web/src/lib/format.ts`. Sem CSS solto além do que Mantine oferece.
+**TypeScript**: `strict`, componentes funcionais, dados via TanStack Query, UI via Mantine, formatação de dinheiro e data só em `src/web/src/lib/format.ts`. CSS só em `src/web/src/theme.css` (tokens, fontes, keyframes); o resto via tema e props do Mantine.
 **Testes**: `pytest` em `tests/` ao lado do pacote, com valores reais da base sempre que possível. Front: lint e build são o teste mínimo.
 **Português** em commits, docs, nomes de domínio e mensagens ao usuário.
 

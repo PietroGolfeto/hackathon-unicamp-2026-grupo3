@@ -64,7 +64,8 @@ def obter_ou_criar(
             valor_sugerido=rec.valor_sugerido, valor_min=rec.valor_min, valor_max=rec.valor_max,
             custo_esperado_defesa=rec.custo_esperado_defesa,
             custo_esperado_acordo=rec.custo_esperado_acordo, economia_esperada=rec.economia_esperada,
-            regra=rec.regra, sinais_acionados=rec.sinais_acionados, motivos=rec.motivos,
+            regra=rec.regra, sinais_acionados=rec.sinais_acionados,
+            docs_a_solicitar=rec.docs_a_solicitar, motivos=rec.motivos,
             scores_snapshot=rec.scores_snapshot.model_dump(mode="json"),
         ).on_conflict_do_nothing(constraint="uq_rec_processo_politica")
     )
@@ -85,6 +86,7 @@ def para_saida(rec: Recomendacao, politica: Politica, processo: Processo) -> Rec
         custo_esperado_defesa=rec.custo_esperado_defesa,
         custo_esperado_acordo=rec.custo_esperado_acordo, economia_esperada=rec.economia_esperada,
         regra=rec.regra, sinais_acionados=list(rec.sinais_acionados or []),
+        docs_a_solicitar=list(rec.docs_a_solicitar or []),
         motivos=list(rec.motivos or []), scores_snapshot=dict(rec.scores_snapshot or {}),
         exige_aprovacao_valor_causa=teto is not None and processo.valor_causa > teto,
         created_at=rec.created_at,
@@ -103,8 +105,11 @@ def avaliar_decisao(
         and dados.valor_proposto is not None
         and rec.valor_min - 0.01 <= dados.valor_proposto <= rec.valor_max + 0.01
     )
-    aderente = dados.tipo == rec.tipo and (dados.tipo != "acordo" or na_banda)
-    tipo_desvio = "nenhum" if aderente else ("tipo" if dados.tipo != rec.tipo else "valor")
+    # O advogado só decide acordo ou defesa. "instruir" é um acordo adiado até os subsídios chegarem:
+    # acordar na banda continua aderente; defender é que é desvio.
+    esperado = "acordo" if rec.tipo == "instruir" else rec.tipo
+    aderente = dados.tipo == esperado and (dados.tipo != "acordo" or na_banda)
+    tipo_desvio = "nenhum" if aderente else ("tipo" if dados.tipo != esperado else "valor")
     if not aderente and not (dados.justificativa or "").strip():
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -139,6 +144,7 @@ def rec_core_de(rec: Recomendacao):
         valor_max=rec.valor_max, custo_esperado_defesa=rec.custo_esperado_defesa,
         custo_esperado_acordo=rec.custo_esperado_acordo, economia_esperada=rec.economia_esperada,
         regra=rec.regra, sinais_acionados=list(rec.sinais_acionados or []),
+        docs_a_solicitar=list(rec.docs_a_solicitar or []),
         motivos=list(rec.motivos or []), scores_snapshot=Scores.model_validate(rec.scores_snapshot),
         politica_id=rec.politica_id,
     )

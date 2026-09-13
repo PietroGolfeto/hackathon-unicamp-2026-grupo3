@@ -11,7 +11,16 @@ from fastapi.responses import JSONResponse
 
 from app import plugins
 from app.db import Base, SessionLocal, engine
-from app.routers import aprovacoes, auth, dashboard, demo, files, politicas, processos
+from app.routers import (
+    aprovacoes,
+    auth,
+    dashboard,
+    demo,
+    files,
+    politicas,
+    preparacao,
+    processos,
+)
 from app.services import seed
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -42,16 +51,18 @@ api = APIRouter(prefix="/api")
 @api.get("/health")
 def health(request: Request) -> dict[str, object]:
     hist = request.app.state.historico
+    extrator = request.app.state.extrator
     return {
         "ok": True,
         "historico_linhas": 0 if hist is None else len(hist),
         "modelo": request.app.state.modelo.info().versao,
-        "extrator": type(request.app.state.extrator).__name__,
+        "extrator": None if extrator is None else type(extrator).__name__,
     }
 
 
 api.include_router(auth.router)
 api.include_router(processos.router)
+api.include_router(preparacao.router)
 api.include_router(files.router)
 api.include_router(politicas.router)
 api.include_router(dashboard.router)

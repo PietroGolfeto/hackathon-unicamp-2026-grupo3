@@ -120,7 +120,7 @@ class Recomendacao(Base):
     processo_id: Mapped[int] = mapped_column(ForeignKey("processos.id"), index=True)
     politica_id: Mapped[int] = mapped_column(ForeignKey("politicas.id"))
     usuario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"))
-    tipo: Mapped[str] = mapped_column(String(10))  # acordo | defesa
+    tipo: Mapped[str] = mapped_column(String(10))  # acordo | defesa | instruir
     valor_sugerido: Mapped[float | None] = mapped_column(Float)
     valor_min: Mapped[float | None] = mapped_column(Float)
     valor_max: Mapped[float | None] = mapped_column(Float)
@@ -129,6 +129,7 @@ class Recomendacao(Base):
     economia_esperada: Mapped[float] = mapped_column(Float)
     regra: Mapped[str] = mapped_column(String(20))
     sinais_acionados: Mapped[list[str]] = mapped_column(Json, default=list)
+    docs_a_solicitar: Mapped[list[str]] = mapped_column(Json, default=list)  # só quando tipo = instruir
     motivos: Mapped[list[str]] = mapped_column(Json, default=list)
     scores_snapshot: Mapped[dict[str, Any]] = mapped_column(Json)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -175,6 +176,17 @@ class Evento(Base):
     processo_id: Mapped[int | None] = mapped_column(ForeignKey("processos.id"), index=True)
     tipo: Mapped[str] = mapped_column(String(30))  # abriu_caso | viu_recomendacao | abriu_documento
     payload: Mapped[dict[str, Any]] = mapped_column(Json, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ParecerJustificativa(Base):
+    __tablename__ = "pareceres_justificativa"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    decisao_id: Mapped[int] = mapped_column(
+        ForeignKey("decisoes.id"), unique=True, index=True
+    )
+    conteudo: Mapped[dict[str, Any]] = mapped_column(Json)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

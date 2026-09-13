@@ -9,7 +9,9 @@ base="${1:-origin/main}"
 head="${2:-HEAD}"
 max_arquivos=20
 max_linhas=800
-ignorar='(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|uv\.lock|\.csv|\.svg|\.png|\.jpg|\.jpeg|\.pdf|\.ico)$'
+# Não contam: lockfiles, dados e imagens, e artefatos gerados por script (modelos exportados em models/,
+# JSON de docs/ como docs/backtest/resumo.json). A linha do numstat é "add<TAB>del<TAB>caminho".
+ignorar='(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|uv\.lock|\.csv|\.svg|\.png|\.jpg|\.jpeg|\.pdf|\.ico)$|[[:space:]](models|docs)/[^[:space:]]*\.json$'
 
 if [[ -z "$base" || "$base" =~ ^0+$ ]] || ! git rev-parse -q --verify "$base^{commit}" >/dev/null; then
   base="$(git rev-parse -q --verify "$head~1" 2>/dev/null || true)"

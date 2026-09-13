@@ -1,0 +1,25 @@
+BANCO UFMG S.A.                                                                          LAUDO REFERENCIADO - CT 700112233
+
+                   LAUDO REFERENCIADO DA OPERAÇÃO DE CRÉDITO
+
+    1. IDENTIFICAÇÃO DA OPERAÇÃO
+
+      Nº do contrato                          700112233
+
+      Situação atual                          ATIVO - EM DISCUSSÃO JUDICIAL
+
+    4. CANAL DE CONTRATAÇÃO E EVIDÊNCIAS
+
+    • Canal: Digital - Aplicativo Mobile (self-service)
+
+    • Autenticação: biometria facial (liveness) + senha eletrônica 6 dígitos
+
+    • Aceite eletrônico das condições contratuais via Termo de Ciência
+
+    6. OBSERVAÇÕES FINAIS
+
+    O contrato nº 700112233 foi objeto de contestação judicial pelo tomador. No entanto, não foi
+    localizado nos arquivos digitais o vídeo de liveness (biometria facial) tradicionalmente capturado
+    ao final do fluxo, fato reportado internamente para apuração.
+
+                       Documento gerado eletronicamente - Banco UFMG S.A. | Documento fictício para teste.

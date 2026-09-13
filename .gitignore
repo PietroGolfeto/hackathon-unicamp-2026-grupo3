@@ -5,10 +5,13 @@
 
 # Dados sensíveis — não versionar
 data/*.csv
+data/**/*.csv
+!data/exemplos/sinteticos*.csv
 data/subsidios/
 data/processos_exemplo/
 data/derived/
 data/policy_artifacts/
+data/sinteticos/
 
 # Dependências de pacotes
 node_modules/
@@ -49,9 +52,19 @@ Thumbs.db
 # Caches de ferramentas
 .pytest_cache/
 .ruff_cache/
+.impeccable/
 
 # Plano de implementação local (não versionar)
 plano-implementacao.md
 
-# Pastas dos processos exemplo da Enter (só o CSV sintético e o README ficam)
-data/exemplos/*/
+# data/exemplos/<numero>/ e data/mock-para-tela-advogado/ passaram a ser versionados
+# (decisão 19/45): a banca não tem esses PDFs prontos, o app precisa deles pra rodar.
+docs/Caso_*/
+# Dados brutos do hackathon (não versionar) — ver data/README.md
+data/raw/
+data/*.xlsx
+data/*.parquet
+data/cache/
+
+# Artefatos de modelo gerados
+models/*.joblib
