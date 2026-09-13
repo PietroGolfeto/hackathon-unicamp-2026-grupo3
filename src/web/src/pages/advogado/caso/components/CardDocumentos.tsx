@@ -1,6 +1,6 @@
-import { Box, Card, Group, SimpleGrid, Stack, Text, ThemeIcon, UnstyledButton } from "@mantine/core";
+import { Box, Card, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip, UnstyledButton } from "@mantine/core";
 
-import { IcoCheck, IcoDoc, IcoExterno } from "../../../../components/Icones";
+import { IcoAlerta, IcoCheck, IcoDoc, IcoExterno } from "../../../../components/Icones";
 import { COR_RELEVANCIA, GRUPOS_DOCUMENTOS } from "../caso.const";
 import type { DocumentosAbertos, ProcessoProps } from "../caso.types";
 import { ListaSubsidios } from "./ListaSubsidios";
@@ -17,6 +17,12 @@ export function CardDocumentos({ p, abertos, onAbrir }: ProcessoProps & {
       </Card>
     );
   }
+  // Documento cujo texto continha instrução embutida (prompt injection) ou outra estrutura de risco:
+  // a extração removeu o trecho antes do modelo e sinalizou DOCUMENTO_SUSPEITO com o arquivo em `fonte`.
+  const suspeitos = new Map<string, string>();
+  for (const s of p.sinais) {
+    if (s.codigo === "DOCUMENTO_SUSPEITO" && s.fonte) suspeitos.set(s.fonte, s.descricao);
+  }
   return (
     <Card>
       <Text fw={500}>Documentos</Text>
@@ -32,6 +38,7 @@ export function CardDocumentos({ p, abertos, onAbrir }: ProcessoProps & {
               <Stack gap={2}>
                 {docs.map((d) => {
                   const aberto = abertos.has(d.arquivo);
+                  const motivo = suspeitos.get(d.arquivo);
                   return (
                     <UnstyledButton key={d.arquivo} component="a" href={d.url} target="_blank" rel="noopener" className="linha-link"
                       onClick={() => onAbrir(d.arquivo)} p={6} style={{ borderRadius: 8, display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -48,6 +55,14 @@ export function CardDocumentos({ p, abertos, onAbrir }: ProcessoProps & {
                         </Group>
                         {d.comentario && <Text size="xs" c="dimmed" lh={1.35} mt={2}>{d.comentario}</Text>}
                       </div>
+                      {motivo && (
+                        <Tooltip multiline w={280} withArrow
+                          label={`Documento provavelmente comprometido (prompt injection). O trecho suspeito foi removido antes da análise e o modelo não o viu. Motivo: ${motivo}`}>
+                          <span style={{ display: "flex", marginTop: 6 }}>
+                            <IcoAlerta size={15} style={{ color: "var(--mantine-color-vermelho-6)" }} />
+                          </span>
+                        </Tooltip>
+                      )}
                       <IcoExterno size={13} style={{ color: "var(--mantine-color-dimmed)", marginTop: 6 }} />
                     </UnstyledButton>
                   );
