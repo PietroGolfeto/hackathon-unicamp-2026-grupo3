@@ -17,7 +17,7 @@ export function TabelaCasos({ casos, gestor, temAutor, colunas, carregando }: {
             <Table.Tr>
               <CabecalhoColuna>Processo</CabecalhoColuna>
               {temAutor && <CabecalhoColuna>Autor</CabecalhoColuna>}
-              <CabecalhoColuna alinhar="right">Valor da causa</CabecalhoColuna>
+              <CabecalhoColuna>Valor da causa</CabecalhoColuna>
               <CabecalhoColuna>Subsídios</CabecalhoColuna>
               <CabecalhoColuna>Recomendação</CabecalhoColuna>
               <CabecalhoColuna>Situação</CabecalhoColuna>

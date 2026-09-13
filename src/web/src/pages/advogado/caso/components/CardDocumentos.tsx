@@ -1,7 +1,7 @@
 import { Box, Card, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip, UnstyledButton } from "@mantine/core";
 
 import { IcoAlerta, IcoCheck, IcoDoc, IcoExterno } from "../../../../components/Icones";
-import { COR_RELEVANCIA, GRUPOS_DOCUMENTOS } from "../caso.const";
+import { COR_RELEVANCIA } from "../caso.const";
 import type { DocumentosAbertos, ProcessoProps } from "../caso.types";
 import { ListaSubsidios } from "./ListaSubsidios";
 
@@ -23,6 +23,8 @@ export function CardDocumentos({ p, abertos, onAbrir }: ProcessoProps & {
   for (const s of p.sinais) {
     if (s.codigo === "DOCUMENTO_SUSPEITO" && s.fonte) suspeitos.set(s.fonte, s.descricao);
   }
+  const colunas: (typeof p.documentos)[] = [[], []];
+  p.documentos.forEach((d, i) => colunas[i % 2].push(d));
   return (
     <Card>
       <Text fw={600}>Documentos</Text>
@@ -30,11 +32,9 @@ export function CardDocumentos({ p, abertos, onAbrir }: ProcessoProps & {
         Abrem em nova aba. Os que você abriu ficam marcados. O comentário abaixo de cada um é da leitura da IA.
       </Text>
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-        {GRUPOS_DOCUMENTOS.map(([tipo, rotulo]) => {
-          const docs = p.documentos.filter((d) => d.tipo === tipo);
+        {colunas.map((docs, i) => {
           return (
-            <div key={tipo}>
-              <Text size="xs" fw={500} c="dimmed" tt="uppercase" lts=".06em" mb={4}>{rotulo}</Text>
+            <div key={i}>
               <Stack gap={2}>
                 {docs.map((d) => {
                   const aberto = abertos.has(d.arquivo);
@@ -56,8 +56,8 @@ export function CardDocumentos({ p, abertos, onAbrir }: ProcessoProps & {
                         {d.comentario && <Text size="xs" c="dimmed" lh={1.35} mt={2}>{d.comentario}</Text>}
                       </div>
                       {motivo && (
-                        <Tooltip multiline w={280} withArrow
-                          label={`Documento provavelmente comprometido (prompt injection). O trecho suspeito foi removido antes da análise e o modelo não o viu. Motivo: ${motivo}`}>
+                        <Tooltip multiline w={260} withArrow
+                          label="Documento sinalizado por indício de manipulação de instruções (prompt injection). O trecho suspeito foi removido antes da análise; o modelo não chegou a vê-lo.">
                           <span style={{ display: "flex", marginTop: 6 }}>
                             <IcoAlerta size={15} style={{ color: "var(--mantine-color-vermelho-6)" }} />
                           </span>

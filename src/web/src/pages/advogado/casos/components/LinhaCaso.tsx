@@ -1,8 +1,8 @@
-import { Anchor, Badge, Group, Table, Text } from "@mantine/core";
+import { Anchor, Table, Text } from "@mantine/core";
 import { Link } from "react-router";
 
 import type { ProcessoResumo } from "../../../../api/client";
-import { OrigemBadge, StatusBadge, TipoBadge } from "../../../../components/Badges";
+import { StatusBadge, TipoBadge } from "../../../../components/Badges";
 import { brl } from "../../../../lib/format";
 import { SubsidiosTracos } from "./SubsidiosTracos";
 
@@ -16,15 +16,9 @@ export function LinhaCaso({ p, gestor, temAutor, onSelecionar }: {
           onClick={(e) => e.stopPropagation()}>
           {p.numero}
         </Anchor>
-        <Group gap={4} mt={4}>
-          <Badge size="xs" variant="default">{p.uf}</Badge>
-          {p.sub_assunto && <Badge size="xs" variant="default">{p.sub_assunto}</Badge>}
-          {p.origem === "exemplo" && <Badge size="xs" color="tinta" variant="light">autos reais</Badge>}
-          <OrigemBadge origem={p.scores_origem} rotulo="score stub" />
-        </Group>
       </Table.Td>
       {temAutor && <Table.Td><Text size="sm">{p.autor ?? "—"}</Text></Table.Td>}
-      <Table.Td align="right"><Text size="sm" className="numero">{brl(p.valor_causa)}</Text></Table.Td>
+      <Table.Td><Text size="sm" className="numero">{brl(p.valor_causa)}</Text></Table.Td>
       <Table.Td><SubsidiosTracos p={p} /></Table.Td>
       <Table.Td>
         <TipoBadge tipo={p.recomendacao?.tipo} size="sm" />
