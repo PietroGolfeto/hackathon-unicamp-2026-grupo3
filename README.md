@@ -26,6 +26,8 @@ https://github.com/user-attachments/assets/bb2b7e18-8f23-4974-bc92-60d5c76014ac
 
 ## Demo: https://youtu.be/tfWq2APnLIg
 
+## Presentation: https://docs.google.com/presentation/d/11SCKmiof4y-GcxGA_CDa5FGFkToc1nKtOZlk28NC25E/edit?usp=sharing
+
 ## Como rodar
 
 Pré-requisitos: [`uv`](https://docs.astral.sh/uv/) (traz o Python 3.12), `make`, Node 20 e Docker com Compose v2.
