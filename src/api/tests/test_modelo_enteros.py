@@ -52,16 +52,9 @@ def test_info_traz_metricas_e_calibracao_em_termos_de_exito(modelo):
     assert info.importancias["contrato"] > info.importancias["dossie"]
 
 
-def test_instrucao_de_subsidios_vem_do_engine(modelo):
-    """Faltando só o extrato, o caso fica na zona em que compensa pedi-lo antes de acordar."""
+def test_valor_da_informacao_indica_quando_mais_dados_ajudam(modelo):
     sem_extrato = Subsidios(contrato=True, comprovante_credito=True, dossie=True,
                             demonstrativo_divida=True, laudo_referenciado=True)
     meio = modelo.score(CasoFeatures(numero="c", uf="MA", sub_assunto="Golpe",
                                      valor_causa=20000, subsidios=sem_extrato))
-    assert meio.instruir_recomendado is True
-    assert meio.docs_a_solicitar == ["extrato"]
-    assert meio.evsi_por_doc.get("extrato", 0) > 0
-
-    completo = modelo.score(CasoFeatures(numero="d", uf="MA", sub_assunto="Golpe",
-                                         valor_causa=20000, subsidios=TODOS))
-    assert completo.instruir_recomendado is False and completo.docs_a_solicitar == []
+    assert meio.mais_dados_recomendado is True

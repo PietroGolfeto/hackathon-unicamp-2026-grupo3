@@ -64,14 +64,21 @@ def _comentarios(p: Processo) -> dict[str, dict]:
 
 def _resumo(p: Processo, rec: Recomendacao | None, dec: Decisao | None,
             com_extrator: bool) -> ProcessoResumo:
+    rec_resumo = RecomendacaoResumo.model_validate(rec) if rec else None
+    if rec_resumo:
+        rec_resumo.tipo = svc.tipo_binario(rec_resumo.tipo)
+    scores = p.scores or {}
     return ProcessoResumo(
         id=p.id, numero=p.numero, uf=p.uf, sub_assunto=p.sub_assunto, valor_causa=p.valor_causa,
         autor=_autor(p), status=p.status, origem=p.origem, escritorio_id=p.escritorio_id,
         escritorio=p.escritorio.nome, n_subsidios=sum(1 for v in (p.subsidios or {}).values() if v),
         sinais=[s.get("codigo", "") for s in _sinais(p)],
-        scores_origem=(p.scores or {}).get("origem"),
+        scores_origem=scores.get("origem"),
+        mais_dados_recomendado=bool(
+            scores.get("mais_dados_recomendado", scores.get("instruir_recomendado", False))
+        ),
         extracao_origem=(p.dados_extraidos or {}).get("origem"),
-        recomendacao=RecomendacaoResumo.model_validate(rec) if rec else None,
+        recomendacao=rec_resumo,
         decisao_tipo=dec.tipo if dec else None, decisao_status=dec.status if dec else None,
         reservado_ate=p.reservado_ate,
         extracao_pendente=prep.extracao_pendente(p, com_extrator),
