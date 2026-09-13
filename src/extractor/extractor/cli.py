@@ -60,11 +60,7 @@ def main(argv: list[str] | None = None) -> int:
                 "brief_chars": len(res.brief), "documentos": [_doc(d) for d in res.docs],
                 "achados": [a.__dict__ for a in res.achados],
                 "dados": res.dados.model_dump(mode="json"), "analise": res.analise.model_dump(mode="json"),
-                "extras_llm": {k: v for k, v in res.saida_llm.dados.contrato.model_dump().items()
-                               if k in ("numero", "liveness", "banco_deposito", "valor_parcela", "parcelas_pagas",
-                                        "saldo_devedor", "canal_alegado_pelo_autor")}
-                | {"dano_moral_pedido": res.saida_llm.dados.dano_moral_pedido,
-                   "contradicoes": res.saida_llm.analise.contradicoes},
+                "saida_llm": res.saida_llm.model_dump(),
             }
             if args.brief:
                 saida["brief"] = res.brief

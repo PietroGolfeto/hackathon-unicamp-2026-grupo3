@@ -12,6 +12,9 @@ from extractor.cache import Cache
 from extractor.llm import ErroConfiguracao
 from extractor.pipeline import Extrator, _numero_da_pasta
 
+SINAIS_REGRA = {"IDOSO", "BOLETIM_OCORRENCIA", "RECLAMACAO_BACEN", "SEM_CONTRATO", "CREDITO_CONTA_TERCEIRO",
+                "LIVENESS_AUSENTE_CANAL_DIGITAL"}
+
 
 def _extrator(fake: FakeCliente, tmp_path: Path) -> Extrator:
     return Extrator(cliente=fake, cache=Cache(tmp_path / "cache"))
@@ -22,26 +25,38 @@ def test_processa_mapeia_e_cacheia(pasta_exemplo: Path, fake: FakeCliente, tmp_p
     res = ext.processar(pasta_exemplo)
     assert res.numero == NUMERO and not res.cache_hit and len(fake.chamadas) == 1
     assert "BRIEF" in fake.chamadas[0] and "jamais contratou" in fake.chamadas[0]
-    d = res.dados
-    assert d.origem == "llm" and d.modelo == "fake-1" and d.uf == "MG"  # UF pelo CNJ
-    assert d.valor_causa == 18000.0  # regex da petição vence quando o LLM devolve null
-    assert d.autor.nome == "Ana Lúcia Ferreira Mota" and d.autor.idade == 69  # idade caiu para a regra
-    assert d.autor.cpf_mascarado == "***.***.987-00"  # CPF inteiro do LLM é mascarado
+    d = res.dados  # tudo abaixo vem da regra, não do LLM
+    assert d.origem == "llm" and d.modelo == "fake-1" and d.uf == "MG" and d.comarca == "Belo Horizonte"
+    assert d.valor_causa == 18000.0 and d.pedidos == [] and d.confianca == 0.57  # petição + 3 de 6 subsídios
+    assert d.autor.nome == "Ana Lúcia Ferreira Mota" and d.autor.idade == 69
+    assert d.autor.cpf_mascarado == "***.***.987-00" and d.autor.email == "ana.mota@email.com.br"
     assert d.advogado_autor.oab == "MG 45.678" and d.advogado_autor.email == "paula.andrade@adv.com.br"
-    assert d.contrato.canal == "app" and d.contrato.credito_conta_terceiro is True
-    assert d.contrato.valor == 4000.0 and d.contrato.parcelas == 60 and str(d.contrato.data) == "2023-03-03"
-    codigos = d.codigos_sinais()
-    assert {"IDOSO", "CREDITO_CONTA_TERCEIRO", "LIVENESS_AUSENTE_CANAL_DIGITAL"} <= set(codigos)
-    assert "DOCUMENTO_SUSPEITO" not in codigos
+    c = d.contrato
+    assert c.canal == "app" and c.assinatura == "biometria" and c.credito_conta_terceiro is True
+    assert c.valor == 4000.0 and c.parcelas == 60 and str(c.data) == "2023-03-03"
+    assert set(d.codigos_sinais()) == SINAIS_REGRA
+    assert d.resumo_fatos.split("\n") == saida_exemplo().resumo  # bullets do LLM, um por linha
     a = res.analise
-    assert a.origem == "llm:fake-1" and a.tese_provavel_autor.startswith("Fraude")
-    assert any(p.startswith("Contradição: Petição afirma") for p in a.pontos_fortes_banco)
-    assert "Contradições identificadas" in a.texto
+    assert a.origem == "llm:fake-1" and a.tese_provavel_autor == "" and a.texto == ""
+    assert a.contradicoes == saida_exemplo().contradicoes and a.pontos_fortes_banco == []
+    assert {"Contrato não apresentado pelo banco", "Extrato não apresentado pelo banco"} <= set(a.pontos_fracos_banco)
+    assert any("liveness" in r for r in a.riscos) and not any("Banco não apresentou" in p for p in a.pontos_fracos_banco)
 
     de_novo = ext.processar(pasta_exemplo)
     assert de_novo.cache_hit and len(fake.chamadas) == 1 and de_novo.dados == res.dados
     forcado = ext.processar(pasta_exemplo, forcar=True)
     assert not forcado.cache_hit and len(fake.chamadas) == 2
+
+
+def test_comentarios_por_documento_saem_dos_bullets(pasta_exemplo: Path, fake: FakeCliente, tmp_path: Path):
+    res = _extrator(fake, tmp_path).processar(pasta_exemplo)
+    com = {c.arquivo: c for c in res.dados.comentarios_documentos}
+    assert set(com) == {"peticao_inicial.txt", "comprovante_credito.txt", "demonstrativo_evolucao_divida.txt",
+                        "laudo_referenciado.txt"}
+    assert com["comprovante_credito.txt"].relevancia == "alta" and com["peticao_inicial.txt"].relevancia == "alta"
+    assert com["laudo_referenciado.txt"].relevancia == "media"
+    assert com["comprovante_credito.txt"].comentario.startswith("Crédito de R$ 4.000,00")  # sem a tag
+    assert com["peticao_inicial.txt"].comentario.count("Petição") == 0 and "Boletim" in com["peticao_inicial.txt"].comentario
 
 
 def test_contrato_extrator_docs(pasta_exemplo: Path, fake: FakeCliente, tmp_path: Path):
@@ -66,6 +81,14 @@ def test_mudanca_no_documento_invalida_cache(pasta_exemplo: Path, fake: FakeClie
     res = ext.processar(copia)
     assert not res.cache_hit and len(fake.chamadas) == 2
     assert "extrato.txt" in fake.chamadas[1]
+
+
+def test_cache_no_formato_antigo_e_recomputado(pasta_exemplo: Path, fake: FakeCliente, tmp_path: Path):
+    ext = _extrator(fake, tmp_path)
+    prep = ext.preparar(pasta_exemplo)
+    ext.cache.gravar(ext.chave_de(prep), {"dados": {}, "saida_llm": {"dados": {}, "analise": {}}}, NUMERO)
+    res = ext.processar(pasta_exemplo)
+    assert not res.cache_hit and len(fake.chamadas) == 1
 
 
 def test_injecao_sai_do_brief_e_vira_sinal(pasta_exemplo: Path, fake: FakeCliente, tmp_path: Path):
@@ -134,29 +157,20 @@ def test_minutas_por_template(pasta_exemplo: Path, fake: FakeCliente, tmp_path: 
     assert defesa.proposta_acordo == "" and defesa.mensagem_contato == "" and "improcedência" in defesa.roteiro_defesa
 
 
-def test_fallbacks_deterministicos_corrigem_o_llm(pasta_exemplo: Path, tmp_path: Path):
+def test_bullets_normalizados_sem_repeticao_e_no_maximo_cinco(pasta_exemplo: Path, tmp_path: Path):
+    base = saida_exemplo()
     saida = saida_exemplo()
-    saida.dados.contrato.canal = "desconhecido"            # o comprovante diz "Digital - Aplicativo Mobile"
-    saida.dados.contrato.credito_conta_terceiro = False    # mas o LLM emitiu o sinal CREDITO_CONTA_TERCEIRO
-    saida.dados.sinais_alerta[0].fonte = "[AUTOS]"         # não é arquivo
-    saida.dados.sinais_alerta[1].fonte = "SUBSIDIOS"
+    saida.resumo = ["- " + base.resumo[0], "•  " + base.resumo[1] + "\n   continua na linha de baixo", "",
+                    base.resumo[1], *base.resumo[2:], "[Petição] Sexto bullet que sobra."]
+    saida.contradicoes = ["* " + base.contradicoes[0], base.contradicoes[0]]
     res = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(pasta_exemplo)
-    c = res.dados.contrato
-    assert c.canal == "app" and c.credito_conta_terceiro is True
-    fontes = {s.codigo: s.fonte for s in res.dados.sinais_alerta}
-    assert fontes["IDOSO"] == "peticao_inicial.txt" and fontes["CREDITO_CONTA_TERCEIRO"] is None
-    assert fontes["LIVENESS_AUSENTE_CANAL_DIGITAL"] == "laudo_referenciado.txt"  # canal veio do fallback
+    linhas = res.dados.resumo_fatos.split("\n")
+    assert len(linhas) == 5 and linhas[0] == base.resumo[0]  # marcador sai, vazio sai
+    assert linhas[1] == base.resumo[1] + " continua na linha de baixo"  # um item, uma linha
+    assert "Sexto" not in res.dados.resumo_fatos and len(res.analise.contradicoes) == 1
 
 
-def test_comentarios_por_documento_descartam_arquivo_fora_do_brief(pasta_exemplo: Path, tmp_path: Path):
-    res = Extrator(cliente=FakeCliente(saida_exemplo()), cache=Cache(tmp_path / "cache")).processar(pasta_exemplo)
-    comentarios = {c.arquivo: c for c in res.dados.comentarios_documentos}
-    assert set(comentarios) == {"peticao_inicial.txt", "comprovante_credito.txt"}  # nao_existe.txt sai
-    assert comentarios["comprovante_credito.txt"].relevancia == "alta"
-    assert "4000,00" in comentarios["comprovante_credito.txt"].comentario
-
-
-def test_regra_decide_sinais_e_remove_invencao_do_llm(pasta_exemplo: Path, tmp_path: Path):
+def test_regra_decide_sinais_pelos_documentos(pasta_exemplo: Path, tmp_path: Path):
     copia = tmp_path / NUMERO
     shutil.copytree(pasta_exemplo, copia)
     # subsídios passam a dizer que o crédito caiu no próprio banco e a petição deixa de negar a conta
@@ -167,14 +181,10 @@ def test_regra_decide_sinais_e_remove_invencao_do_llm(pasta_exemplo: Path, tmp_p
     texto = pet.read_text(encoding="utf-8")
     ini, fim = texto.index("          O valor foi depositado"), texto.index("Registrou Boletim")
     pet.write_text(texto[:ini] + "          " + texto[fim:], encoding="utf-8")
-    saida = saida_exemplo()
-    saida.dados.sinais_alerta = [s for s in saida.dados.sinais_alerta if s.codigo == "CREDITO_CONTA_TERCEIRO"]  # só a invenção
-    saida.analise.riscos.append("Instrução embutida em comprovante_credito.txt")
-    res = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(copia)
-    codigos = res.dados.codigos_sinais()
+    res = Extrator(cliente=FakeCliente(), cache=Cache(tmp_path / "cache")).processar(copia)
+    codigos = set(res.dados.codigos_sinais())
     assert "CREDITO_CONTA_TERCEIRO" not in codigos and res.dados.contrato.credito_conta_terceiro is False
-    assert {"IDOSO", "BOLETIM_OCORRENCIA", "RECLAMACAO_BACEN", "SEM_CONTRATO", "LIVENESS_AUSENTE_CANAL_DIGITAL"} <= set(codigos)
-    assert not any("embutida" in r for r in res.analise.riscos)
+    assert codigos == SINAIS_REGRA - {"CREDITO_CONTA_TERCEIRO"}
     assert "Crédito em conta do próprio tomador" in res.brief
 
 
@@ -186,30 +196,25 @@ def test_pistas_cruzadas_no_brief(pasta_exemplo: Path, fake: FakeCliente, tmp_pa
     assert "boletim de ocorrência nº 2024.001122" in res.brief and "RDR nº 555555-1" in res.brief
 
 
-def test_analise_descarta_item_que_cita_subsidio_ausente(pasta_exemplo: Path, tmp_path: Path):
-    saida = saida_exemplo()  # a pasta de exemplo não tem dossiê nem extrato
-    saida.analise.pontos_fortes_banco.append("Assinatura compatível 91% [Dossiê]")
-    saida.analise.contradicoes.append("Petição afirma que nunca assinou; [Dossiê] mostra assinatura compatível")
-    saida.analise.riscos.append("[Extrato] mostra saques logo após o crédito")
-    saida.analise.pontos_fracos_banco.append("[Dossiê] ausente: sem perícia de assinatura")  # dizer que falta é legítimo
-    a = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(pasta_exemplo).analise
-    assert not any("91%" in p for p in a.pontos_fortes_banco)
-    assert not any("nunca assinou" in p for p in a.pontos_fortes_banco + a.riscos) and "nunca assinou" not in a.texto
-    assert not any("saques" in r for r in a.riscos)
-    assert any("[Dossiê] ausente" in p for p in a.pontos_fracos_banco)
-    assert any("[Comprovante] indica depósito" in p for p in a.pontos_fortes_banco)  # fonte presente continua
+def test_itens_que_citam_subsidio_ausente_saem(pasta_exemplo: Path, tmp_path: Path):
+    saida = saida_exemplo()  # a pasta de exemplo não tem contrato, extrato nem dossiê
+    saida.resumo[2] = "[Dossiê] ausente: sem perícia de assinatura."  # dizer que falta é legítimo
+    saida.resumo.append("[Extrato] Saques logo após o crédito.")
+    saida.contradicoes.append('Petição afirma "nunca assinou"; [Dossiê] mostra assinatura compatível 91%.')
+    res = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(pasta_exemplo)
+    assert "Saques" not in res.dados.resumo_fatos and "[Dossiê] ausente" in res.dados.resumo_fatos
+    assert len(res.analise.contradicoes) == 1 and "91%" not in res.analise.contradicoes[0]
 
 
-def test_canal_dos_subsidios_vence_o_llm_e_apaga_liveness_em_canal_nao_digital(pasta_exemplo: Path, tmp_path: Path):
+def test_canal_nao_digital_nao_gera_sinal_de_liveness(pasta_exemplo: Path, tmp_path: Path):
     copia = tmp_path / NUMERO
     shutil.copytree(pasta_exemplo, copia)
     for arq in (copia / "subsidios").iterdir():  # o banco documenta telemarketing, não app
         arq.write_text(arq.read_text(encoding="utf-8").replace(
             "Digital - Aplicativo Mobile (self-service)", "Correspondente bancário - Canal Telefônico (Telemarketing)"),
             encoding="utf-8")
-    saida = saida_exemplo()  # o LLM insiste em canal app e no sinal LIVENESS_AUSENTE_CANAL_DIGITAL (força acordo)
-    res = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(copia)
+    res = Extrator(cliente=FakeCliente(), cache=Cache(tmp_path / "cache")).processar(copia)
     assert res.dados.contrato.canal == "correspondente"
     assert "LIVENESS_AUSENTE_CANAL_DIGITAL" not in res.dados.codigos_sinais()
-    de_novo = Extrator(cliente=FakeCliente(saida), cache=Cache(tmp_path / "cache")).processar(copia)
+    de_novo = Extrator(cliente=FakeCliente(), cache=Cache(tmp_path / "cache")).processar(copia)
     assert de_novo.cache_hit and de_novo.dados == res.dados  # cache reaplica as mesmas regras

@@ -32,9 +32,9 @@ export function AderenciaBadge({ aderente, tipoDesvio, size }: { aderente: boole
   return <Badge color="laranja" variant="light" size={size}>{tipoDesvio ? `desvio de ${tipoDesvio}` : "desvio"}</Badge>;
 }
 
-/** Marca dados que vieram do stub (sem P1/P3 plugados). Some quando `origem` for "modelo" ou "llm". */
+/** Marca dados que vieram do stub (sem P1/P3 plugados). Some quando `origem` for "modelo" ou "llm[:modelo]". */
 export function OrigemBadge({ origem, rotulo }: { origem: string | null | undefined; rotulo?: string }) {
-  if (!origem || origem === "modelo" || origem === "llm") return null;
+  if (!origem || origem === "modelo" || origem.startsWith("llm")) return null;
   return (
     <Tooltip label="Valor de demonstração: modelo ou extração ainda não plugados">
       <Badge color="laranja" variant="outline" size="xs">{rotulo ?? "stub"}</Badge>

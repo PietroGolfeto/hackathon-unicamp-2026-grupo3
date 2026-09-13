@@ -132,6 +132,9 @@ exemplos-docs: ## copia docs/Caso_*/ (PDFs da Enter, não versionados) para data
 	  echo "→ data/exemplos/$$n"; ls "data/exemplos/$$n"/*; \
 	done
 
+test-llm: ## chama a OpenAI de verdade nos PDFs de docs/Caso_*/ e mostra o que o modelo devolve (gasta tokens)
+	$(PY) -m pytest -q src/extractor --llm -m llm -p no:cacheprovider
+
 # ---------------------------------------------------------------- engine de política e backtest (src/enteros, P1)
 
 data: ## carrega a base (xlsx em $(RAW) ou data/exemplos/sinteticos.csv) e salva cache parquet
@@ -173,4 +176,4 @@ backup: ## pg_dump da VPS para backups/enter-<data>.sql.gz
 	ssh $(VPS_HOST) 'cd $(VPS_DIR) && docker compose -f infra/compose.yml --project-directory . exec -T db pg_dump -U $${POSTGRES_USER:-enter} $${POSTGRES_DB:-enter}' | gzip > backups/enter-$$(date +%Y%m%d-%H%M).sql.gz
 	@ls -la backups | tail -1
 
-.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair exemplo-injecao bench-extractor exemplos-docs mocks-advogado data train backtest compare-models scored analises sinteticos engine-api demo deploy backup
+.PHONY: help hooks check check-commits check-memory-bank check-secrets lint test test-llm install setup up up-prod down logs psql dev-api dev-web seed historico ingest seed-demo mock-painel reset-demo reset jobs-docker extrair exemplo-injecao bench-extractor exemplos-docs mocks-advogado data train backtest compare-models scored analises sinteticos engine-api demo deploy backup

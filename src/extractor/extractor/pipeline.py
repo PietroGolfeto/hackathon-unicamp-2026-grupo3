@@ -1,8 +1,10 @@
 """Extrator de P3: implementa `core.docs.ExtratorDocs` (EXTRACTOR_IMPL=extractor.pipeline:Extrator).
 
 Fluxo por processo: ler PDFs/TXT → validar segurança → parsing → brief → cache? → LLM (uma chamada
-devolve dados + análise) → mapear para os contratos de core → gravar cache. `extrair` e `analisar`
-servem do mesmo resultado; `redigir` é template, sem LLM. Instanciável sem argumentos: lê
+devolve `resumo` em bullets e `contradicoes`) → montar os contratos de core → gravar cache. Em
+`DadosExtraidos` só `resumo_fatos` e `comentarios_documentos` vêm do LLM; autor, advogado, contrato e
+sinais vêm de regra (petição por regex, subsídios por rótulo e indício, UF pelo CNJ). `extrair` e
+`analisar` servem do mesmo resultado; `redigir` é template, sem LLM. Instanciável sem argumentos: lê
 OPENAI_API_KEY, OPENAI_MODEL, EXTRACTOR_CACHE_DIR e DATA_DIR do ambiente. Sem chave, responde só do cache.
 """
 
@@ -18,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from core import cnj
-from core.caso import CasoFeatures
+from core.caso import NOMES_SUBSIDIOS, CasoFeatures
 from core.docs import (
     Advogado,
     Analise,
@@ -38,11 +40,12 @@ from extractor import parsing, prompts, seguranca, texto
 from extractor.cache import Cache
 from extractor.cache import chave as chave_cache
 from extractor.llm import MODELO_PADRAO, ClienteLLM, ErroConfiguracao, ErroLLM, cliente_do_ambiente
-from extractor.schema import AnaliseLLM, SaidaLLM, hash_esquema
+from extractor.schema import SaidaLLM, hash_esquema
 from extractor.seguranca import Achado
 
 log = logging.getLogger(__name__)
 ORIGEM = "llm"
+MAX_BULLETS = 5
 
 
 @dataclass
@@ -61,6 +64,10 @@ class Preparacao:
     @property
     def fatos_peticao(self) -> dict[str, Any]:
         return next((d.fatos for d in self.docs if d.tipo == "peticao"), {})
+
+    @property
+    def subsidios(self) -> list[parsing.DocParseado]:
+        return [d for d in self.docs if d.pasta != "autos"]
 
 
 @dataclass
@@ -177,15 +184,17 @@ class Extrator:
                  f"ausentes: {', '.join(caso.subsidios.ausentes()) or 'nenhum'}\n"
                  "DADOS JÁ EXTRAÍDOS DOS AUTOS (JSON):\n" + corpo)
         resp = self.cliente.completar(prompts.INSTRUCOES + "\nATENÇÃO: só há dados já extraídos, sem trechos; "
-                                      "preencha `dados` copiando-os e concentre-se em `analise`.",
+                                      "resuma o que eles dizem e aponte contradição só se estiver explícita neles.",
                                       prompts.montar_entrada(brief), SaidaLLM)
-        analise = _analise_de(caso.numero, resp.saida.analise, resp.modelo)
+        ausentes = caso.subsidios.ausentes()
+        analise = _analise_de(caso.numero, resp.modelo, _itens(resp.saida.contradicoes, ausentes), ausentes,
+                              dados.sinais_alerta)
         self.cache.gravar(chave, {"numero": caso.numero, "chave": chave, "modelo": resp.modelo,
                                   "gerado_em": _agora().isoformat(), "analise": analise.model_dump(mode="json")})
         return analise
 
 
-# ---------------------------------------------------------------- mapeamento LLM → contratos de core
+# ---------------------------------------------------------------- mapeamento regras + LLM → contratos de core
 
 def _agora() -> datetime:
     return datetime.now(UTC)
@@ -198,169 +207,187 @@ def _numero_da_pasta(pasta: Path) -> str:
     return pasta.name
 
 
-def _ou[T](valor_llm: T | None, valor_regra: T | None) -> T | None:
-    return valor_llm if valor_llm is not None else valor_regra
+def _ou[T](primeiro: T | None, segundo: T | None) -> T | None:
+    return primeiro if primeiro is not None else segundo
 
 
-def _data(iso: str | None, br: str | None) -> date | None:
-    if iso:
-        try:
-            return date.fromisoformat(iso[:10])
-        except ValueError:
-            pass
-    if br:
-        return parsing._data_br(br)
+def _data(s: str | None) -> date | None:
+    if not s:
+        return None
+    try:
+        return date.fromisoformat(s[:10])
+    except ValueError:
+        return parsing._data_br(s)
+
+
+def _arquivo_com_indicio(docs: list[parsing.DocParseado], indicio: str) -> str | None:
+    return next((d.arquivo for d in docs if indicio in d.fatos.get("indicios", [])), None)
+
+
+def _campo(docs: list[parsing.DocParseado], padrao_rotulo: str) -> str | None:
+    """Primeiro valor dos pares rótulo/valor dos subsídios cujo rótulo casa com o padrão."""
+    for d in docs:
+        for rotulo, valor in d.fatos.get("campos", {}).items():
+            if re.search(padrao_rotulo, rotulo, re.IGNORECASE):
+                return valor
     return None
 
 
-def _cpf(valor: str | None) -> str | None:
-    if valor and re.fullmatch(r"\d{3}\.\d{3}\.\d{3}-\d{2}", valor):
-        return parsing._mascarar_cpf(valor)  # o LLM não deve devolver CPF inteiro; mascara por segurança
-    return valor
+def _valor_brl(s: str | None) -> float | None:
+    if s and (m := re.search(r"\d[\d.]*(?:,\d{1,2})?", s)):
+        return parsing._brl(m.group(0))
+    return None
 
 
-def _fonte(valor: str | None, prep: Preparacao) -> str | None:
-    """'AUTOS'/'[SUBSIDIOS]' não são arquivos: autos vira o nome da petição; subsídios genérico vira None."""
-    if not valor:
-        return None
-    limpo = valor.strip("[] ").upper()
-    if limpo == "AUTOS":
-        return next((d.arquivo for d in prep.docs if d.pasta == "autos"), None)
-    if limpo == "SUBSIDIOS":
-        return None
-    return valor
+def _inteiro(s: str | None) -> int | None:
+    if s and (m := re.search(r"\d+", s)):
+        return int(m.group(0))
+    return None
 
 
-def _comentarios(saida: SaidaLLM, prep: Preparacao) -> list[ComentarioDocumento]:
-    """Um comentário por arquivo lido; descarta o que o LLM tenha inventado e o repetido."""
-    conhecidos = {d.arquivo for d in prep.docs}
-    vistos: set[str] = set()
-    lista: list[ComentarioDocumento] = []
-    for c in saida.dados.comentarios_documentos:
-        arquivo = (c.arquivo or "").strip().strip("[] ")
-        if arquivo not in conhecidos or arquivo in vistos or not c.comentario.strip():
-            continue
-        vistos.add(arquivo)
-        lista.append(ComentarioDocumento(arquivo=arquivo, relevancia=c.relevancia,
-                                         comentario=c.comentario.strip()))
-    return lista
+def _assinatura(subs: list[parsing.DocParseado], ausentes: list[str]) -> str:
+    ind = {i for d in subs for i in d.fatos.get("indicios", [])}
+    if "assinatura_manuscrita" in ind:
+        return "fisica"
+    if "biometria_ou_liveness" in ind:
+        return "biometria"
+    if "assinatura_eletronica" in ind:
+        return "digital"
+    return "ausente" if "contrato" in ausentes else "desconhecida"
+
+
+def _confianca(prep: Preparacao) -> float:
+    """Completude do material: petição legível + fração dos seis subsídios entregues."""
+    peticao = 1 if any(d.tipo == "peticao" and (d.trechos or d.fatos) for d in prep.docs) else 0
+    return round((peticao + len(prep.presentes)) / (1 + len(NOMES_SUBSIDIOS)), 2)
 
 
 def mapear(prep: Preparacao, saida: SaidaLLM, modelo: str) -> tuple[DadosExtraidos, Analise]:
+    """Dados, contrato e sinais vêm das regras; do LLM entram só o resumo em bullets e as contradições."""
     f = prep.fatos_peticao
-    d = saida.dados
-    # "Canal de contratação" escrito num subsídio vence o LLM; sem isso, vale o que o LLM leu
-    canal = parsing.canal_dos_subsidios(prep.docs) or d.contrato.canal
-    autor = Pessoa(nome=_ou(d.autor.nome, f.get("autor_nome")), cpf_mascarado=_cpf(_ou(d.autor.cpf_mascarado, f.get("autor_cpf_mascarado"))),
-                   idade=_ou(d.autor.idade, f.get("autor_idade")), email=_ou(d.autor.email, f.get("autor_email")),
-                   telefone=d.autor.telefone)
-    adv = Advogado(nome=_ou(d.advogado_autor.nome, f.get("advogado_nome")), oab=_ou(d.advogado_autor.oab, f.get("advogado_oab")),
-                   email=_ou(d.advogado_autor.email, f.get("advogado_email")), telefone=d.advogado_autor.telefone,
-                   cpf_mascarado=_cpf(d.advogado_autor.cpf_mascarado), idade=d.advogado_autor.idade)
-    sinais_llm = [SinalAlerta(codigo=s.codigo, descricao=s.descricao, severidade=s.severidade, fonte=_fonte(s.fonte, prep))
-                  for s in d.sinais_alerta]
-    sinais, conta_terceiro = _reconciliar_sinais(prep, sinais_llm, canal, d.contrato.liveness, d.contrato.credito_conta_terceiro)
-    contrato = ContratoInfo(
-        canal=canal, assinatura=d.contrato.assinatura, credito_conta_terceiro=conta_terceiro,
-        valor=_ou(d.contrato.valor, f.get("contrato_valor_alegado")),
-        parcelas=_ou(d.contrato.parcelas, f.get("contrato_parcelas_alegadas")),
-        data=_data(d.contrato.data, f.get("contrato_data_alegada")),
-    )
+    subs = prep.subsidios
+    canal = parsing.canal_dos_subsidios(prep.docs) or "desconhecido"
+    liveness = "nao_localizado" if _arquivo_com_indicio(subs, "liveness_nao_localizado") else "desconhecido"
+    sinais, conta_terceiro = _sinais_por_regra(prep, canal, liveness)
     for doc in prep.docs:
         if motivo := seguranca.resumo_sinal(doc.achados):
             sinais.append(SinalAlerta(codigo=seguranca.CODIGO_SUSPEITO, descricao=motivo, severidade="alta",
                                       fonte=doc.arquivo))
-    dados = DadosExtraidos(
-        numero=prep.numero, origem=ORIGEM, modelo=modelo, autor=autor, advogado_autor=adv,
-        comarca=_ou(d.comarca, f.get("comarca")), uf=prep.uf or d.uf or f.get("uf"),
-        valor_causa=f.get("valor_causa") or d.valor_causa, pedidos=list(d.pedidos), contrato=contrato,
-        sinais_alerta=sinais, comentarios_documentos=_comentarios(saida, prep),
-        resumo_fatos=d.resumo_fatos.strip(),
-        confianca=min(1.0, max(0.0, float(d.confianca))), gerado_em=_agora(),
+    contrato = ContratoInfo(
+        canal=canal, assinatura=_assinatura(subs, prep.ausentes), credito_conta_terceiro=conta_terceiro,
+        valor=_ou(f.get("contrato_valor_alegado"), _valor_brl(_campo(subs, r"valor (da opera|l[íi]quido|liberado|financiado)"))),
+        parcelas=_ou(f.get("contrato_parcelas_alegadas"), _inteiro(_campo(subs, r"(n[úu]mero|n[ºo°]) de parcelas|^prazo"))),
+        data=_data(_ou(f.get("contrato_data_alegada"), _campo(subs, r"data da contrata"))),
     )
-    houve_injecao = any(a.codigo == "INJECAO_PROMPT" for a in prep.achados)
-    return dados, _analise_de(prep.numero, saida.analise, modelo, houve_injecao, prep.ausentes)
+    resumo = _itens(saida.resumo, prep.ausentes)[:MAX_BULLETS]
+    contradicoes = _itens(saida.contradicoes, prep.ausentes)
+    dados = DadosExtraidos(
+        numero=prep.numero, origem=ORIGEM, modelo=modelo,
+        autor=Pessoa(nome=f.get("autor_nome"), cpf_mascarado=f.get("autor_cpf_mascarado"), idade=f.get("autor_idade"),
+                     email=f.get("autor_email"), telefone=None),
+        advogado_autor=Advogado(nome=f.get("advogado_nome"), oab=f.get("advogado_oab"), email=f.get("advogado_email"),
+                                telefone=None, cpf_mascarado=None, idade=None),
+        comarca=f.get("comarca"), uf=prep.uf or f.get("uf"), valor_causa=f.get("valor_causa"), pedidos=[],
+        contrato=contrato, sinais_alerta=sinais, comentarios_documentos=_comentarios(resumo, contradicoes, prep.docs),
+        resumo_fatos="\n".join(resumo), confianca=_confianca(prep), gerado_em=_agora(),
+    )
+    return dados, _analise_de(prep.numero, modelo, contradicoes, prep.ausentes, sinais)
 
 
-def _reconciliar_sinais(prep: Preparacao, sinais_llm: list[SinalAlerta], canal: str, liveness: str,
-                        conta_llm: bool | None) -> tuple[list[SinalAlerta], bool | None]:
-    """Os sinais que a regra consegue decidir vencem o LLM: entram se faltam, saem se o LLM inventou.
+def _sinais_por_regra(prep: Preparacao, canal: str, liveness: str) -> tuple[list[SinalAlerta], bool | None]:
+    """Sinais decididos por regra (decisão 42): o LLM não emite sinal, então não há o que reconciliar.
 
-    Vale para IDOSO (idade), BOLETIM_OCORRENCIA e RECLAMACAO_BACEN (petição), SEM_CONTRATO (subsídios),
-    CREDITO_CONTA_TERCEIRO (banco depositário × petição) e LIVENESS_AUSENTE_CANAL_DIGITAL (canal × laudo).
-    CREDITO_CONTA_TERCEIRO força acordo na política: um falso positivo custa dinheiro.
+    IDOSO (idade pelo RG e data da petição), BOLETIM_OCORRENCIA e RECLAMACAO_BACEN (petição), SEM_CONTRATO
+    (subsídios entregues), CREDITO_CONTA_TERCEIRO (banco depositário × petição negando a conta),
+    LIVENESS_AUSENTE_CANAL_DIGITAL (canal digital × laudo) e ASSINATURA_DIVERGENTE (perícia).
     """
     pet = next((d for d in prep.docs if d.tipo == "peticao"), None)
     f = pet.fatos if pet else {}
     ind = set(f.get("indicios", []))
     pet_arq = pet.arquivo if pet else None
-    decididos: dict[str, tuple[bool, str, str | None, str]] = {}
-    if (idade := f.get("autor_idade")) is not None:
-        decididos["IDOSO"] = (idade >= 60, f"Autor com {idade} anos na data da petição", pet_arq, "media")
+    sinais: list[SinalAlerta] = []
+    if (idade := f.get("autor_idade")) is not None and idade >= 60:
+        sinais.append(SinalAlerta(codigo="IDOSO", descricao=f"Autor com {idade} anos na data da petição",
+                                  severidade="media", fonte=pet_arq))
     if f.get("boletim_ocorrencia") or "boletim_ocorrencia" in ind:
         bo = f.get("boletim_ocorrencia")
-        decididos["BOLETIM_OCORRENCIA"] = (True, "Há boletim de ocorrência" + (f" nº {bo}" if bo else ""), pet_arq, "media")
+        sinais.append(SinalAlerta(codigo="BOLETIM_OCORRENCIA", descricao="Há boletim de ocorrência" + (f" nº {bo}" if bo else ""),
+                                  severidade="media", fonte=pet_arq))
     if f.get("reclamacao_bacen_rdr") or "reclamacao_bacen" in ind:
         rdr = f.get("reclamacao_bacen_rdr")
-        decididos["RECLAMACAO_BACEN"] = (True, "Há reclamação no BACEN" + (f" (RDR nº {rdr})" if rdr else ""), pet_arq, "media")
-    decididos["SEM_CONTRATO"] = ("contrato" in prep.ausentes, "Banco não apresentou o contrato", None, "alta")
+        sinais.append(SinalAlerta(codigo="RECLAMACAO_BACEN", descricao="Há reclamação no BACEN" + (f" (RDR nº {rdr})" if rdr else ""),
+                                  severidade="media", fonte=pet_arq))
+    if "contrato" in prep.ausentes:
+        sinais.append(SinalAlerta(codigo="SEM_CONTRATO", descricao="Banco não apresentou o contrato", severidade="alta", fonte=None))
     conta: bool | None = None
     if pet and (dep := parsing.banco_depositario(prep.docs)):
         banco, arq = dep
         nega = parsing.nega_conta_deposito(pet, banco)
         if nega and parsing.BANCO_PROPRIO not in banco.lower():
             conta = True
-            decididos["CREDITO_CONTA_TERCEIRO"] = (True, f"Crédito caiu em conta ({banco}) que o autor nega ter", arq, "alta")
+            sinais.append(SinalAlerta(codigo="CREDITO_CONTA_TERCEIRO", descricao=f"Crédito caiu em conta ({banco}) que o autor nega ter",
+                                      severidade="alta", fonte=arq))
         elif parsing.BANCO_PROPRIO in banco.lower() and not nega:
             conta = False
-            decididos["CREDITO_CONTA_TERCEIRO"] = (False, "", arq, "alta")
-    sem_liveness = liveness == "nao_localizado" or any(
-        "liveness_nao_localizado" in d.fatos.get("indicios", []) for d in prep.docs if d.pasta != "autos")
-    if canal in ("app", "internet_banking"):
-        laudo = next((d.arquivo for d in prep.docs if "liveness_nao_localizado" in d.fatos.get("indicios", [])), None)
-        decididos["LIVENESS_AUSENTE_CANAL_DIGITAL"] = (sem_liveness, "Contratação digital sem vídeo de liveness localizado",
-                                                       laudo, "alta")
-    elif canal != "desconhecido":  # canal não digital: o sinal não se aplica; se o LLM o emitiu, sai (força acordo)
-        decididos["LIVENESS_AUSENTE_CANAL_DIGITAL"] = (False, "", None, "alta")
-    finais = [s for s in sinais_llm if not (s.codigo in decididos and decididos[s.codigo][0] is False)]
-    presentes = {s.codigo for s in finais}
-    for codigo, (presente, descricao, fonte, severidade) in decididos.items():
-        if presente and codigo not in presentes:
-            finais.append(SinalAlerta(codigo=codigo, descricao=descricao, severidade=severidade, fonte=fonte))
-    if conta is None:
-        conta = True if "CREDITO_CONTA_TERCEIRO" in {s.codigo for s in finais} else conta_llm
-    return finais, conta
+    if canal in ("app", "internet_banking") and liveness == "nao_localizado":
+        sinais.append(SinalAlerta(codigo="LIVENESS_AUSENTE_CANAL_DIGITAL", descricao="Contratação digital sem vídeo de liveness localizado",
+                                  severidade="alta", fonte=_arquivo_com_indicio(prep.subsidios, "liveness_nao_localizado")))
+    if arq := _arquivo_com_indicio(prep.subsidios, "assinatura_divergente"):
+        sinais.append(SinalAlerta(codigo="ASSINATURA_DIVERGENTE", descricao="Perícia aponta assinatura divergente",
+                                  severidade="alta", fonte=arq))
+    return sinais, conta
 
 
-_TAG_SUBSIDIO = {"contrato": r"\[contrato\]", "extrato": r"\[extrato\]", "comprovante_credito": r"\[comprovante\]",
-                 "dossie": r"\[dossi[êe]\]", "demonstrativo_divida": r"\[demonstrativo\]", "laudo_referenciado": r"\[laudo\]"}
+# tags aceitam sufixo ("[Laudo_Referenciado]", "[Comprovante BACEN]"): o modelo nem sempre usa a forma curta
+_TAG_SUBSIDIO = {"contrato": r"\[contrato[^\]]*\]", "extrato": r"\[extrato[^\]]*\]", "comprovante_credito": r"\[comprovante[^\]]*\]",
+                 "dossie": r"\[dossi[êe][^\]]*\]", "demonstrativo_divida": r"\[demonstrativo[^\]]*\]",
+                 "laudo_referenciado": r"\[laudo[^\]]*\]"}
+_TAG_TIPO = {"peticao": r"\[peti[cç][ãa]o[^\]]*\]"} | _TAG_SUBSIDIO
 _DIZ_AUSENTE = re.compile(r"ausente|n[ãa]o\s+(foi\s+)?(apresentad|juntad|entregu|const)", re.IGNORECASE)
+_MARCADOR = re.compile(r"^[-•*·]+\s*")
 
 
 def _cita_ausente(item: str, ausentes: list[str]) -> bool:
-    """Item de análise que atribui um fato a subsídio que o banco não entregou: o LLM inventou a fonte."""
+    """Item que atribui um fato a subsídio que o banco não entregou: o LLM inventou a fonte."""
     tags = [_TAG_SUBSIDIO[t] for t in ausentes if t in _TAG_SUBSIDIO]
     return any(re.search(tag, item, re.IGNORECASE) for tag in tags) and not _DIZ_AUSENTE.search(item)
 
 
-def _analise_de(numero: str, a: AnaliseLLM, modelo: str, houve_injecao: bool = True,
-                ausentes: list[str] | None = None) -> Analise:
-    ausentes = list(ausentes or [])
-    fortes = [p for p in a.pontos_fortes_banco if not _cita_ausente(p, ausentes)]
-    riscos = [r for r in a.riscos if (houve_injecao or not re.search(r"instru[cç][ãa]o\s+embutida", r, re.IGNORECASE))
-              and not _cita_ausente(r, ausentes)]
-    contradicoes = [c for c in a.contradicoes if not _cita_ausente(c, ausentes)]
-    descartados = len(a.pontos_fortes_banco) + len(a.riscos) + len(a.contradicoes) - len(fortes) - len(riscos) - len(contradicoes)
-    if descartados:
-        log.info("extractor %s: %d item(ns) de análise citavam subsídio ausente e saíram", numero, descartados)
-    for c in contradicoes:  # contradição da petição favorece o banco; inconsistência entre subsídios é risco
-        (fortes if re.match(r"\s*peti[cç][ãa]o", c, re.IGNORECASE) else riscos).append(f"Contradição: {c}")
-    texto_final = a.texto.strip()
-    if contradicoes:
-        texto_final += "\n\nContradições identificadas: " + " ".join(contradicoes)
-    return Analise(numero=numero, origem=f"{ORIGEM}:{modelo}", pontos_fortes_banco=fortes,
-                   pontos_fracos_banco=list(a.pontos_fracos_banco), tese_provavel_autor=a.tese_provavel_autor.strip(),
-                   riscos=riscos, texto=texto_final)
+def _itens(brutos: list[str], ausentes: list[str]) -> list[str]:
+    """Uma linha por item, sem marcador, sem repetição e sem citar subsídio que o banco não entregou."""
+    itens: list[str] = []
+    for bruto in brutos:
+        item = _MARCADOR.sub("", " ".join(bruto.split()))
+        if item and item not in itens and not _cita_ausente(item, ausentes):
+            itens.append(item)
+    if descartados := len(brutos) - len(itens):
+        log.info("extractor: %d item(ns) do LLM saíram (vazios, repetidos ou citando subsídio ausente)", descartados)
+    return itens
+
+
+def _comentarios(resumo: list[str], contradicoes: list[str], docs: list[parsing.DocParseado]) -> list[ComentarioDocumento]:
+    """O comentário de cada documento é o bullet do resumo que o cita; alta relevância se entra numa contradição."""
+    lista: list[ComentarioDocumento] = []
+    for d in docs:
+        if not (padrao := _TAG_TIPO.get(d.tipo)):
+            continue
+        tag = re.compile(padrao, re.IGNORECASE)
+        bullets = [tag.sub("", b).strip(" :;-") for b in resumo if tag.search(b)]
+        if not bullets:
+            continue
+        em_contradicao = any(tag.search(c) for c in contradicoes) or (d.tipo == "peticao" and bool(contradicoes))
+        lista.append(ComentarioDocumento(arquivo=d.arquivo, relevancia="alta" if em_contradicao else "media",
+                                         comentario=" ".join(bullets)))
+    return lista
+
+
+def _analise_de(numero: str, modelo: str, contradicoes: list[str], ausentes: list[str],
+                sinais: list[SinalAlerta]) -> Analise:
+    """Contradições do LLM em campo próprio; o que falta e os sinais de regra em pontos fracos. Sem tese nem parecer."""
+    fracos = [f"{NOMES_SUBSIDIOS.get(k, k)} não apresentado pelo banco" for k in ausentes]
+    fracos += [s.descricao for s in sinais if s.severidade == "alta" and s.codigo != "SEM_CONTRATO"]
+    return Analise(numero=numero, origem=f"{ORIGEM}:{modelo}", contradicoes=contradicoes, pontos_fortes_banco=[],
+                   pontos_fracos_banco=fracos, tese_provavel_autor="", riscos=[s.descricao for s in sinais], texto="")
 
 
 # ---------------------------------------------------------------- cache
