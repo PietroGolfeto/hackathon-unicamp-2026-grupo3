@@ -121,7 +121,7 @@ bench-extractor: ## benchmark da compressão de tokens (sem LLM) → docs/extrac
 	$(if $(UV),$(UVENV) uv run --no-sync --with tiktoken python,$(PY)) -m extractor.benchmark docs/Caso_*/ \
 	  src/extractor/tests/dados/*/ --stress --cache-dir data/cache/extractor --md docs/extractor/benchmark.md
 
-mocks-advogado: ## data/mock-para-tela-advogado/Caso_NN/ -> data/exemplos/<numero>/{autos,subsidios} (+ caso derivado)
+mocks-advogado: ## data/mock-para-tela-advogado/Caso_NN/ -> data/exemplos/<numero>/{autos,subsidios} (+ caso derivado, + caso de prompt injection)
 	./scripts/mocks_advogado.sh
 
 exemplos-docs: ## copia docs/Caso_*/ (PDFs da Enter, não versionados) para data/exemplos/<numero>/{autos,subsidios}

@@ -6,6 +6,9 @@
 # O terceiro caso é derivado do primeiro sem o extrato: mesmo autor, mesma UF, só o acervo de
 # subsídios muda. Tirar só o extrato deixa o caso na zona intermediária, onde vale a pena pedir o
 # documento antes de acordar; tirar contrato e extrato juntos faria dele um clone do segundo caso.
+# O quarto caso reaproveita o derivado com as mesmas injeções ocultas de `extractor.injecao`
+# (a mesma lógica de `make exemplo-injecao`), para mostrar a defesa contra prompt injection
+# funcionando com um caso real da demo.
 set -euo pipefail
 
 ORIGEM="${ORIGEM:-data/mock-para-tela-advogado}"
@@ -14,6 +17,9 @@ DERIVADO_NUMERO="${DERIVADO_NUMERO:-0801235-56.2024.8.10.0001}"
 DERIVADO_DE="${DERIVADO_DE:-Caso_01}"
 # subsídio que o caso derivado não tem
 DERIVADO_SEM='extrato'
+INJECAO_NUMERO="${INJECAO_NUMERO:-0801235-57.2024.8.10.0001}"
+INJECAO_DE="${INJECAO_DE:-$DERIVADO_NUMERO}"
+PY_BIN="${PY_BIN:-$([ -x .venv/bin/python ] && echo .venv/bin/python || echo python3)}"
 
 [ -d "$ORIGEM" ] || { echo "erro: $ORIGEM não existe (PDFs da Enter não são versionados)" >&2; exit 1; }
 
@@ -59,4 +65,11 @@ if [ -d "$derivado" ]; then
   echo "  (derivado de $DERIVADO_DE sem o extrato)"
 else
   echo "aviso: $derivado não existe; caso derivado não foi criado" >&2
+fi
+
+if [ -d "$DESTINO/$INJECAO_DE" ]; then
+  "$PY_BIN" -m extractor.injecao --origem "$DESTINO/$INJECAO_DE" --destino "$DESTINO/$INJECAO_NUMERO" --forcar
+  echo "  (injeção de prompt oculta na petição de $INJECAO_DE)"
+else
+  echo "aviso: $DESTINO/$INJECAO_DE não existe; caso de prompt injection não foi criado" >&2
 fi
