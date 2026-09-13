@@ -33,7 +33,9 @@ export function FormDecisao({ pid, rec, abertos, inicio, onOk }: {
           <Collapse in={tipo === "acordo"}>
             <NumberInput label="Valor proposto" value={valor ?? ""} onChange={(v) => setValor(typeof v === "number" ? v : v === "" ? null : Number(v))}
               min={0} step={50} thousandSeparator="." decimalSeparator="," prefix="R$ " decimalScale={2} fixedDecimalScale inputMode="decimal" size="md"
-              description={rec.tipo === "acordo" ? `Banda da política: ${brl(rec.valor_min)} a ${brl(rec.valor_max)}` : "A política recomendou defesa: acordo vai para aprovação do gestor."}
+              description={rec.valor_min != null
+                ? `Banda da política: ${brl(rec.valor_min)} a ${brl(rec.valor_max)}`
+                : "A política recomendou defesa: acordo vai para aprovação do gestor."}
               error={foraDaBanda ? "Fora da banda: exige justificativa e aprovação do gestor" : undefined} />
           </Collapse>
           <Collapse in={diverge}>

@@ -8,7 +8,10 @@ import type { DocumentosAbertos } from "../caso.types";
 export function useFormDecisao({ pid, rec, abertos, inicio, onOk }: {
   pid: number; rec: Recomendacao; abertos: DocumentosAbertos; inicio: number; onOk: (r: DecisaoRegistrada) => void;
 }) {
-  const [tipo, setTipo] = useState<TipoDecisao>(rec.tipo);
+  // O advogado decide acordo ou defesa. "instruir" é um acordo adiado: a aderência é medida
+  // contra ele, então é ele que vem pré-selecionado. Mesma regra do backend.
+  const esperado: TipoDecisao = rec.tipo === "instruir" ? "acordo" : rec.tipo;
+  const [tipo, setTipo] = useState<TipoDecisao>(esperado);
   const [valor, setValor] = useState<number | null>(rec.valor_sugerido);
   const [justificativa, setJustificativa] = useState("");
   const [segundos, setSegundos] = useState(0);
@@ -18,9 +21,9 @@ export function useFormDecisao({ pid, rec, abertos, inicio, onOk }: {
     return () => clearInterval(t);
   }, [inicio]);
 
-  const foraDaBanda = tipo === "acordo" && rec.tipo === "acordo" && valor != null &&
+  const foraDaBanda = tipo === "acordo" && valor != null &&
     rec.valor_min != null && rec.valor_max != null && (valor < rec.valor_min || valor > rec.valor_max);
-  const diverge = tipo !== rec.tipo || foraDaBanda;
+  const diverge = tipo !== esperado || foraDaBanda;
 
   const registrar = useMutation({
     mutationFn: () => api.decidir(pid, {

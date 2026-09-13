@@ -2,7 +2,8 @@ import { Alert, Box, Card, Divider, Group, List, Skeleton, Stack, Text, Title } 
 
 import type { ProcessoDetalhe, Recomendacao } from "../../../../api/client";
 import { OrigemBadge } from "../../../../components/Badges";
-import { brl, pct } from "../../../../lib/format";
+import { brl, pct, ROTULO_TIPO } from "../../../../lib/format";
+import { NOMES_SUBSIDIOS } from "../caso.const";
 import { BandaOferta } from "./BandaOferta";
 import { MedidorProbabilidade } from "./MedidorProbabilidade";
 import { MiniMetrica } from "./MiniMetrica";
@@ -14,17 +15,26 @@ export function CardRecomendacao({ p, rec, carregando, erro }: {
   if (erro) return <Alert color="vermelho" variant="light" title="Sem recomendação">{erro.message}</Alert>;
   if (!rec) return null;
   const s = rec.scores_snapshot;
-  const acordo = rec.tipo === "acordo";
+  const defesa = rec.tipo === "defesa";
+  const instruir = rec.tipo === "instruir";
+  // "instruir" é um acordo já dimensionado que espera os subsídios: tem oferta e banda como o acordo.
+  const temOferta = rec.valor_sugerido != null;
   return (
-    <Card style={{ borderColor: acordo ? "var(--enter-laranja)" : "var(--enter-tinta)", borderWidth: 2 }}>
+    <Card style={{ borderColor: defesa ? "var(--enter-tinta)" : "var(--enter-laranja)", borderWidth: 2 }}>
       <Text size="xs" c="dimmed" tt="uppercase" lts=".06em" fw={500}>A política recomenda</Text>
       <Group justify="space-between" align="flex-start" wrap="wrap" gap="xl" mt={4}>
         <div style={{ flex: "1 1 280px" }}>
           <Group gap="sm" align="baseline">
-            <Title order={1} c={acordo ? "laranja.8" : "tinta.6"} className="subir">{acordo ? "Acordo" : "Defesa"}</Title>
-            {acordo && <Text className="numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
+            <Title order={1} c={defesa ? "tinta.6" : "laranja.8"} className="subir">{ROTULO_TIPO[rec.tipo] ?? rec.tipo}</Title>
+            {temOferta && !instruir && <Text className="numero" fz={{ base: 26, sm: 32 }} lh={1}>{brl(rec.valor_sugerido)}</Text>}
           </Group>
-          {acordo && rec.valor_min != null && rec.valor_max != null && rec.valor_sugerido != null && (
+          {instruir && (
+            <Alert color="laranja" variant="light" mt="sm" p="xs">
+              Solicitar ao banco: {rec.docs_a_solicitar.map((d) => NOMES_SUBSIDIOS[d] ?? d).join(", ")}.
+              {temOferta && ` Se o banco não localizar, propor o acordo de ${brl(rec.valor_sugerido)}.`}
+            </Alert>
+          )}
+          {temOferta && rec.valor_min != null && rec.valor_max != null && rec.valor_sugerido != null && (
             <Box mt="md"><BandaOferta min={rec.valor_min} sugerido={rec.valor_sugerido} max={rec.valor_max} causa={p.valor_causa} /></Box>
           )}
           <Box mt="lg">

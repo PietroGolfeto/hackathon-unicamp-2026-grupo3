@@ -4,3 +4,8 @@ export const NOMES_SUBSIDIOS: Record<string, string> = {
 };
 
 export const GRUPOS_DOCUMENTOS = [["autos", "Autos"], ["subsidios", "Subsídios do banco"]] as const;
+
+/** Cor do ponto de relevância do comentário da IA em cada documento. */
+export const COR_RELEVANCIA: Record<string, string> = {
+  alta: "vermelho", media: "laranja", baixa: "gray",
+};

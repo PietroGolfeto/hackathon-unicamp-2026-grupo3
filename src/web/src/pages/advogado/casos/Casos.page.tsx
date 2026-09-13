@@ -4,6 +4,7 @@ import { IcoBusca } from "../../../components/Icones";
 import { num } from "../../../lib/format";
 import { OPCOES_SITUACAO } from "./casos.const";
 import type { Situacao } from "./casos.types";
+import { PreparandoCasos } from "./components/PreparandoCasos";
 import { TabelaCasos } from "./components/TabelaCasos";
 import { useCasos } from "./hooks/useCasos";
 
@@ -11,6 +12,7 @@ export default function Casos() {
   const {
     busca, setBusca, situacao, setSituacao, usuario, gestor,
     processos, filtrados, pendentes, temAutor, colunas, isLoading, error,
+    preparacao, preparando, erroPreparacao,
   } = useCasos();
 
   return (
@@ -32,8 +34,15 @@ export default function Casos() {
       </Group>
 
       {error && <Alert color="vermelho" variant="light">{error.message}</Alert>}
+      {erroPreparacao && !preparando && (
+        <Alert color="laranja" variant="light">Alguns casos não puderam ser preparados: {erroPreparacao}</Alert>
+      )}
 
-      <TabelaCasos casos={filtrados} gestor={!!gestor} temAutor={temAutor} colunas={colunas} carregando={isLoading} />
+      {preparando ? (
+        <PreparandoCasos preparacao={preparacao} />
+      ) : (
+        <TabelaCasos casos={filtrados} gestor={!!gestor} temAutor={temAutor} colunas={colunas} carregando={isLoading} />
+      )}
     </Stack>
   );
 }

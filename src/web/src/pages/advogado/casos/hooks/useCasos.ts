@@ -5,13 +5,18 @@ import { api } from "../../../../api/client";
 import { useSession } from "../../../../auth/useSession";
 import { COLUNAS_BASE } from "../casos.const";
 import type { Situacao } from "../casos.types";
+import { usePreparacao } from "./usePreparacao";
 
 /** Lista de processos com filtro de situação e busca por número ou autor. */
 export function useCasos() {
   const [busca, setBusca] = useState("");
   const [situacao, setSituacao] = useState<Situacao>("todos");
   const { data: usuario } = useSession();
-  const { data, isLoading, error } = useQuery({ queryKey: ["processos"], queryFn: () => api.processos() });
+  // a lista só busca depois que todas as inferências terminaram
+  const { preparacao, pronto, preparando, erroPreparacao } = usePreparacao();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["processos"], queryFn: () => api.processos(), enabled: pronto,
+  });
   const gestor = usuario?.papel === "gestor";
 
   const filtrados = useMemo(() => {
@@ -33,6 +38,7 @@ export function useCasos() {
     busca, setBusca, situacao, setSituacao,
     usuario, gestor, processos: data, filtrados,
     pendentes, temAutor, colunas,
-    isLoading, error: error as Error | null,
+    preparacao, preparando, erroPreparacao,
+    isLoading: isLoading || !pronto, error: error as Error | null,
   };
 }

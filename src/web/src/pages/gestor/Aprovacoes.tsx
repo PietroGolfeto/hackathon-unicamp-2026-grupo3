@@ -82,7 +82,7 @@ export default function Aprovacoes() {
                     </Table.Td>
                     <Table.Td>
                       <TipoBadge tipo={a.recomendacao.tipo} size="sm" />
-                      {a.recomendacao.tipo === "acordo" && (
+                      {a.recomendacao.valor_min != null && (
                         <Text size="xs" c="dimmed" mt={2} className="numero">{brl(a.recomendacao.valor_min)} – {brl(a.recomendacao.valor_max)}</Text>
                       )}
                     </Table.Td>

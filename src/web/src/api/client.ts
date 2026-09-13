@@ -42,6 +42,8 @@ async function req<T>(path: string, init: RequestInit & { json?: unknown } = {})
 
 export type Papel = "advogado" | "gestor";
 export type TipoDecisao = "acordo" | "defesa";
+/** A recomendação tem uma saída a mais que a decisão: instruir = pedir subsídios antes de acordar. */
+export type TipoRecomendacao = TipoDecisao | "instruir";
 
 export interface Usuario {
   id: number; nome: string; email: string; papel: Papel;
@@ -49,7 +51,7 @@ export interface Usuario {
 }
 
 export interface RecomendacaoResumo {
-  id: number; politica_id: number; tipo: TipoDecisao;
+  id: number; politica_id: number; tipo: TipoRecomendacao;
   valor_sugerido: number | null; valor_min: number | null; valor_max: number | null; created_at: string;
 }
 
@@ -61,7 +63,11 @@ export interface ProcessoResumo {
   reservado_ate: string | null;
 }
 
-export interface Documento { tipo: string; arquivo: string; url: string }
+export type Relevancia = "alta" | "media" | "baixa";
+export interface Documento {
+  tipo: string; arquivo: string; url: string;
+  comentario?: string | null; relevancia?: Relevancia | null;  // da extração; null sem P3
+}
 export interface Sinal { codigo: string; descricao: string; severidade: "baixa" | "media" | "alta"; fonte?: string | null }
 export interface Pessoa { nome?: string | null; cpf_mascarado?: string | null; idade?: number | null; email?: string | null; telefone?: string | null; oab?: string | null }
 
@@ -99,10 +105,16 @@ export interface ProcessoDetalhe {
 
 export interface Recomendacao {
   id: number; processo_id: number; politica_id: number; politica_versao: number; politica_nome: string;
-  tipo: TipoDecisao; valor_sugerido: number | null; valor_min: number | null; valor_max: number | null;
+  tipo: TipoRecomendacao; valor_sugerido: number | null; valor_min: number | null; valor_max: number | null;
   custo_esperado_defesa: number; custo_esperado_acordo: number; economia_esperada: number; regra: string;
-  sinais_acionados: string[]; motivos: string[]; scores_snapshot: Scores; exige_aprovacao_valor_causa: boolean;
+  sinais_acionados: string[]; docs_a_solicitar: string[]; motivos: string[]; scores_snapshot: Scores;
+  exige_aprovacao_valor_causa: boolean;
   created_at: string;
+}
+
+export interface Preparacao {
+  status: "ocioso" | "rodando" | "pronto" | "erro";
+  total: number; prontos: number; atual: string | null; erro: string | null; atualizado_em: string | null;
 }
 
 export interface DecisaoIn {
@@ -193,6 +205,9 @@ export const api = {
     }
   },
   logout: () => req<void>("/api/auth/logout", { method: "POST" }),
+
+  prepararCasos: () => req<Preparacao>("/api/preparacao", { method: "POST" }),
+  preparacao: () => req<Preparacao>("/api/preparacao"),
 
   processos: (busca?: string) =>
     req<ProcessoResumo[]>(`/api/processos${busca ? `?busca=${encodeURIComponent(busca)}` : ""}`),
